@@ -1,4 +1,4 @@
-# OpenFeature
+# OpenFeature Swift Provider
 
 Swift implementation of the Konfidens feature provider.
 
@@ -6,7 +6,7 @@ Swift implementation of the Konfidens feature provider.
 
 ### Adding the package dependency
 
-If you manage dependencies through XCode go to "Add package" and enter `git@github.com:spotify/openfeature-swift-provider.git`.
+If you manage dependencies through Xcode go to "Add package" and enter `git@github.com:spotify/openfeature-swift-provider.git`.
 
 If you manage dependencies through SPM, in the dependencies section of Package.swift add:
 ```swift
