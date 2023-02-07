@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+script_dir=$(dirname $0)
+root_dir="$script_dir/.."
+
+$root_dir/Tools/swift-lint --config $root_dir/.swiftlint.yml $root_dir/Sources $root_dir/Tests
