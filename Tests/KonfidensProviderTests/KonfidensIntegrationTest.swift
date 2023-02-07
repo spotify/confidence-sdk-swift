@@ -4,6 +4,8 @@ import OpenFeature
 import XCTest
 
 class Konfidens: XCTestCase {
+    let clientToken = ProcessInfo.processInfo.environment["KONFIDENS_CLIENT_TOKEN"]
+
     override func setUp() {
         try? PersistentBatchProviderCache.fromDefaultStorage().clear()
 
@@ -11,8 +13,12 @@ class Konfidens: XCTestCase {
     }
 
     func testKonfidensFeatureIntegration() throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
         OpenFeatureAPI.shared.provider =
-            KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "<SECRET>"))
+            KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: clientToken))
             .build()
         let client = OpenFeatureAPI.shared.getClient()
 
@@ -36,8 +42,12 @@ class Konfidens: XCTestCase {
     }
 
     func testKonfidensBatchFeatureIntegration() throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
         let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
-            credentials: .clientSecret(secret: "<SECRET>")
+            credentials: .clientSecret(secret: clientToken)
         )
         .build()
 
@@ -58,8 +68,12 @@ class Konfidens: XCTestCase {
     }
 
     func testKonfidensBatchFeatureProviderInvalidContext() throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
         let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
-            credentials: .clientSecret(secret: "<SECRET>")
+            credentials: .clientSecret(secret: clientToken)
         )
         .build()
 
@@ -89,8 +103,12 @@ class Konfidens: XCTestCase {
     }
 
     func testKonfidensBatchFeatureIntegrationNoSegmentMatch() throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
         let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
-            credentials: .clientSecret(secret: "<SECRET>")
+            credentials: .clientSecret(secret: clientToken)
         )
         .build()
 
@@ -110,4 +128,8 @@ class Konfidens: XCTestCase {
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
     }
+}
+
+enum TestError: Error {
+    case missingClientToken
 }
