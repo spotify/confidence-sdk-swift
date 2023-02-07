@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "OpenFeature",
-        "repositoryURL": "git@ghe.spotify.net:konfidens/openfeature-swift-sdk.git",
+        "repositoryURL": "git@github.com:spotify/openfeature-swift-sdk.git",
         "state": {
           "branch": null,
-          "revision": "3b7e6a72249bca0dea201ccc09c21dc0dc6bcac9",
-          "version": "0.1.4"
+          "revision": "ccf50b9e6877b0f5acf71334b883aa468cdbf468",
+          "version": "0.1.0"
         }
       }
     ]

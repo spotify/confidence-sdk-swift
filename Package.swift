@@ -15,7 +15,7 @@ let package = Package(
             targets: ["KonfidensProvider"])
     ],
     dependencies: [
-        .package(url: "git@ghe.spotify.net:konfidens/openfeature-swift-sdk.git", from: "0.1.4"),
+        .package(url: "git@github.com:spotify/openfeature-swift-sdk.git", from: "0.1.0"),
     ],
     targets: [
         .target(
