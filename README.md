@@ -82,11 +82,11 @@ now, all resolves of `button.size` will return 4.
 
 ## Development
 
-Open the project in XCode and build by Product -> Build.
+Open the project in Xcode and build by Product -> Build.
 
 ### Linting code
 
-Code is automatically linted during build in XCode, if you need to manually lint:
+Code is automatically linted during build in Xcode, if you need to manually lint:
 ```shell
 brew install swiftlint
 swiftlint
@@ -99,8 +99,11 @@ You can automatically format your code using:
 ./scripts/swift-format
 ```
 
-### Running tests from command line
+### Running tests
+
+IT tests require a Konfidens client token to reach remote servers. The token can be created on the Konfidens portal. The Konfidens project used for IT tests is named `konfidens_e2e`.
+
 
 ```shell
-./scripts/run_tests.sh
+./scripts/run_tests.sh <CLIENT_TOKEN>
 ```

@@ -6,7 +6,7 @@ import XCTest
 
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
-@available(macOS 13.0, *)
+@available(macOS 13.0, iOS 16.0, *)
 class KonfidensBatchFeatureProviderTest: XCTestCase {
     private let builder = KonfidensBatchFeatureProvider.Builder(credentials: .clientSecret(secret: "test"))
     private let cache = PersistentBatchProviderCache.fromDefaultStorage()
@@ -621,7 +621,7 @@ final class DispatchQueueFake: DispatchQueueType {
     }
 }
 
-@available(macOS 13.0, *)
+@available(macOS 13.0, iOS 16.0, *)
 final class DispatchQueueFakeSlow: DispatchQueueType {
     var expectation: XCTestExpectation
     init(expectation: XCTestExpectation) {
