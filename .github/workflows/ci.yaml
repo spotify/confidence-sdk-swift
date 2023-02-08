@@ -20,7 +20,7 @@ jobs:
     - name: Build and Test
       env:
         KONFIDENS_CLIENT_TOKEN: ${{ secrets.KONFIDENS_CLIENT_TOKEN }}
-      run: scripts/run_tests.sh $KONFIDENS_CLIENT_TOKEN
+      run: swift test
 
   SwiftLint:
     runs-on: ubuntu-latest
