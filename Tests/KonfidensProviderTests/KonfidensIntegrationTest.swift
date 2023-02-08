@@ -98,7 +98,10 @@ class Konfidens: XCTestCase {
         XCTAssertNotNil(result.errorCode)
         XCTAssertEqual(
             result.errorMessage,
-            "General error: Error during integer evaluation for key test-flag-1.my-integer: Cached flag has an old evaluation context"
+            """
+            General error: Error during integer evaluation for key test-flag-1.my-integer: \
+            Cached flag has an old evaluation context
+            """
         )
     }
 
