@@ -99,8 +99,10 @@ You can automatically format your code using:
 ./scripts/swift-format
 ```
 
-### Running tests from command line
+### Running tests
+
+IT tests require a Konfidens client token to reach remote servers. The token can be created on the Konfidens portal.
 
 ```shell
-./scripts/run_tests.sh
+./scripts/run_tests.sh <CLIENT_TOKEN>
 ```
