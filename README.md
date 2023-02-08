@@ -101,7 +101,8 @@ You can automatically format your code using:
 
 ### Running tests
 
-IT tests require a Konfidens client token to reach remote servers. The token can be created on the Konfidens portal.
+IT tests require a Konfidens client token to reach remote servers. The token can be created on the Konfidens portal. The Konfidens project used for IT tests is named `konfidens_e2e`.
+
 
 ```shell
 ./scripts/run_tests.sh <CLIENT_TOKEN>
