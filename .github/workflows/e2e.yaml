@@ -1,0 +1,20 @@
+name: E2E
+
+on:
+  schedule:
+    - cron:  '0 * * * *'
+
+jobs:
+  Tests:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: webfactory/ssh-agent
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.SDK_REPO_PRIVATE_KEY }}
+    - name: Build and Test
+      env:
+        KONFIDENS_CLIENT_TOKEN: ${{ secrets.KONFIDENS_CLIENT_TOKEN }}
+        TEST_FLAG_NAME: ${{ secrets.E2E_RESOLVE_FLAG }}
+      run: scripts/run_tests.sh $KONFIDENS_CLIENT_TOKEN $TEST_FLAG_NAME
