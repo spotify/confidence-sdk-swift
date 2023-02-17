@@ -10,9 +10,9 @@ public class RemoteKonfidensClient: KonfidensClient {
     private var options: KonfidensClientOptions
 
     private var httpClient: HttpClient
-    private var sendApplyEvent: Bool
+    private var applyOnResolve: Bool
 
-    init(options: KonfidensClientOptions, session: URLSession? = nil, sendApplyEvent: Bool) {
+    init(options: KonfidensClientOptions, session: URLSession? = nil, applyOnResolve: Bool) {
         self.options = options
         self.baseUrl = "https://resolver.\(options.region.rawValue).\(domain)"
         if let session = session {
@@ -20,7 +20,7 @@ public class RemoteKonfidensClient: KonfidensClient {
         } else {
             self.httpClient = HttpClient()
         }
-        self.sendApplyEvent = sendApplyEvent
+        self.applyOnResolve = applyOnResolve
     }
 
     public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
@@ -28,7 +28,7 @@ public class RemoteKonfidensClient: KonfidensClient {
             flag: "flags/\(flag)",
             evaluationContext: try getEvaluationContextStruct(ctx: ctx),
             clientSecret: options.credentials.getSecret(),
-            sendApplyEvent: sendApplyEvent)
+            apply: applyOnResolve)
         guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute)/\(flag):resolve") else {
             throw KonfidensError.internalError(message: "Could not create service url")
         }
@@ -58,7 +58,7 @@ public class RemoteKonfidensClient: KonfidensClient {
         let request = BatchResolveFlagRequest(
             evaluationContext: try getEvaluationContextStruct(ctx: ctx),
             clientSecret: options.credentials.getSecret(),
-            sendApplyEvent: sendApplyEvent)
+            apply: applyOnResolve)
         guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute):batchResolve") else {
             throw KonfidensError.internalError(message: "Could not create service url")
         }
@@ -114,7 +114,7 @@ public class RemoteKonfidensClient: KonfidensClient {
                 value: nil,
                 contextHash: ctx.hash(),
                 flag: try displayName(resolvedFlag: resolvedFlag),
-                applyStatus: sendApplyEvent ? .applied : .notApplied)
+                applyStatus: applyOnResolve ? .applied : .notApplied)
         }
 
         let value = try TypeMapper.from(object: responseValue, schema: responseFlagSchema)
@@ -125,7 +125,7 @@ public class RemoteKonfidensClient: KonfidensClient {
             value: value,
             contextHash: ctx.hash(),
             flag: try displayName(resolvedFlag: resolvedFlag),
-            applyStatus: sendApplyEvent ? .applied : .notApplied)
+            applyStatus: applyOnResolve ? .applied : .notApplied)
     }
 
     private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> Struct {
@@ -166,7 +166,7 @@ extension RemoteKonfidensClient {
         var flag: String
         var evaluationContext: Struct
         var clientSecret: String
-        var sendApplyEvent: Bool
+        var apply: Bool
     }
 
     struct ResolveFlagResponse: Codable {
@@ -209,7 +209,7 @@ extension RemoteKonfidensClient {
     struct BatchResolveFlagRequest: Codable {
         var evaluationContext: Struct
         var clientSecret: String
-        var sendApplyEvent: Bool
+        var apply: Bool
     }
 
     struct BatchResolveFlagResponse: Codable {

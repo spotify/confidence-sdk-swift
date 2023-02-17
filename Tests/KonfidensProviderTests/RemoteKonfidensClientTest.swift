@@ -26,7 +26,7 @@ class RemoteKonfidensClientTest: XCTestCase {
         let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
 
         let client = RemoteKonfidensClient(
-            options: .init(credentials: .clientSecret(secret: "test")), session: session, sendApplyEvent: true)
+            options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
         let value = try client.resolve(flag: "flag1", ctx: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(resolvedFlag1.value, value.resolvedValue.value)
@@ -37,7 +37,7 @@ class RemoteKonfidensClientTest: XCTestCase {
         let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
 
         let client = RemoteKonfidensClient(
-            options: .init(credentials: .clientSecret(secret: "test")), session: session, sendApplyEvent: true)
+            options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
         let result = try client.batchResolve(ctx: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(result.resolvedValues.count, 2)
@@ -54,7 +54,7 @@ class RemoteKonfidensClientTest: XCTestCase {
         let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
 
         let client = RemoteKonfidensClient(
-            options: .init(credentials: .clientSecret(secret: "test")), session: session, sendApplyEvent: true)
+            options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
         try client.apply(flag: "flag1", resolveToken: "test", appliedTime: Date.backport.now)
     }

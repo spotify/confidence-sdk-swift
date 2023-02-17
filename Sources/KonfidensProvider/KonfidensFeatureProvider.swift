@@ -166,7 +166,7 @@ extension KonfidensFeatureProvider {
 
         /// Creates the `KonfidensFeatureProvider` according to the settings specified in the builder.
         public func build() -> KonfidensFeatureProvider {
-            let client = RemoteKonfidensClient(options: options, session: self.session, sendApplyEvent: true)
+            let client = RemoteKonfidensClient(options: options, session: self.session, applyOnResolve: true)
             return KonfidensFeatureProvider(resolver: client, overrides: self.localOverrides)
         }
     }
