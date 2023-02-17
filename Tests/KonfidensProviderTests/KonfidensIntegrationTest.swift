@@ -3,6 +3,8 @@ import KonfidensProvider
 import OpenFeature
 import XCTest
 
+@testable import KonfidensProvider
+
 class Konfidens: XCTestCase {
     let clientToken = ProcessInfo.processInfo.environment["KONFIDENS_CLIENT_TOKEN"]
 
@@ -67,14 +69,51 @@ class Konfidens: XCTestCase {
         XCTAssertNil(result.errorMessage)
     }
 
-    func testKonfidensBatchFeatureProviderInvalidContext() throws {
+    func testKonfidensBatchFeatureApplies() throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
+        let cache = PersistentBatchProviderCache.fromDefaultStorage()
+
         let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
+        .with(applyQueue: DispatchQueueFake())
+        .with(cache: cache)
+        .build()
+
+        OpenFeatureAPI.shared.provider = konfidensFeatureProvider
+
+        let ctx = MutableContext(
+            targetingKey: "user_foo",
+            structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
+        try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
+
+        let client = OpenFeatureAPI.shared.getClient()
+        let result = client.getIntegerDetails(key: "test-flag-1.my-integer", defaultValue: 1, ctx: ctx)
+
+        XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
+        XCTAssertNotNil(result.variant)
+        XCTAssertNil(result.errorCode)
+        XCTAssertNil(result.errorMessage)
+        XCTAssertEqual(
+            try cache.getValue(flag: "test-flag-1", ctx: ctx)?.resolvedValue.applyStatus,
+            .applied)
+    }
+
+    func testKonfidensBatchFeatureMutatedContext() throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
+        let cache = PersistentBatchProviderCache.fromDefaultStorage()
+
+        let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
+            credentials: .clientSecret(secret: clientToken)
+        )
+        .with(applyQueue: DispatchQueueFake())
+        .with(cache: cache)
         .build()
 
         OpenFeatureAPI.shared.provider = konfidensFeatureProvider
@@ -103,16 +142,23 @@ class Konfidens: XCTestCase {
             Cached flag has an old evaluation context
             """
         )
+        XCTAssertEqual(
+            try cache.getValue(flag: "test-flag-1", ctx: ctx)?.resolvedValue.applyStatus,
+            .notApplied)
     }
 
-    func testKonfidensBatchFeatureIntegrationNoSegmentMatch() throws {
+    func testKonfidensBatchFeatureNoSegmentMatch() throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
+        let cache = PersistentBatchProviderCache.fromDefaultStorage()
+
         let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
+        .with(applyQueue: DispatchQueueFake())
+        .with(cache: cache)
         .build()
 
         OpenFeatureAPI.shared.provider = konfidensFeatureProvider
@@ -130,6 +176,9 @@ class Konfidens: XCTestCase {
         XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
+        XCTAssertEqual(
+            try cache.getValue(flag: "test-flag-1", ctx: ctx)?.resolvedValue.applyStatus,
+            .applied)
     }
 }
 
