@@ -301,7 +301,7 @@ extension KonfidensBatchFeatureProvider {
 
         /// Creates the `KonfidensBatchFeatureProvider` according to the settings specified in the builder.
         public func build() -> KonfidensBatchFeatureProvider {
-            let client = RemoteKonfidensClient(options: options, session: self.session, sendApplyEvent: false)
+            let client = RemoteKonfidensClient(options: options, session: self.session, applyOnResolve: false)
             let resolver = LocalStorageResolver(cache: cache)
             return KonfidensBatchFeatureProvider(
                 resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue)
