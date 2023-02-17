@@ -6,7 +6,14 @@ import XCTest
 
 class Konfidens: XCTestCase {
     let clientToken = ProcessInfo.processInfo.environment["KONFIDENS_CLIENT_TOKEN"]
-    let resolveFlag = ProcessInfo.processInfo.environment["TEST_FLAG_NAME"] ?? "test-flag-1"
+    let resolveFlag = setResolveFlag()
+
+    private static func setResolveFlag() -> String {
+        if let flag = ProcessInfo.processInfo.environment["TEST_FLAG_NAME"], !flag.isEmpty {
+            return flag
+        }
+        return "test-flag-1"
+    }
 
     override func setUp() {
         try? PersistentBatchProviderCache.fromDefaultStorage().clear()
