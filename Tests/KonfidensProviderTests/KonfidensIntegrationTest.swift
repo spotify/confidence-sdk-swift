@@ -1,5 +1,4 @@
 import Foundation
-import KonfidensProvider
 import OpenFeature
 import XCTest
 
