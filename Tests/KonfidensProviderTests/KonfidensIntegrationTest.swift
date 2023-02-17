@@ -1,5 +1,4 @@
 import Foundation
-import KonfidensProvider
 import OpenFeature
 import XCTest
 
@@ -7,6 +6,7 @@ import XCTest
 
 class Konfidens: XCTestCase {
     let clientToken = ProcessInfo.processInfo.environment["KONFIDENS_CLIENT_TOKEN"]
+    let resolveFlag = ProcessInfo.processInfo.environment["TEST_FLAG_NAME"] ?? "test-flag-1"
 
     override func setUp() {
         try? PersistentBatchProviderCache.fromDefaultStorage().clear()
@@ -28,15 +28,15 @@ class Konfidens: XCTestCase {
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
 
-        let intResult = client.getIntegerDetails(key: "test-flag-1.my-integer", defaultValue: 1, ctx: ctx)
-        let boolResult = client.getBooleanDetails(key: "test-flag-1.my-boolean", defaultValue: false, ctx: ctx)
+        let intResult = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
+        let boolResult = client.getBooleanDetails(key: "\(resolveFlag).my-boolean", defaultValue: false, ctx: ctx)
 
-        XCTAssertEqual(intResult.flagKey, "test-flag-1.my-integer")
+        XCTAssertEqual(intResult.flagKey, "\(resolveFlag).my-integer")
         XCTAssertEqual(intResult.reason, Reason.targetingMatch.rawValue)
         XCTAssertNotNil(intResult.variant)
         XCTAssertNil(intResult.errorCode)
         XCTAssertNil(intResult.errorMessage)
-        XCTAssertEqual(boolResult.flagKey, "test-flag-1.my-boolean")
+        XCTAssertEqual(boolResult.flagKey, "\(resolveFlag).my-boolean")
         XCTAssertEqual(boolResult.reason, Reason.targetingMatch.rawValue)
         XCTAssertNotNil(boolResult.variant)
         XCTAssertNil(boolResult.errorCode)
@@ -61,7 +61,7 @@ class Konfidens: XCTestCase {
         try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
 
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "test-flag-1.my-integer", defaultValue: 1, ctx: ctx)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
 
         XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
         XCTAssertNotNil(result.variant)
@@ -91,14 +91,14 @@ class Konfidens: XCTestCase {
         try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
 
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "test-flag-1.my-integer", defaultValue: 1, ctx: ctx)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
 
         XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
         XCTAssertNotNil(result.variant)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
         XCTAssertEqual(
-            try cache.getValue(flag: "test-flag-1", ctx: ctx)?.resolvedValue.applyStatus,
+            try cache.getValue(flag: "\(resolveFlag)", ctx: ctx)?.resolvedValue.applyStatus,
             .applied)
     }
 
@@ -129,7 +129,7 @@ class Konfidens: XCTestCase {
                 "user": Value.structure(["country": Value.string("SE"), "premium": Value.boolean(true)])
             ]))
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "test-flag-1.my-integer", defaultValue: 1, ctx: ctx2)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx2)
 
         XCTAssertEqual(result.value, 1)
         XCTAssertNil(result.variant)
@@ -138,12 +138,12 @@ class Konfidens: XCTestCase {
         XCTAssertEqual(
             result.errorMessage,
             """
-            General error: Error during integer evaluation for key test-flag-1.my-integer: \
+            General error: Error during integer evaluation for key \(resolveFlag).my-integer: \
             Cached flag has an old evaluation context
             """
         )
         XCTAssertEqual(
-            try cache.getValue(flag: "test-flag-1", ctx: ctx)?.resolvedValue.applyStatus,
+            try cache.getValue(flag: "\(resolveFlag)", ctx: ctx)?.resolvedValue.applyStatus,
             .notApplied)
     }
 
@@ -169,7 +169,7 @@ class Konfidens: XCTestCase {
         try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
 
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "test-flag-1.my-integer", defaultValue: 1, ctx: ctx)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
 
         XCTAssertEqual(result.value, 1)
         XCTAssertNil(result.variant)
@@ -177,7 +177,7 @@ class Konfidens: XCTestCase {
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
         XCTAssertEqual(
-            try cache.getValue(flag: "test-flag-1", ctx: ctx)?.resolvedValue.applyStatus,
+            try cache.getValue(flag: "\(resolveFlag)", ctx: ctx)?.resolvedValue.applyStatus,
             .applied)
     }
 }
