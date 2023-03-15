@@ -117,25 +117,20 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
                 statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "Server error")
         }
 
-        guard let request = request.decodeBody(type: RemoteKonfidensClient.ApplyFlagRequest.self) else {
+        guard let request = request.decodeBody(type: RemoteKonfidensClient.ApplyFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
         }
 
-        guard request.flag.flag.hasPrefix("flags/") else {
-            respondWithError(
-                statusCode: 400, code: GrpcStatusCode.failedPrecondition.rawValue, message: "Incorrect flag name")
-            return
+        request.flags.forEach { flag in
+            guard flag.flag.hasPrefix("flags/") else {
+                respondWithError(
+                    statusCode: 400, code: GrpcStatusCode.failedPrecondition.rawValue, message: "Incorrect flag name")
+                return
+            }
         }
-
-        let flagName = request.flag.flag
-        guard MockedKonfidensClientURLProtocol.flags[flagName] != nil else {
-            respondWithError(statusCode: 404, code: GrpcStatusCode.notFound.rawValue, message: "Flag not found")
-            return
-        }
-
-        respondWithSuccess(response: RemoteKonfidensClient.ApplyFlagResponse())
+        respondWithSuccess(response: RemoteKonfidensClient.ApplyFlagsResponse())
     }
 
     private func respondWithError(statusCode: Int, code: Int, message: String) {

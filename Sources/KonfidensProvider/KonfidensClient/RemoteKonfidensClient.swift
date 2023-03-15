@@ -65,22 +65,21 @@ public class RemoteKonfidensClient: KonfidensClient {
         return ResolveResult(resolvedValue: resolvedValue, resolveToken: resolveResult.resolveToken)
     }
 
-
     public func apply(flag: String, resolveToken: String, appliedTime: Date) throws {
         let appliedFlag = AppliedFlag(
             flag: "flags/\(flag)",
-            appliedTime: Date.backport.toISOString(date: appliedTime),
-            sentTime: Date.backport.nowISOString)
-        let request = ApplyFlagRequest(
-            flag: appliedFlag,
+            applyTime: Date.backport.toISOString(date: appliedTime))
+        let request = ApplyFlagsRequest(
+            flags: [appliedFlag],
+            sendTime: Date.backport.nowISOString,
             clientSecret: options.credentials.getSecret(),
             resolveToken: resolveToken)
-        guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute)/\(flag):apply") else {
+        guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute):apply") else {
             throw KonfidensError.internalError(message: "Could not create service url")
         }
 
         do {
-            let result = try self.httpClient.post(url: url, data: request, resultType: ApplyFlagResponse.self)
+            let result = try self.httpClient.post(url: url, data: request, resultType: ApplyFlagsResponse.self)
             guard result.response.status == .ok else {
                 throw mapHttpStatusToError(status: result.response.status, error: result.decodedError, flag: flag)
             }
@@ -175,19 +174,19 @@ extension RemoteKonfidensClient {
         case unknown
     }
 
-    struct ApplyFlagRequest: Codable {
-        var flag: AppliedFlag
+    struct ApplyFlagsRequest: Codable {
+        var flags: [AppliedFlag]
+        var sendTime: String
         var clientSecret: String
         var resolveToken: String
     }
 
-    struct AppliedFlag: Codable {
-        var flag: String
-        var appliedTime: String
-        var sentTime: String
+    struct ApplyFlagsResponse: Codable {
     }
 
-    struct ApplyFlagResponse: Codable {
+    struct AppliedFlag: Codable {
+        var flag: String
+        var applyTime: String
     }
 }
 
