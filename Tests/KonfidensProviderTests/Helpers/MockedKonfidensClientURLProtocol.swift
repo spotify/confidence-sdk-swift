@@ -5,8 +5,7 @@ import OpenFeature
 
 class MockedKonfidensClientURLProtocol: URLProtocol {
     public static var callStats = 0
-    public static var resolveStats: [String: Int] = [:]
-    public static var batchResolveStats = 0
+    public static var resolveStats = 0
     public static var applyStats = 0
     public static var flags: [String: TestFlag] = [:]
     public static var failFirstApply = false
@@ -26,8 +25,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
     static func reset() {
         MockedKonfidensClientURLProtocol.flags = [:]
         MockedKonfidensClientURLProtocol.callStats = 0
-        MockedKonfidensClientURLProtocol.resolveStats = [:]
-        MockedKonfidensClientURLProtocol.batchResolveStats = 0
+        MockedKonfidensClientURLProtocol.resolveStats = 0
         MockedKonfidensClientURLProtocol.applyStats = 0
         MockedKonfidensClientURLProtocol.failFirstApply = false
     }
@@ -49,8 +47,6 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
         switch path {
         case _ where path.hasSuffix(":resolve"):
             return resolve()
-        case _ where path.hasSuffix("batchResolve"):
-            return batchResolve()
         case _ where path.hasSuffix(":apply"):
             return MockedKonfidensClientURLProtocol.failFirstApply
                 ? apply(failAt: 1)
@@ -67,77 +63,9 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
 
     private func resolve() {
         MockedKonfidensClientURLProtocol.callStats += 1
+        MockedKonfidensClientURLProtocol.resolveStats += 1
 
-        guard let request = request.decodeBody(type: RemoteKonfidensClient.ResolveFlagRequest.self) else {
-            client?.urlProtocol(
-                self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
-            return
-        }
-
-        guard request.flag.hasPrefix("flags/") else {
-            respondWithError(
-                statusCode: 400, code: GrpcStatusCode.failedPrecondition.rawValue, message: "Incorrect flag name")
-            return
-        }
-
-        let flagName = request.flag
-        MockedKonfidensClientURLProtocol.resolveStats[flagName] =
-            (MockedKonfidensClientURLProtocol.resolveStats[flagName] ?? 0) + 1
-        guard let flag = MockedKonfidensClientURLProtocol.flags[flagName] else {
-            respondWithError(statusCode: 404, code: GrpcStatusCode.notFound.rawValue, message: "Flag not found")
-            return
-        }
-
-        if flag.isArchived {
-            respondWithSuccess(
-                response: RemoteKonfidensClient.ResolveFlagResponse(
-                    resolvedFlag: .init(flag: flagName, reason: .archived)))
-            return
-        }
-
-        guard case .string(let targetingKey) = request.evaluationContext.fields["targeting_key"] else {
-            respondWithError(
-                statusCode: 400,
-                code: GrpcStatusCode.invalidArgument.rawValue,
-                message: "Request missing field targeting_key")
-            return
-        }
-
-        guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
-            respondWithSuccess(
-                response: RemoteKonfidensClient.ResolveFlagResponse(
-                    resolvedFlag: .init(flag: flagName, reason: .noSegmentMatch)))
-            return
-        }
-
-        var responseValue: Struct?
-        do {
-            responseValue = try TypeMapper.from(value: resolved.value)
-        } catch {
-            respondWithError(statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "\(error)")
-            return
-        }
-
-        guard let responseValue = responseValue else {
-            respondWithError(
-                statusCode: 400,
-                code: GrpcStatusCode.invalidArgument.rawValue,
-                message: "Could not convert value to response")
-            return
-        }
-
-        respondWithSuccess(
-            response: RemoteKonfidensClient.ResolveFlagResponse(
-                resolvedFlag: .init(
-                    flag: flagName, value: responseValue, variant: resolved.variant, flagSchema: schema, reason: .match)
-            ))
-    }
-
-    private func batchResolve() {
-        MockedKonfidensClientURLProtocol.callStats += 1
-        MockedKonfidensClientURLProtocol.batchResolveStats += 1
-
-        guard let request = request.decodeBody(type: RemoteKonfidensClient.BatchResolveFlagRequest.self) else {
+        guard let request = request.decodeBody(type: RemoteKonfidensClient.ResolveFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
@@ -154,6 +82,12 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
         let flags = MockedKonfidensClientURLProtocol.flags
             .filter { _, flag in
                 flag.isArchived == false
+            }
+            .filter { flagName, _ in
+                if !request.flags.isEmpty {
+                    return request.flags.contains(flagName)
+                }
+                return true
             }
             .map { flagName, flag in
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
@@ -176,7 +110,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
                     flag: flagName, value: responseValue, variant: resolved.variant, flagSchema: schema, reason: .match)
             }
         respondWithSuccess(
-            response: RemoteKonfidensClient.BatchResolveFlagResponse(resolvedFlags: flags, resolveToken: "token1"))
+            response: RemoteKonfidensClient.ResolveFlagsResponse(resolvedFlags: flags, resolveToken: "token1"))
     }
 
     private func apply(failAt: Int = 0) {
@@ -187,25 +121,20 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
                 statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "Server error")
         }
 
-        guard let request = request.decodeBody(type: RemoteKonfidensClient.ApplyFlagRequest.self) else {
+        guard let request = request.decodeBody(type: RemoteKonfidensClient.ApplyFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
         }
 
-        guard request.flag.flag.hasPrefix("flags/") else {
-            respondWithError(
-                statusCode: 400, code: GrpcStatusCode.failedPrecondition.rawValue, message: "Incorrect flag name")
-            return
+        request.flags.forEach { flag in
+            guard flag.flag.hasPrefix("flags/") else {
+                respondWithError(
+                    statusCode: 400, code: GrpcStatusCode.failedPrecondition.rawValue, message: "Incorrect flag name")
+                return
+            }
         }
-
-        let flagName = request.flag.flag
-        guard MockedKonfidensClientURLProtocol.flags[flagName] != nil else {
-            respondWithError(statusCode: 404, code: GrpcStatusCode.notFound.rawValue, message: "Flag not found")
-            return
-        }
-
-        respondWithSuccess(response: RemoteKonfidensClient.ApplyFlagResponse())
+        respondWithSuccess(response: RemoteKonfidensClient.ApplyFlagsResponse())
     }
 
     private func respondWithError(statusCode: Int, code: Int, message: String) {

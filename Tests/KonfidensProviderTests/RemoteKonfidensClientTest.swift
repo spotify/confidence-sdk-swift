@@ -39,7 +39,7 @@ class RemoteKonfidensClientTest: XCTestCase {
         let client = RemoteKonfidensClient(
             options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
-        let result = try client.batchResolve(ctx: MutableContext(targetingKey: "user1"))
+        let result = try client.resolve(ctx: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(result.resolvedValues.count, 2)
         let sortedResultValues = result.resolvedValues.sorted { resolvedValue1, resolvedValue2 in
             resolvedValue1.flag < resolvedValue2.flag
@@ -56,6 +56,6 @@ class RemoteKonfidensClientTest: XCTestCase {
         let client = RemoteKonfidensClient(
             options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
-        try client.apply(flag: "flag1", resolveToken: "test", appliedTime: Date.backport.now)
+        try client.apply(flag: "flag1", resolveToken: "test", applyTime: Date.backport.now)
     }
 }

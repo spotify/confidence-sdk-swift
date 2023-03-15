@@ -56,8 +56,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 2)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 2)
     }
 
     func testResolveIntegerFlag() throws {
@@ -83,8 +82,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testResolveAndApplyIntegerFlag() throws {
@@ -122,8 +120,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedKonfidensClientURLProtocol.applyStats, 1)
     }
 
@@ -163,8 +160,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
         XCTAssertEqual(evaluation.variant, nil)
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedKonfidensClientURLProtocol.applyStats, 1)
     }
 
@@ -209,8 +205,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedKonfidensClientURLProtocol.applyStats, 1)
     }
 
@@ -253,8 +248,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
         wait(for: [expectation], timeout: 2.0)
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
@@ -304,8 +298,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedKonfidensClientURLProtocol.applyStats, 2)
     }
 
@@ -357,8 +350,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testResolveObjectFlag() throws {
@@ -384,8 +376,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testResolveNullValues() throws {
@@ -415,8 +406,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testProviderThrowsFlagNotFound() throws {
@@ -438,8 +428,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
                 OpenFeatureError.generalError(
                     message: "Error during object evaluation for key flag: Flag not found in the cache"))
         }
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 0)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 0)
     }
 
     func testProviderThrowsMissingTargetingKey() throws {
@@ -467,8 +456,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         ) { error in
             XCTAssertEqual(error as? OpenFeatureError, OpenFeatureError.targetingKeyMissingError)
         }
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testProviderCannotParse() throws {
@@ -493,8 +481,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
             XCTAssertEqual(
                 error as? OpenFeatureError, OpenFeatureError.parseError(message: "Unable to parse flag value: 3"))
         }
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testLocalOverrideReplacesFlag() throws {
@@ -520,8 +507,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
         XCTAssertEqual(evaluation.value, 4)
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testLocalOverridePartiallyReplacesFlag() throws {
@@ -556,8 +542,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertEqual(colorEvaluation.variant, "control")
         XCTAssertEqual(colorEvaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(colorEvaluation.value, "green")
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testLocalOverrideTwiceTakesSecondOverride() throws {
@@ -584,8 +569,7 @@ class KonfidensBatchFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.variant, "treatment")
         XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
         XCTAssertEqual(evaluation.value, 5)
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, [:])  // only local storage used
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.batchResolveStats, 1)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
     func testOverridingInProvider() throws {

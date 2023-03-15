@@ -254,14 +254,15 @@ class KonfidensFeatureProviderTest: XCTestCase {
         ])
         let provider = builder.with(session: session).build()
 
-        let evaluation = try provider.getBooleanEvaluation(
-            key: "archived",
-            defaultValue: false,
-            ctx: MutableContext(targetingKey: "user1")
-        )
-
-        XCTAssertEqual(evaluation.value, false)
-        XCTAssertEqual(evaluation.reason, Reason.disabled.rawValue)
-        XCTAssertNil(evaluation.variant)
+        XCTAssertThrowsError(
+            try provider.getBooleanEvaluation(
+                key: "archived",
+                defaultValue: false,
+                ctx: MutableContext(targetingKey: "user1")
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? OpenFeatureError, OpenFeatureError.flagNotFoundError(key: "archived"))
+        }
     }
 }

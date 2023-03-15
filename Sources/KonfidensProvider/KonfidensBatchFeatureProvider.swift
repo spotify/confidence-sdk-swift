@@ -43,7 +43,7 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
             ctx: ctx,
-            appliedTime: Date.backport.now)
+            applyTime: Date.backport.now)
         return evaluationResult
     }
 
@@ -59,7 +59,7 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
             ctx: ctx,
-            appliedTime: Date.backport.now)
+            applyTime: Date.backport.now)
         return evaluationResult
     }
 
@@ -75,7 +75,7 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
             ctx: ctx,
-            appliedTime: Date.backport.now)
+            applyTime: Date.backport.now)
         return evaluationResult
     }
 
@@ -91,7 +91,7 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
             ctx: ctx,
-            appliedTime: Date.backport.now)
+            applyTime: Date.backport.now)
         return evaluationResult
     }
 
@@ -107,16 +107,16 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
             ctx: ctx,
-            appliedTime: Date.backport.now)
+            applyTime: Date.backport.now)
         return evaluationResult
     }
 
     public func initializeFromContext(ctx: OpenFeature.EvaluationContext) throws {
-        let batchResolveResult = try client.batchResolve(ctx: ctx)
-        guard let resolveToken = batchResolveResult.resolveToken else {
+        let resolveResult = try client.resolve(ctx: ctx)
+        guard let resolveToken = resolveResult.resolveToken else {
             throw KonfidensError.noResolveTokenFromServer
         }
-        try cache.clearAndSetValues(values: batchResolveResult.resolvedValues, ctx: ctx, resolveToken: resolveToken)
+        try cache.clearAndSetValues(values: resolveResult.resolvedValues, ctx: ctx, resolveToken: resolveToken)
     }
 
     public func refresh(ctx: EvaluationContext) throws {
@@ -141,7 +141,7 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
         evaluationResult: ProviderEvaluation<T>,
         resolverResult: ResolveResult?,
         ctx: OpenFeature.EvaluationContext,
-        appliedTime: Date
+        applyTime: Date
     ) {
         guard evaluationResult.errorCode == nil, let resolverResult = resolverResult,
             let resolveToken = resolverResult.resolveToken
@@ -176,7 +176,7 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
     ) {
         applyQueue.async {
             do {
-                try client.apply(flag: flag, resolveToken: resolveToken, appliedTime: Date.backport.now)
+                try client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
                 completion(true)
             } catch let error {
                 self.logApplyError(error: error)
