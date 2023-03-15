@@ -22,49 +22,20 @@ public class RemoteKonfidensClient: KonfidensClient {
         }
         self.applyOnResolve = applyOnResolve
     }
-
-    public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
-        let request = ResolveFlagRequest(
-            flag: "flags/\(flag)",
+    public func resolve(flags: [String], ctx: EvaluationContext) throws -> ResolvesResult {
+        let request = ResolveFlagsRequest(
+            flags: flags.map { flag in
+                "flags/\(flag)"
+            },
             evaluationContext: try getEvaluationContextStruct(ctx: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve)
-        guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute)/\(flag):resolve") else {
+        guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute):resolve") else {
             throw KonfidensError.internalError(message: "Could not create service url")
         }
 
         do {
-            let result = try self.httpClient.post(url: url, data: request, resultType: ResolveFlagResponse.self)
-            guard result.response.status == .ok else {
-                throw mapHttpStatusToError(status: result.response.status, error: result.decodedError, flag: flag)
-            }
-
-            guard let response = result.decodedData else {
-                throw OpenFeatureError.parseError(message: "Unable to parse request response")
-            }
-
-            if response.resolvedFlag.reason == .archived {
-                throw KonfidensError.flagIsArchived
-            }
-
-            let resolvedValue = try convert(resolvedFlag: response.resolvedFlag, ctx: ctx)
-            return ResolveResult.init(resolvedValue: resolvedValue, resolveToken: response.resolveToken)
-        } catch let error {
-            throw handleError(error: error)
-        }
-    }
-
-    public func batchResolve(ctx: EvaluationContext) throws -> BatchResolveResult {
-        let request = BatchResolveFlagRequest(
-            evaluationContext: try getEvaluationContextStruct(ctx: ctx),
-            clientSecret: options.credentials.getSecret(),
-            apply: applyOnResolve)
-        guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute):batchResolve") else {
-            throw KonfidensError.internalError(message: "Could not create service url")
-        }
-
-        do {
-            let result = try self.httpClient.post(url: url, data: request, resultType: BatchResolveFlagResponse.self)
+            let result = try self.httpClient.post(url: url, data: request, resultType: ResolveFlagsResponse.self)
             guard result.response.status == .ok else {
                 throw mapHttpStatusToError(status: result.response.status, error: result.decodedError)
             }
@@ -76,11 +47,24 @@ public class RemoteKonfidensClient: KonfidensClient {
             let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
                 try convert(resolvedFlag: resolvedFlag, ctx: ctx)
             }
-            return BatchResolveResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+            return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
         } catch let error {
             throw handleError(error: error)
         }
     }
+
+    public func resolve(ctx: EvaluationContext) throws -> ResolvesResult {
+        return try resolve(flags: [], ctx: ctx)
+    }
+
+    public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
+        let resolveResult = try resolve(flags: [flag], ctx: ctx)
+        guard let resolvedValue = resolveResult.resolvedValues.first else {
+            throw OpenFeatureError.flagNotFoundError(key: flag)
+        }
+        return ResolveResult(resolvedValue: resolvedValue, resolveToken: resolveResult.resolveToken)
+    }
+
 
     public func apply(flag: String, resolveToken: String, appliedTime: Date) throws {
         let appliedFlag = AppliedFlag(
@@ -162,15 +146,15 @@ public class RemoteKonfidensClient: KonfidensClient {
 }
 
 extension RemoteKonfidensClient {
-    struct ResolveFlagRequest: Codable {
-        var flag: String
+    struct ResolveFlagsRequest: Codable {
+        var flags: [String]
         var evaluationContext: Struct
         var clientSecret: String
         var apply: Bool
     }
 
-    struct ResolveFlagResponse: Codable {
-        var resolvedFlag: ResolvedFlag
+    struct ResolveFlagsResponse: Codable {
+        var resolvedFlags: [ResolvedFlag]
         var resolveToken: String?
     }
 
@@ -204,17 +188,6 @@ extension RemoteKonfidensClient {
     }
 
     struct ApplyFlagResponse: Codable {
-    }
-
-    struct BatchResolveFlagRequest: Codable {
-        var evaluationContext: Struct
-        var clientSecret: String
-        var apply: Bool
-    }
-
-    struct BatchResolveFlagResponse: Codable {
-        var resolvedFlags: [ResolvedFlag]
-        var resolveToken: String?
     }
 }
 

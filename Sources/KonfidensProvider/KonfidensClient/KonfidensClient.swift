@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 
 public protocol KonfidensClient: Resolver {
-    func batchResolve(ctx: EvaluationContext) throws -> BatchResolveResult
+    func resolve(ctx: EvaluationContext) throws -> ResolvesResult
 
     func apply(flag: String, resolveToken: String, appliedTime: Date) throws
 }
@@ -15,7 +15,7 @@ public struct ResolvedValue: Codable, Equatable {
     var applyStatus: ApplyStatus
 }
 
-public struct BatchResolveResult: Codable, Equatable {
+public struct ResolvesResult: Codable, Equatable {
     var resolvedValues: [ResolvedValue]
     var resolveToken: String?
 }

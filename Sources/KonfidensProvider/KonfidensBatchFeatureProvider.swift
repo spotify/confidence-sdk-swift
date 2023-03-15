@@ -112,11 +112,11 @@ public class KonfidensBatchFeatureProvider: FeatureProvider, BatchFeatureProvide
     }
 
     public func initializeFromContext(ctx: OpenFeature.EvaluationContext) throws {
-        let batchResolveResult = try client.batchResolve(ctx: ctx)
-        guard let resolveToken = batchResolveResult.resolveToken else {
+        let resolveResult = try client.resolve(ctx: ctx)
+        guard let resolveToken = resolveResult.resolveToken else {
             throw KonfidensError.noResolveTokenFromServer
         }
-        try cache.clearAndSetValues(values: batchResolveResult.resolvedValues, ctx: ctx, resolveToken: resolveToken)
+        try cache.clearAndSetValues(values: resolveResult.resolvedValues, ctx: ctx, resolveToken: resolveToken)
     }
 
     public func refresh(ctx: EvaluationContext) throws {
