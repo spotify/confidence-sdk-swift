@@ -56,6 +56,6 @@ class RemoteKonfidensClientTest: XCTestCase {
         let client = RemoteKonfidensClient(
             options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
-        try client.apply(flag: "flag1", resolveToken: "test", appliedTime: Date.backport.now)
+        try client.apply(flag: "flag1", resolveToken: "test", applyTime: Date.backport.now)
     }
 }

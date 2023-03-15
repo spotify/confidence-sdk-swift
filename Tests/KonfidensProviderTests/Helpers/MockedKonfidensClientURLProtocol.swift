@@ -5,8 +5,7 @@ import OpenFeature
 
 class MockedKonfidensClientURLProtocol: URLProtocol {
     public static var callStats = 0
-    public static var resolveStats: [String: Int] = [:]
-    public static var batchResolveStats = 0
+    public static var resolveStats = 0
     public static var applyStats = 0
     public static var flags: [String: TestFlag] = [:]
     public static var failFirstApply = false
@@ -26,8 +25,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
     static func reset() {
         MockedKonfidensClientURLProtocol.flags = [:]
         MockedKonfidensClientURLProtocol.callStats = 0
-        MockedKonfidensClientURLProtocol.resolveStats = [:]
-        MockedKonfidensClientURLProtocol.batchResolveStats = 0
+        MockedKonfidensClientURLProtocol.resolveStats = 0
         MockedKonfidensClientURLProtocol.applyStats = 0
         MockedKonfidensClientURLProtocol.failFirstApply = false
     }
@@ -65,7 +63,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
 
     private func resolve() {
         MockedKonfidensClientURLProtocol.callStats += 1
-        MockedKonfidensClientURLProtocol.batchResolveStats += 1
+        MockedKonfidensClientURLProtocol.resolveStats += 1
 
         guard let request = request.decodeBody(type: RemoteKonfidensClient.ResolveFlagsRequest.self) else {
             client?.urlProtocol(
@@ -84,6 +82,12 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
         let flags = MockedKonfidensClientURLProtocol.flags
             .filter { _, flag in
                 flag.isArchived == false
+            }
+            .filter { flagName, _ in
+                if !request.flags.isEmpty {
+                    return request.flags.contains(flagName)
+                }
+                return true
             }
             .map { flagName, flag in
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {

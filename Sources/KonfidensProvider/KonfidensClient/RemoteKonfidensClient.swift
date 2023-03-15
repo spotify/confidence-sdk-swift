@@ -65,10 +65,10 @@ public class RemoteKonfidensClient: KonfidensClient {
         return ResolveResult(resolvedValue: resolvedValue, resolveToken: resolveResult.resolveToken)
     }
 
-    public func apply(flag: String, resolveToken: String, appliedTime: Date) throws {
+    public func apply(flag: String, resolveToken: String, applyTime: Date) throws {
         let appliedFlag = AppliedFlag(
             flag: "flags/\(flag)",
-            applyTime: Date.backport.toISOString(date: appliedTime))
+            applyTime: Date.backport.toISOString(date: applyTime))
         let request = ApplyFlagsRequest(
             flags: [appliedFlag],
             sendTime: Date.backport.nowISOString,

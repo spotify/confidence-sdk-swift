@@ -4,7 +4,7 @@ import OpenFeature
 public protocol KonfidensClient: Resolver {
     func resolve(ctx: EvaluationContext) throws -> ResolvesResult
 
-    func apply(flag: String, resolveToken: String, appliedTime: Date) throws
+    func apply(flag: String, resolveToken: String, applyTime: Date) throws
 }
 
 public struct ResolvedValue: Codable, Equatable {
