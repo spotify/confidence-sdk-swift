@@ -15,28 +15,32 @@ class Konfidens: XCTestCase {
         return "test-flag-1"
     }
 
-    override func setUp() {
+    override func setUp() async throws {
         try? PersistentBatchProviderCache.fromDefaultStorage().clear()
+        OpenFeatureAPI.shared.clearProvider()
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: MutableContext())
 
-        super.setUp()
+        try await super.setUp()
     }
 
-    func testKonfidensFeatureIntegration() throws {
+    func testKonfidensFeatureIntegration() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
-        OpenFeatureAPI.shared.provider =
-            KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: clientToken))
-            .build()
+        await OpenFeatureAPI.shared.setProvider(
+            provider:
+                KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: clientToken))
+                .build())
         let client = OpenFeatureAPI.shared.getClient()
 
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
-        let intResult = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
-        let boolResult = client.getBooleanDetails(key: "\(resolveFlag).my-boolean", defaultValue: false, ctx: ctx)
+        let intResult = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let boolResult = client.getBooleanDetails(key: "\(resolveFlag).my-boolean", defaultValue: false)
 
         XCTAssertEqual(intResult.flagKey, "\(resolveFlag).my-integer")
         XCTAssertEqual(intResult.reason, Reason.targetingMatch.rawValue)
@@ -50,55 +54,31 @@ class Konfidens: XCTestCase {
         XCTAssertNil(boolResult.errorMessage)
     }
 
-    func testKonfidensBatchFeatureIntegration() throws {
-        guard let clientToken = self.clientToken else {
-            throw TestError.missingClientToken
-        }
-
-        let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
-            credentials: .clientSecret(secret: clientToken)
-        )
-        .build()
-
-        OpenFeatureAPI.shared.provider = konfidensFeatureProvider
-
-        let ctx = MutableContext(
-            targetingKey: "user_foo",
-            structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
-        try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
-
-        let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
-
-        XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
-        XCTAssertNotNil(result.variant)
-        XCTAssertNil(result.errorCode)
-        XCTAssertNil(result.errorMessage)
-    }
-
-    func testKonfidensBatchFeatureApplies() throws {
+    func testKonfidensFeatureApplies() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
         let cache = PersistentBatchProviderCache.fromDefaultStorage()
 
-        let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
+        let konfidensFeatureProvider = KonfidensFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
         .with(applyQueue: DispatchQueueFake())
         .with(cache: cache)
         .build()
 
-        OpenFeatureAPI.shared.provider = konfidensFeatureProvider
+        await OpenFeatureAPI.shared.setProvider(provider: konfidensFeatureProvider)
 
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
-        try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
         XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
         XCTAssertNotNil(result.variant)
@@ -109,74 +89,29 @@ class Konfidens: XCTestCase {
             .applied)
     }
 
-    func testKonfidensBatchFeatureMutatedContext() throws {
+    func testKonfidensFeatureNoSegmentMatch() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
         let cache = PersistentBatchProviderCache.fromDefaultStorage()
 
-        let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
+        let konfidensFeatureProvider = KonfidensFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
         .with(applyQueue: DispatchQueueFake())
         .with(cache: cache)
         .build()
 
-        OpenFeatureAPI.shared.provider = konfidensFeatureProvider
-
-        let ctx = MutableContext(
-            targetingKey: "user_foo",
-            structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
-        try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
-
-        let ctx2 = MutableContext(
-            targetingKey: "user_foo",
-            structure: MutableStructure(attributes: [
-                "user": Value.structure(["country": Value.string("SE"), "premium": Value.boolean(true)])
-            ]))
-        let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx2)
-
-        XCTAssertEqual(result.value, 1)
-        XCTAssertNil(result.variant)
-        XCTAssertEqual(result.reason, Reason.error.rawValue)
-        XCTAssertNotNil(result.errorCode)
-        XCTAssertEqual(
-            result.errorMessage,
-            """
-            General error: Error during integer evaluation for key \(resolveFlag).my-integer: \
-            Cached flag has an old evaluation context
-            """
-        )
-        XCTAssertEqual(
-            try cache.getValue(flag: "\(resolveFlag)", ctx: ctx)?.resolvedValue.applyStatus,
-            .notApplied)
-    }
-
-    func testKonfidensBatchFeatureNoSegmentMatch() throws {
-        guard let clientToken = self.clientToken else {
-            throw TestError.missingClientToken
-        }
-
-        let cache = PersistentBatchProviderCache.fromDefaultStorage()
-
-        let konfidensFeatureProvider = KonfidensBatchFeatureProvider.Builder(
-            credentials: .clientSecret(secret: clientToken)
-        )
-        .with(applyQueue: DispatchQueueFake())
-        .with(cache: cache)
-        .build()
-
-        OpenFeatureAPI.shared.provider = konfidensFeatureProvider
+        await OpenFeatureAPI.shared.setProvider(provider: konfidensFeatureProvider)
 
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("IT")])]))
-        try konfidensFeatureProvider.initializeFromContext(ctx: ctx)
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1, ctx: ctx)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
         XCTAssertEqual(result.value, 1)
         XCTAssertNil(result.variant)
