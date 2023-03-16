@@ -34,28 +34,14 @@ public class KonfidensFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext) {
-        do {
-            let resolveResult = try client.resolve(ctx: initialContext)
-            guard let resolveToken = resolveResult.resolveToken else {
-                throw KonfidensError.noResolveTokenFromServer
-            }
-            try cache.clearAndSetValues(
-                values: resolveResult.resolvedValues, ctx: initialContext, resolveToken: resolveToken)
-            // Racy: local ctx and ctx in cache might differ, resulting in STALE evaluations
-            // Local ctx and global ctx might also differ, resulting in potential inconsistencies of ctx data
-            self.currentCtx = initialContext
-        } catch let error {
-            // Should we throw the exception instead?
-            Logger(subsystem: "com.konfidens.provider", category: "initialize").error(
-                "Error while executing \"initialize\": \(error)")
-        }
+        processNewContext(context: initialContext)
     }
 
     public func onContextSet(oldContext: OpenFeature.EvaluationContext, newContext: OpenFeature.EvaluationContext) {
         guard self.currentCtx.hash() != newContext.hash() else {
             return
         }
-        initialize(initialContext: newContext)
+        processNewContext(context: newContext)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool) throws
@@ -154,6 +140,24 @@ public class KonfidensFeatureProvider: FeatureProvider {
             overrides.forEach { localOverride in
                 resolverWrapper.overrides[localOverride.key()] = localOverride
             }
+        }
+    }
+
+    private func processNewContext(context: OpenFeature.EvaluationContext) {
+        do {
+            let resolveResult = try client.resolve(ctx: context)
+            guard let resolveToken = resolveResult.resolveToken else {
+                throw KonfidensError.noResolveTokenFromServer
+            }
+            try cache.clearAndSetValues(
+                values: resolveResult.resolvedValues, ctx: context, resolveToken: resolveToken)
+            // Racy: local ctx and ctx in cache might differ, resulting in STALE evaluations
+            // Local ctx and global ctx might also differ, resulting in potential inconsistencies of ctx data
+            self.currentCtx = context
+        } catch let error {
+            // Should we throw the exception instead?
+            Logger(subsystem: "com.konfidens.provider", category: "initialize").error(
+                "Error while executing \"initialize\": \(error)")
         }
     }
 
