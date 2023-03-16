@@ -2,9 +2,9 @@ import Foundation
 import OpenFeature
 
 public class LocalStorageResolver: Resolver {
-    private var cache: BatchProviderCache
+    private var cache: ProviderCache
 
-    init(cache: BatchProviderCache) {
+    init(cache: ProviderCache) {
         self.cache = cache
     }
 

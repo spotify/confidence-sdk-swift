@@ -13,7 +13,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     private var lock = UnfairLock()
     private var resolver: Resolver
     private var client: KonfidensClient
-    private var cache: BatchProviderCache
+    private var cache: ProviderCache
     private var resolverWrapper: ResolverWrapper
     private var currentCtx: EvaluationContext
 
@@ -21,7 +21,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     init(
         resolver: Resolver,
         client: RemoteKonfidensClient,
-        cache: BatchProviderCache,
+        cache: ProviderCache,
         overrides: [String: LocalOverride] = [:],
         applyQueue: DispatchQueueType = DispatchQueue(label: "com.konfidens.apply", attributes: .concurrent)
     ) {
@@ -219,11 +219,11 @@ extension KonfidensFeatureProvider {
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
         var applyQueue: DispatchQueueType = DispatchQueue(label: "com.konfidens.apply", attributes: .concurrent)
-        var cache: BatchProviderCache = PersistentBatchProviderCache.fromDefaultStorage()
+        var cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
 
         /// Initializes the builder with the given credentails.
         ///
-        ///     OpenFeatureAPI.shared.provider =
+        ///     OpenFeatureAPI.shared.setProvider(provider:
         ///     KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .build()
         public init(credentials: RemoteKonfidensClient.KonfidensClientCredentials) {
@@ -235,7 +235,7 @@ extension KonfidensFeatureProvider {
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
             applyQueue: DispatchQueueType = DispatchQueue(label: "com.konfidens.apply", attributes: .concurrent),
-            cache: BatchProviderCache = PersistentBatchProviderCache.fromDefaultStorage()
+            cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
         ) {
             self.options = options
             self.session = session
@@ -275,7 +275,7 @@ extension KonfidensFeatureProvider {
         ///
         /// - Parameters:
         ///      - cache: cache for the provider to use.
-        public func with(cache: BatchProviderCache) -> Builder {
+        public func with(cache: ProviderCache) -> Builder {
             return Builder(
                 options: options,
                 session: session,
@@ -289,14 +289,14 @@ extension KonfidensFeatureProvider {
         ///
         /// For example, the following will override the size field of a flag called button:
         ///
-        ///     OpenFeatureAPI.shared.provider =
+        ///     OpenFeatureAPI.shared.setProvider(provider:
         ///         KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .overrides(.field(path: "button.size", variant: "control", value: .integer(4)))
         ///         .build()
         ///
         /// You can alsow override the complete flag by:
         ///
-        ///     OpenFeatureAPI.shared.provider =
+        ///     OpenFeatureAPI.shared.setProvider(provider:
         ///         KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .overrides(.flag(name: "button", variant: "control", value: ["size": .integer(4)]))
         ///         .build()

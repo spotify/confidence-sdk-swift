@@ -32,7 +32,7 @@ class LocalStorageResolverTest: XCTestCase {
     }
 }
 
-class TestCache: BatchProviderCache {
+class TestCache: ProviderCache {
     private let returnType: ReturnType
     private let mockedResolvedValue = ResolvedValue(contextHash: "", flag: "flag1", applyStatus: .applied)
 

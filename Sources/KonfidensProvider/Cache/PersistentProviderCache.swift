@@ -3,7 +3,7 @@ import Foundation
 import OpenFeature
 import os
 
-public class PersistentBatchProviderCache: BatchProviderCache {
+public class PersistentProviderCache: ProviderCache {
     private var rwCacheQueue = DispatchQueue(label: "com.konfidens.cache.rw", attributes: .concurrent)
     private static let currentVersion = "0.0.1"
     private static let persistIntervalSeconds = RunLoop.SchedulerTimeType.Stride.seconds(30.0)
@@ -21,7 +21,7 @@ public class PersistentBatchProviderCache: BatchProviderCache {
 
         persistPublisher
             .throttle(
-                for: PersistentBatchProviderCache.persistIntervalSeconds, scheduler: RunLoop.current, latest: true
+                for: PersistentProviderCache.persistIntervalSeconds, scheduler: RunLoop.current, latest: true
             )
             .sink { _ in
                 do {
@@ -114,16 +114,16 @@ public class PersistentBatchProviderCache: BatchProviderCache {
         }
     }
 
-    public static func fromDefaultStorage() -> PersistentBatchProviderCache {
+    public static func fromDefaultStorage() -> PersistentProviderCache {
         return from(storage: DefaultStorage())
     }
 
-    public static func from(storage: Storage) -> PersistentBatchProviderCache {
+    public static func from(storage: Storage) -> PersistentProviderCache {
         do {
             let storedCache = try storage.load(
                 StoredCacheData.self,
                 defaultValue: StoredCacheData(version: currentVersion, cache: [:], curResolveToken: nil))
-            return PersistentBatchProviderCache(
+            return PersistentProviderCache(
                 storage: storage, cache: storedCache.cache, curResolveToken: storedCache.curResolveToken)
         } catch {
             Logger(subsystem: "com.konfidens.cache", category: "storage").error(
@@ -133,12 +133,12 @@ public class PersistentBatchProviderCache: BatchProviderCache {
                 try? storage.clear()
             }
 
-            return PersistentBatchProviderCache(storage: storage, cache: [:], curResolveToken: nil)
+            return PersistentProviderCache(storage: storage, cache: [:], curResolveToken: nil)
         }
     }
 }
 
-extension PersistentBatchProviderCache {
+extension PersistentProviderCache {
     struct StoredCacheData: Codable {
         var version: String
         var cache: [ResolvedKey: ResolvedValue]
@@ -153,7 +153,7 @@ extension PersistentBatchProviderCache {
         try rwCacheQueue.sync {
             try self.storage.save(
                 data: StoredCacheData(
-                    version: PersistentBatchProviderCache.currentVersion,
+                    version: PersistentProviderCache.currentVersion,
                     cache: self.cache,
                     curResolveToken: self.curResolveToken))
         }

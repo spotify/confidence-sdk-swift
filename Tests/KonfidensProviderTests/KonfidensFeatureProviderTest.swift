@@ -9,7 +9,7 @@ import XCTest
 @available(macOS 13.0, iOS 16.0, *)
 class KonfidensFeatureProviderTest: XCTestCase {
     private let builder = KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "test"))
-    private let cache = PersistentBatchProviderCache.fromDefaultStorage()
+    private let cache = PersistentProviderCache.fromDefaultStorage()
 
     override func setUp() {
         try? cache.clear()

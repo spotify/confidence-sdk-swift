@@ -16,7 +16,7 @@ class Konfidens: XCTestCase {
     }
 
     override func setUp() async throws {
-        try? PersistentBatchProviderCache.fromDefaultStorage().clear()
+        try? PersistentProviderCache.fromDefaultStorage().clear()
         OpenFeatureAPI.shared.clearProvider()
         await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: MutableContext())
 
@@ -59,7 +59,7 @@ class Konfidens: XCTestCase {
             throw TestError.missingClientToken
         }
 
-        let cache = PersistentBatchProviderCache.fromDefaultStorage()
+        let cache = PersistentProviderCache.fromDefaultStorage()
 
         let konfidensFeatureProvider = KonfidensFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
@@ -94,7 +94,7 @@ class Konfidens: XCTestCase {
             throw TestError.missingClientToken
         }
 
-        let cache = PersistentBatchProviderCache.fromDefaultStorage()
+        let cache = PersistentProviderCache.fromDefaultStorage()
 
         let konfidensFeatureProvider = KonfidensFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
