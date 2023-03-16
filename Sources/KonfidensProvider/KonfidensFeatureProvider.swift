@@ -61,15 +61,16 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getBooleanEvaluation(key: String, defaultValue: Bool) throws
         -> OpenFeature.ProviderEvaluation<Bool>
     {
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             errorPrefix: "Error during boolean evaluation for key \(key)")
         processResultForApply(
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             applyTime: Date.backport.now)
         return evaluationResult
     }
@@ -77,15 +78,16 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getStringEvaluation(key: String, defaultValue: String) throws
         -> OpenFeature.ProviderEvaluation<String>
     {
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             errorPrefix: "Error during string evaluation for key \(key)")
         processResultForApply(
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             applyTime: Date.backport.now)
         return evaluationResult
     }
@@ -93,15 +95,16 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getIntegerEvaluation(key: String, defaultValue: Int64) throws
         -> OpenFeature.ProviderEvaluation<Int64>
     {
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             errorPrefix: "Error during integer evaluation for key \(key)")
         processResultForApply(
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             applyTime: Date.backport.now)
         return evaluationResult
     }
@@ -109,15 +112,16 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getDoubleEvaluation(key: String, defaultValue: Double) throws
         -> OpenFeature.ProviderEvaluation<Double>
     {
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             errorPrefix: "Error during double evaluation for key \(key)")
         processResultForApply(
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             applyTime: Date.backport.now)
         return evaluationResult
     }
@@ -125,15 +129,16 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value)
         throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             errorPrefix: "Error during object evaluation for key \(key)")
         processResultForApply(
             evaluationResult: evaluationResult,
             resolverResult: resolverResult,
-            ctx: self.currentCtx,
+            ctx: invocationCtx,
             applyTime: Date.backport.now)
         return evaluationResult
     }
@@ -167,15 +172,15 @@ public class KonfidensFeatureProvider: FeatureProvider {
         let flag = resolverResult.resolvedValue.flag
         do {
             try cache.updateApplyStatus(
-                flag: flag, ctx: self.currentCtx, resolveToken: resolveToken, applyStatus: .applying)
+                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)
             executeApply(client: client, flag: flag, resolveToken: resolveToken) { success in
                 do {
                     if success {
                         try self.cache.updateApplyStatus(
-                            flag: flag, ctx: self.currentCtx, resolveToken: resolveToken, applyStatus: .applied)
+                            flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
                     } else {
                         try self.cache.updateApplyStatus(
-                            flag: flag, ctx: self.currentCtx, resolveToken: resolveToken, applyStatus: .applyFailed)
+                            flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applyFailed)
                     }
                 } catch let error {
                     self.logApplyError(error: error)
