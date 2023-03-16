@@ -59,6 +59,8 @@ public class ResolverWrapper {
             )
         } catch KonfidensError.flagIsArchived {
             return (ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.disabled.rawValue), nil)
+        } catch KonfidensError.cachedValueExpired {
+            return (ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue), nil)
         } catch {
             throw error
         }
