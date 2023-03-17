@@ -36,7 +36,7 @@ let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false,
 
 Notes:
 - If a flag can't be resolved from cache, the provider doesn't automatically resort to calling remote: refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI
-- It's advised to not perform resolves while `setProvider` and `setEvaluationContext` are running, as the internals might be in an inconsistent state during these operations 
+- It's advised not to perform resolves while `setProvider` and `setEvaluationContext` are running: resolves might return the default value with reason `STALE` during such operations. 
 
 ### Local overrides
 
