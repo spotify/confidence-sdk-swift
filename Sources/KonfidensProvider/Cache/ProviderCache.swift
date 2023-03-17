@@ -1,7 +1,7 @@
 import Foundation
 import OpenFeature
 
-public protocol BatchProviderCache {
+public protocol ProviderCache {
     func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult?
 
     func clearAndSetValues(values: [ResolvedValue], ctx: EvaluationContext, resolveToken: String) throws

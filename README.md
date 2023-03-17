@@ -18,46 +18,25 @@ and in the target dependencies section add:
 .product(name: "KonfidensProvider", package: "openfeature-swift-provider"),
 ```
 
-### Enabling the provider and resolving flags
-
-There are two types of providers available:
-- A **regular provider**: makes one network call per resolve operation (no caching)
-- A **batch provider**: allows to pre-fetch all flags and cache/persist them locally
-
-To use the regular provider:
+### Enabling the provider, setting the evaluation context and resolving flags
 
 ```swift
 import KonfidensProvider
 import OpenFeature
 
-OpenFeatureAPI.shared.provider =
-    KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
-        .build()
-let client = OpenFeatureAPI.shared.getClient()
-
-let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
-let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false, ctx: ctx)
-```
-
-To use the batch provider
-```swift
-import KonfidensProvider
-import OpenFeature
-
-let provider = KonfidensBatchFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
+let provider = KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
     .build()
-OpenFeatureAPI.shared.provider = provider
+await OpenFeatureAPI.shared.setProvider(provider: provider)
 let client = OpenFeatureAPI.shared.getClient()
 
 let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
-try provider.initializeFromContext(ctx: ctx)
+await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false, ctx: ctx)
 ```
 
-Notes about the batch provider:
-- If a flag can't be resolved from cache, the batch provider doesn't automatically resort to calling remote: refreshing the cache from remote is responsibility of the user, and can be achieved by calling the following provider API:
-  - `provider.initializeFromContext(ctx: EvaluationContext)`
-- The cache operates on top of a single `EvaluationContext`: subsequent resolves with different `EvaluationContext`s won't succeed.
+Notes:
+- If a flag can't be resolved from cache, the provider doesn't automatically resort to calling remote: refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI
+- It's advised not to perform resolves while `setProvider` and `setEvaluationContext` are running: resolves might return the default value with reason `STALE` during such operations. 
 
 ### Local overrides
 

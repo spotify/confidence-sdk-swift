@@ -22,7 +22,7 @@ class RemoteKonfidensClientTest: XCTestCase {
         super.setUp()
     }
 
-    func testResolveSucceeds() throws {
+    func testResolveSingleFlagSucceeds() throws {
         let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
 
         let client = RemoteKonfidensClient(
@@ -33,7 +33,7 @@ class RemoteKonfidensClientTest: XCTestCase {
         XCTAssertEqual(resolvedFlag1.variant, value.resolvedValue.variant)
     }
 
-    func testBatchResolveSucceeds() throws {
+    func testResolveMultipleFlagsSucceeds() throws {
         let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
 
         let client = RemoteKonfidensClient(

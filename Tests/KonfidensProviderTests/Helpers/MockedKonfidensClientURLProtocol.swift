@@ -64,7 +64,6 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
     private func resolve() {
         MockedKonfidensClientURLProtocol.callStats += 1
         MockedKonfidensClientURLProtocol.resolveStats += 1
-
         guard let request = request.decodeBody(type: RemoteKonfidensClient.ResolveFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
