@@ -1,6 +1,6 @@
-# OpenFeature Swift Provider
+# OpenFeature Swift Confidence Provider
 
-Swift implementation of the Konfidens feature provider.
+Swift implementation of the Confidence feature provider, to be used in conjunction with the OpenFeature SDK.
 
 ## Usage
 
