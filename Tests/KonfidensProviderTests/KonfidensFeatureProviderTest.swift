@@ -417,7 +417,7 @@ class KonfidensFeatureProviderTest: XCTestCase {
         XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
-    func testProviderThrowsMissingTargetingKey() throws {
+    func testProviderNoTargetingKey() throws {
         let resolve: [String: MockedKonfidensClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .null]))
         ]
@@ -434,14 +434,13 @@ class KonfidensFeatureProviderTest: XCTestCase {
         let provider = builder.with(session: session).build()
         provider.initialize(initialContext: MutableContext(attributes: [:]))
 
-        XCTAssertThrowsError(
-            try provider.getIntegerEvaluation(
-                key: "flag.size",
-                defaultValue: 3)
-        ) { error in
-            XCTAssertEqual(error as? OpenFeatureError, OpenFeatureError.targetingKeyMissingError)
-        }
-        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 0)
+        let evaluation = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 3)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(evaluation.value, 3)
     }
 
     func testProviderCannotParse() throws {

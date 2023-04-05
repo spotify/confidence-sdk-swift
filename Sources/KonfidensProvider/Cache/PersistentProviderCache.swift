@@ -9,15 +9,17 @@ public class PersistentProviderCache: ProviderCache {
     private static let persistIntervalSeconds = RunLoop.SchedulerTimeType.Stride.seconds(30.0)
 
     private var storage: Storage
-    private var cache: [ResolvedKey: ResolvedValue]
+    private var cache: [String: ResolvedValue]
     private var curResolveToken: String?
+    private var curEvalContextHash: String?
     private var persistPublisher = PassthroughSubject<CacheEvent, Never>()
     private var cancellable = Set<AnyCancellable>()
 
-    init(storage: Storage, cache: [ResolvedKey: ResolvedValue], curResolveToken: String?) {
+    init(storage: Storage, cache: [String: ResolvedValue], curResolveToken: String?, curEvalContextHash: String?) {
         self.storage = storage
         self.cache = cache
         self.curResolveToken = curResolveToken
+        self.curEvalContextHash = curEvalContextHash
 
         persistPublisher
             .throttle(
@@ -35,19 +37,13 @@ public class PersistentProviderCache: ProviderCache {
     }
 
     public func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult? {
-        guard !ctx.getTargetingKey().isEmpty else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
-
-        let key = ResolvedKey(flag: flag, targetingKey: ctx.getTargetingKey())
-
         return try rwCacheQueue.sync {
-            if let value = self.cache[key] {
+            if let value = self.cache[flag] {
                 guard let curResolveToken = curResolveToken else {
                     throw KonfidensError.noResolveTokenFromCache
                 }
                 return .init(
-                    resolvedValue: value, needsUpdate: value.contextHash != ctx.hash(), resolveToken: curResolveToken)
+                    resolvedValue: value, needsUpdate: curEvalContextHash != ctx.hash(), resolveToken: curResolveToken)
             } else {
                 return nil
             }
@@ -55,16 +51,12 @@ public class PersistentProviderCache: ProviderCache {
     }
 
     public func clearAndSetValues(values: [ResolvedValue], ctx: EvaluationContext, resolveToken: String) throws {
-        guard !ctx.getTargetingKey().isEmpty else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
-
         rwCacheQueue.sync(flags: .barrier) {
             self.cache = [:]
             self.curResolveToken = resolveToken
+            self.curEvalContextHash = ctx.hash()
             values.forEach { value in
-                let key = ResolvedKey(flag: value.flag, targetingKey: ctx.getTargetingKey())
-                self.cache[key] = value
+                self.cache[value.flag] = value
             }
         }
         self.persistPublisher.send(.persist)
@@ -73,13 +65,12 @@ public class PersistentProviderCache: ProviderCache {
     public func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus)
         throws
     {
-        guard !ctx.getTargetingKey().isEmpty else {
-            throw OpenFeatureError.targetingKeyMissingError
+        if ctx.hash() != curEvalContextHash {
+            throw KonfidensError.cachedValueExpired
         }
 
-        let key = ResolvedKey(flag: flag, targetingKey: ctx.getTargetingKey())
         try rwCacheQueue.sync(flags: .barrier) {
-            guard var value = self.cache[key] else {
+            guard var value = self.cache[flag] else {
                 throw KonfidensError.flagNotFoundInCache
             }
 
@@ -101,7 +92,7 @@ public class PersistentProviderCache: ProviderCache {
             }
 
             value.applyStatus = applyStatus
-            self.cache[key] = value
+            self.cache[flag] = value
         }
         self.persistPublisher.send(.persist)
     }
@@ -122,9 +113,13 @@ public class PersistentProviderCache: ProviderCache {
         do {
             let storedCache = try storage.load(
                 StoredCacheData.self,
-                defaultValue: StoredCacheData(version: currentVersion, cache: [:], curResolveToken: nil))
+                defaultValue: StoredCacheData(
+                    version: currentVersion, cache: [:], curResolveToken: nil, curEvalContextHash: nil))
             return PersistentProviderCache(
-                storage: storage, cache: storedCache.cache, curResolveToken: storedCache.curResolveToken)
+                storage: storage,
+                cache: storedCache.cache,
+                curResolveToken: storedCache.curResolveToken,
+                curEvalContextHash: storedCache.curEvalContextHash)
         } catch {
             Logger(subsystem: "com.konfidens.cache", category: "storage").error(
                 "Error when trying to load resolver cache, clearing cache: \(error)")
@@ -133,7 +128,7 @@ public class PersistentProviderCache: ProviderCache {
                 try? storage.clear()
             }
 
-            return PersistentProviderCache(storage: storage, cache: [:], curResolveToken: nil)
+            return PersistentProviderCache(storage: storage, cache: [:], curResolveToken: nil, curEvalContextHash: nil)
         }
     }
 }
@@ -141,8 +136,9 @@ public class PersistentProviderCache: ProviderCache {
 extension PersistentProviderCache {
     struct StoredCacheData: Codable {
         var version: String
-        var cache: [ResolvedKey: ResolvedValue]
+        var cache: [String: ResolvedValue]
         var curResolveToken: String?
+        var curEvalContextHash: String?
     }
 
     enum CacheEvent {
@@ -155,7 +151,8 @@ extension PersistentProviderCache {
                 data: StoredCacheData(
                     version: PersistentProviderCache.currentVersion,
                     cache: self.cache,
-                    curResolveToken: self.curResolveToken))
+                    curResolveToken: self.curResolveToken,
+                    curEvalContextHash: self.curEvalContextHash))
         }
     }
 

@@ -95,7 +95,6 @@ public class RemoteKonfidensClient: KonfidensClient {
         else {
             return ResolvedValue(
                 value: nil,
-                contextHash: ctx.hash(),
                 flag: try displayName(resolvedFlag: resolvedFlag),
                 applyStatus: applyOnResolve ? .applied : .notApplied)
         }
@@ -106,16 +105,11 @@ public class RemoteKonfidensClient: KonfidensClient {
         return ResolvedValue(
             variant: variant,
             value: value,
-            contextHash: ctx.hash(),
             flag: try displayName(resolvedFlag: resolvedFlag),
             applyStatus: applyOnResolve ? .applied : .notApplied)
     }
 
     private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> Struct {
-        guard !ctx.getTargetingKey().isEmpty else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
-
         var evaluationContext = TypeMapper.from(value: ctx)
         evaluationContext.fields[targetingKey] = .string(ctx.getTargetingKey())
         return evaluationContext
