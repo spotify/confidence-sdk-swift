@@ -65,11 +65,11 @@ public class PersistentProviderCache: ProviderCache {
     public func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus)
         throws
     {
-        if ctx.hash() != curEvalContextHash {
-            throw KonfidensError.cachedValueExpired
-        }
-
         try rwCacheQueue.sync(flags: .barrier) {
+            if ctx.hash() != curEvalContextHash {
+                throw KonfidensError.cachedValueExpired
+            }
+
             guard var value = self.cache[flag] else {
                 throw KonfidensError.flagNotFoundInCache
             }
