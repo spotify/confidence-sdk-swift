@@ -24,7 +24,6 @@ class PersistentProviderCacheTest: XCTestCase {
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
         let value = ResolvedValue(
             value: Value.double(3.14),
-            contextHash: ctx.hash(),
             flag: flag,
             applyStatus: .applied)
 
@@ -44,12 +43,10 @@ class PersistentProviderCacheTest: XCTestCase {
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
         let value1 = ResolvedValue(
             value: Value.double(3.14),
-            contextHash: ctx.hash(),
             flag: "flag1",
             applyStatus: .applied)
         let value2 = ResolvedValue(
             value: Value.string("test"),
-            contextHash: ctx.hash(),
             flag: "flag2",
             applyStatus: .notApplied)
 
@@ -77,7 +74,6 @@ class PersistentProviderCacheTest: XCTestCase {
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
         let value = ResolvedValue(
             value: Value.double(3.14),
-            contextHash: ctx.hash(),
             flag: flag,
             applyStatus: .applying)
 
@@ -113,7 +109,6 @@ class PersistentProviderCacheTest: XCTestCase {
 
         let value = ResolvedValue(
             value: Value.double(3.14),
-            contextHash: ctx1.hash(),
             flag: flag,
             applyStatus: .applied)
 

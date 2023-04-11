@@ -10,7 +10,6 @@ public protocol KonfidensClient: Resolver {
 public struct ResolvedValue: Codable, Equatable {
     var variant: String?
     var value: Value?
-    var contextHash: String
     var flag: String
     var applyStatus: ApplyStatus
 }

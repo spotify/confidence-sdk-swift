@@ -70,6 +70,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
             return
         }
 
+        // TODO support case where a different field is used for targeting
         guard case .string(let targetingKey) = request.evaluationContext.fields["targeting_key"] else {
             respondWithError(
                 statusCode: 400,
