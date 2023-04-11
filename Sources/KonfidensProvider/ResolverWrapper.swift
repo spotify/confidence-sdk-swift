@@ -10,9 +10,12 @@ public class ResolverWrapper {
         self.overrides = overrides
     }
 
-    public func errorWrappedResolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext, errorPrefix: String)
+    public func errorWrappedResolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?, errorPrefix: String)
         throws -> (providerEvaluation: ProviderEvaluation<T>, resolveResult: ResolveResult?)
     {
+        guard let ctx = ctx else {
+            throw OpenFeatureError.targetingKeyMissingError
+        }
         do {
             return try resolveFlag(flag: flag, defaultValue: defaultValue, ctx: ctx)
         } catch let error {

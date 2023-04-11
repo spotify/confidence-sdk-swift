@@ -15,7 +15,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     private var client: KonfidensClient
     private var cache: ProviderCache
     private var resolverWrapper: ResolverWrapper
-    private var currentCtx: EvaluationContext
+    private var currentCtx: EvaluationContext?
 
     /// Should not be called externally, use `KonfidensFeatureProvider.Builder` instead.
     init(
@@ -30,15 +30,17 @@ public class KonfidensFeatureProvider: FeatureProvider {
         self.client = client
         self.cache = cache
         self.resolverWrapper = ResolverWrapper(resolver: resolver, overrides: overrides)
-        self.currentCtx = MutableContext()
     }
 
-    public func initialize(initialContext: OpenFeature.EvaluationContext) {
+    public func initialize(initialContext: OpenFeature.EvaluationContext?) {
+        guard let initialContext = initialContext else {
+            return
+        }
         processNewContext(context: initialContext)
     }
 
-    public func onContextSet(oldContext: OpenFeature.EvaluationContext, newContext: OpenFeature.EvaluationContext) {
-        guard self.currentCtx.hash() != newContext.hash() else {
+    public func onContextSet(oldContext: OpenFeature.EvaluationContext?, newContext: OpenFeature.EvaluationContext) {
+        guard self.currentCtx?.hash() != newContext.hash() else {
             return
         }
         processNewContext(context: newContext)
@@ -164,11 +166,11 @@ public class KonfidensFeatureProvider: FeatureProvider {
     private func processResultForApply<T>(
         evaluationResult: ProviderEvaluation<T>,
         resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext,
+        ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
         guard evaluationResult.errorCode == nil, let resolverResult = resolverResult,
-            let resolveToken = resolverResult.resolveToken
+            let resolveToken = resolverResult.resolveToken, let ctx = ctx
         else {
             return
         }
