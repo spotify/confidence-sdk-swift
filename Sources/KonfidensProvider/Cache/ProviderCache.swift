@@ -6,7 +6,7 @@ public protocol ProviderCache {
 
     func clearAndSetValues(values: [ResolvedValue], ctx: EvaluationContext, resolveToken: String) throws
 
-    func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus) throws
+    func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus) throws -> Bool
 }
 
 public struct CacheGetValueResult {

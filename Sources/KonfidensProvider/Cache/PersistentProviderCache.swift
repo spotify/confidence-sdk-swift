@@ -63,9 +63,9 @@ public class PersistentProviderCache: ProviderCache {
     }
 
     public func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus)
-        throws
+        throws -> Bool
     {
-        try rwCacheQueue.sync(flags: .barrier) {
+        let success = try rwCacheQueue.sync(flags: .barrier) {
             if ctx.hash() != curEvalContextHash {
                 throw KonfidensError.cachedValueExpired
             }
@@ -81,7 +81,7 @@ public class PersistentProviderCache: ProviderCache {
             switch applyStatus {
             case .applying:
                 if value.applyStatus == .applying || value.applyStatus == .applied {
-                    throw KonfidensError.applyStatusTransitionError
+                    return false
                 }
             case .applied, .applyFailed:
                 if value.applyStatus != .applying {
@@ -93,8 +93,10 @@ public class PersistentProviderCache: ProviderCache {
 
             value.applyStatus = applyStatus
             self.cache[flag] = value
+            return true
         }
         self.persistPublisher.send(.persist)
+        return success
     }
 
     public func clear() throws {

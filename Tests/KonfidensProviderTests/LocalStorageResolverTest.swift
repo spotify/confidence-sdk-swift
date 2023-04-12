@@ -58,7 +58,7 @@ class TestCache: ProviderCache {
         ctx: OpenFeature.EvaluationContext,
         resolveToken: String,
         applyStatus: KonfidensProvider.ApplyStatus
-    ) throws {}
+    ) throws -> Bool { return true }
 
     func getCurResolveToken() -> String? {
         return nil
