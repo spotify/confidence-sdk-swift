@@ -525,6 +525,40 @@ class KonfidensFeatureProviderTest: XCTestCase {
         XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
     }
 
+    func testLocalOverridePartiallyReplacesFlagNoEvaluationContext() throws {
+        let resolve: [String: MockedKonfidensClientURLProtocol.ResolvedTestFlag] = [
+            "user1": .init(variant: "control", value: .structure(["size": .integer(3), "color": .string("green")]))
+        ]
+
+        let flags: [String: MockedKonfidensClientURLProtocol.TestFlag] = [
+            "flags/flag": .init(resolve: resolve)
+        ]
+
+        let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
+        let provider = builder.with(session: session)
+            .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
+            .build()
+
+        let sizeEvaluation1 = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 0)
+
+        XCTAssertEqual(sizeEvaluation1.variant, "treatment")
+        XCTAssertEqual(sizeEvaluation1.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(sizeEvaluation1.value, 4)
+
+        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+
+        let sizeEvaluation2 = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 0)
+
+        XCTAssertEqual(sizeEvaluation2.variant, "treatment")
+        XCTAssertEqual(sizeEvaluation2.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(sizeEvaluation2.value, 4)
+        XCTAssertEqual(MockedKonfidensClientURLProtocol.resolveStats, 1)
+    }
+
     func testLocalOverrideTwiceTakesSecondOverride() throws {
         let resolve: [String: MockedKonfidensClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))

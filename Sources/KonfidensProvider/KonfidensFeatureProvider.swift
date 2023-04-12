@@ -50,9 +50,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getBooleanEvaluation(key: String, defaultValue: Bool) throws
         -> OpenFeature.ProviderEvaluation<Bool>
     {
-        guard let invocationCtx = self.currentCtx else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
@@ -69,9 +67,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getStringEvaluation(key: String, defaultValue: String) throws
         -> OpenFeature.ProviderEvaluation<String>
     {
-        guard let invocationCtx = self.currentCtx else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
@@ -88,9 +84,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getIntegerEvaluation(key: String, defaultValue: Int64) throws
         -> OpenFeature.ProviderEvaluation<Int64>
     {
-        guard let invocationCtx = self.currentCtx else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
@@ -107,9 +101,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getDoubleEvaluation(key: String, defaultValue: Double) throws
         -> OpenFeature.ProviderEvaluation<Double>
     {
-        guard let invocationCtx = self.currentCtx else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
@@ -126,9 +118,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value)
         throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
-        guard let invocationCtx = self.currentCtx else {
-            throw OpenFeatureError.targetingKeyMissingError
-        }
+        let invocationCtx = self.currentCtx
         let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
@@ -175,11 +165,11 @@ public class KonfidensFeatureProvider: FeatureProvider {
     private func processResultForApply<T>(
         evaluationResult: ProviderEvaluation<T>,
         resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext,
+        ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
         guard evaluationResult.errorCode == nil, let resolverResult = resolverResult,
-            let resolveToken = resolverResult.resolveToken
+            let resolveToken = resolverResult.resolveToken, let ctx = ctx
         else {
             return
         }

@@ -10,7 +10,7 @@ public class ResolverWrapper {
         self.overrides = overrides
     }
 
-    public func errorWrappedResolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext, errorPrefix: String)
+    public func errorWrappedResolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?, errorPrefix: String)
         throws -> (providerEvaluation: ProviderEvaluation<T>, resolveResult: ResolveResult?)
     {
         do {
@@ -24,7 +24,7 @@ public class ResolverWrapper {
         }
     }
 
-    private func resolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext) throws -> (
+    private func resolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?) throws -> (
         ProviderEvaluation<T>, resolveResult: ResolveResult?
     ) {
         let path = try FlagPath.getPath(for: flag)
@@ -36,6 +36,11 @@ public class ResolverWrapper {
                 nil
             )
         }
+
+        guard let ctx = ctx else {
+            throw OpenFeatureError.invalidContextError
+        }
+
         do {
             let resolverResult = try self.resolver.resolve(flag: path.flag, ctx: ctx)
             guard let value = resolverResult.resolvedValue.value else {
