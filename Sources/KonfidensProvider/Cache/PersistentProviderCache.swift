@@ -6,34 +6,17 @@ import os
 public class PersistentProviderCache: ProviderCache {
     private var rwCacheQueue = DispatchQueue(label: "com.konfidens.cache.rw", attributes: .concurrent)
     private static let currentVersion = "0.0.1"
-    private static let persistIntervalSeconds = RunLoop.SchedulerTimeType.Stride.seconds(30.0)
 
     private var storage: Storage
     private var cache: [String: ResolvedValue]
     private var curResolveToken: String?
     private var curEvalContextHash: String?
-    private var persistPublisher = PassthroughSubject<CacheEvent, Never>()
-    private var cancellable = Set<AnyCancellable>()
 
     init(storage: Storage, cache: [String: ResolvedValue], curResolveToken: String?, curEvalContextHash: String?) {
         self.storage = storage
         self.cache = cache
         self.curResolveToken = curResolveToken
         self.curEvalContextHash = curEvalContextHash
-
-        persistPublisher
-            .throttle(
-                for: PersistentProviderCache.persistIntervalSeconds, scheduler: RunLoop.current, latest: true
-            )
-            .sink { _ in
-                do {
-                    try self.persist()
-                } catch {
-                    Logger(subsystem: "com.konfidens.cache", category: "persist")
-                        .error("Unable to persist cache: \(error)")
-                }
-            }
-            .store(in: &cancellable)
     }
 
     public func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult? {
@@ -59,7 +42,7 @@ public class PersistentProviderCache: ProviderCache {
                 self.cache[value.flag] = value
             }
         }
-        self.persistPublisher.send(.persist)
+        try self.persist()
     }
 
     public func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus)
@@ -95,7 +78,9 @@ public class PersistentProviderCache: ProviderCache {
             self.cache[flag] = value
             return true
         }
-        self.persistPublisher.send(.persist)
+        if (success) {
+            try self.persist()
+        }
         return success
     }
 

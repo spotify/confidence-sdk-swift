@@ -146,6 +146,8 @@ public class KonfidensFeatureProvider: FeatureProvider {
     }
 
     private func processNewContext(context: OpenFeature.EvaluationContext) {
+        self.currentCtx = context
+        // Racy: local ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
         do {
             let resolveResult = try client.resolve(ctx: context)
             guard let resolveToken = resolveResult.resolveToken else {
@@ -153,11 +155,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
             }
             try cache.clearAndSetValues(
                 values: resolveResult.resolvedValues, ctx: context, resolveToken: resolveToken)
-            // Racy: local ctx and ctx in cache might differ, resulting in STALE evaluations
-            // Local ctx and global ctx might also differ, resulting in potential inconsistencies of ctx data
-            self.currentCtx = context
         } catch let error {
-            // Should we throw the exception instead?
             Logger(subsystem: "com.konfidens.provider", category: "initialize").error(
                 "Error while executing \"initialize\": \(error)")
         }
