@@ -34,6 +34,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
         guard let initialContext = initialContext else {
+            self.currentCtx = nil
             return
         }
         processNewContext(context: initialContext)
