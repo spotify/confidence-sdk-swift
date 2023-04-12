@@ -185,15 +185,16 @@ public class KonfidensFeatureProvider: FeatureProvider {
 
         let flag = resolverResult.resolvedValue.flag
         do {
-            if (try cache.updateApplyStatus(
-                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)) {
+            if try cache.updateApplyStatus(
+                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)
+            {
                 executeApply(client: client, flag: flag, resolveToken: resolveToken) { success in
                     do {
                         if success {
-                            let _ = try self.cache.updateApplyStatus(
+                            _ = try self.cache.updateApplyStatus(
                                 flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
                         } else {
-                            let _ = try self.cache.updateApplyStatus(
+                            _ = try self.cache.updateApplyStatus(
                                 flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applyFailed)
                         }
                     } catch let error {

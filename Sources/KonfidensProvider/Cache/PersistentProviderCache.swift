@@ -78,7 +78,7 @@ public class PersistentProviderCache: ProviderCache {
             self.cache[flag] = value
             return true
         }
-        if (success) {
+        if success {
             try self.persist()
         }
         return success
