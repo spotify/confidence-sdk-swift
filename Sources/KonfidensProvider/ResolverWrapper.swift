@@ -38,7 +38,7 @@ public class ResolverWrapper {
         }
 
         guard let ctx = ctx else {
-            throw OpenFeatureError.invalidContextError
+            throw OpenFeatureError.providerNotReady
         }
 
         do {
