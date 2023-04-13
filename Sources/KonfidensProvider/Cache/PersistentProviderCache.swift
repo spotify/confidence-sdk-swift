@@ -5,18 +5,33 @@ import os
 
 public class PersistentProviderCache: ProviderCache {
     private var rwCacheQueue = DispatchQueue(label: "com.konfidens.cache.rw", attributes: .concurrent)
+    private var persistQueue = DispatchQueue(label: "com.konfidens.cache.persist")
     private static let currentVersion = "0.0.1"
 
     private var storage: Storage
     private var cache: [String: ResolvedValue]
     private var curResolveToken: String?
     private var curEvalContextHash: String?
+    private var persistPublisher = PassthroughSubject<CacheEvent, Never>()
+    private var cancellable = Set<AnyCancellable>()
 
     init(storage: Storage, cache: [String: ResolvedValue], curResolveToken: String?, curEvalContextHash: String?) {
         self.storage = storage
         self.cache = cache
         self.curResolveToken = curResolveToken
         self.curEvalContextHash = curEvalContextHash
+
+        persistPublisher
+            .throttle(for: 30.0, scheduler: persistQueue, latest: true)
+            .sink { _ in
+                do {
+                    try self.persist()
+                } catch {
+                    Logger(subsystem: "com.konfidens.cache", category: "persist")
+                        .error("Unable to persist cache: \(error)")
+                }
+            }
+            .store(in: &cancellable)
     }
 
     public func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult? {
@@ -42,7 +57,7 @@ public class PersistentProviderCache: ProviderCache {
                 self.cache[value.flag] = value
             }
         }
-        try self.persist()
+        self.persistPublisher.send(.persist)
     }
 
     public func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus)
@@ -79,7 +94,7 @@ public class PersistentProviderCache: ProviderCache {
             return true
         }
         if success {
-            try self.persist()
+            self.persistPublisher.send(.persist)
         }
         return success
     }
