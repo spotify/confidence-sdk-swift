@@ -78,8 +78,9 @@ class PersistentProviderCacheTest: XCTestCase {
             applyStatus: .applying)
 
         try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
-        try cache?.updateApplyStatus(flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
-
+        let success = try cache?.updateApplyStatus(
+            flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
+        XCTAssertTrue(success ?? false)
         let cachedValue = try cache?.getValue(flag: flag, ctx: ctx)
         XCTAssertEqual(cachedValue?.resolvedValue.applyStatus, .applied)
     }

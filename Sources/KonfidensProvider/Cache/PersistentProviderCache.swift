@@ -5,8 +5,8 @@ import os
 
 public class PersistentProviderCache: ProviderCache {
     private var rwCacheQueue = DispatchQueue(label: "com.konfidens.cache.rw", attributes: .concurrent)
+    private var persistQueue = DispatchQueue(label: "com.konfidens.cache.persist")
     private static let currentVersion = "0.0.1"
-    private static let persistIntervalSeconds = RunLoop.SchedulerTimeType.Stride.seconds(30.0)
 
     private var storage: Storage
     private var cache: [String: ResolvedValue]
@@ -22,9 +22,7 @@ public class PersistentProviderCache: ProviderCache {
         self.curEvalContextHash = curEvalContextHash
 
         persistPublisher
-            .throttle(
-                for: PersistentProviderCache.persistIntervalSeconds, scheduler: RunLoop.current, latest: true
-            )
+            .throttle(for: 30.0, scheduler: persistQueue, latest: true)
             .sink { _ in
                 do {
                     try self.persist()
@@ -95,7 +93,9 @@ public class PersistentProviderCache: ProviderCache {
             self.cache[flag] = value
             return true
         }
-        self.persistPublisher.send(.persist)
+        if success {
+            self.persistPublisher.send(.persist)
+        }
         return success
     }
 

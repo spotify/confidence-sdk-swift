@@ -15,7 +15,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     private var client: KonfidensClient
     private var cache: ProviderCache
     private var resolverWrapper: ResolverWrapper
-    private var currentCtx: EvaluationContext
+    private var currentCtx: EvaluationContext?
 
     /// Should not be called externally, use `KonfidensFeatureProvider.Builder` instead.
     init(
@@ -30,15 +30,18 @@ public class KonfidensFeatureProvider: FeatureProvider {
         self.client = client
         self.cache = cache
         self.resolverWrapper = ResolverWrapper(resolver: resolver, overrides: overrides)
-        self.currentCtx = MutableContext()
     }
 
-    public func initialize(initialContext: OpenFeature.EvaluationContext) {
+    public func initialize(initialContext: OpenFeature.EvaluationContext?) {
+        guard let initialContext = initialContext else {
+            self.currentCtx = nil
+            return
+        }
         processNewContext(context: initialContext)
     }
 
-    public func onContextSet(oldContext: OpenFeature.EvaluationContext, newContext: OpenFeature.EvaluationContext) {
-        guard self.currentCtx.hash() != newContext.hash() else {
+    public func onContextSet(oldContext: OpenFeature.EvaluationContext?, newContext: OpenFeature.EvaluationContext) {
+        guard self.currentCtx?.hash() != newContext.hash() else {
             return
         }
         processNewContext(context: newContext)
@@ -144,6 +147,8 @@ public class KonfidensFeatureProvider: FeatureProvider {
     }
 
     private func processNewContext(context: OpenFeature.EvaluationContext) {
+        self.currentCtx = context
+        // Racy: local ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
         do {
             let resolveResult = try client.resolve(ctx: context)
             guard let resolveToken = resolveResult.resolveToken else {
@@ -151,11 +156,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
             }
             try cache.clearAndSetValues(
                 values: resolveResult.resolvedValues, ctx: context, resolveToken: resolveToken)
-            // Racy: local ctx and ctx in cache might differ, resulting in STALE evaluations
-            // Local ctx and global ctx might also differ, resulting in potential inconsistencies of ctx data
-            self.currentCtx = context
         } catch let error {
-            // Should we throw the exception instead?
             Logger(subsystem: "com.konfidens.provider", category: "initialize").error(
                 "Error while executing \"initialize\": \(error)")
         }
@@ -164,26 +165,27 @@ public class KonfidensFeatureProvider: FeatureProvider {
     private func processResultForApply<T>(
         evaluationResult: ProviderEvaluation<T>,
         resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext,
+        ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
         guard evaluationResult.errorCode == nil, let resolverResult = resolverResult,
-            let resolveToken = resolverResult.resolveToken
+            let resolveToken = resolverResult.resolveToken, let ctx = ctx
         else {
             return
         }
 
         let flag = resolverResult.resolvedValue.flag
         do {
-            if (try cache.updateApplyStatus(
-                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)) {
+            if try cache.updateApplyStatus(
+                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)
+            {
                 executeApply(client: client, flag: flag, resolveToken: resolveToken) { success in
                     do {
                         if success {
-                            let _ = try self.cache.updateApplyStatus(
+                            _ = try self.cache.updateApplyStatus(
                                 flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
                         } else {
-                            let _ = try self.cache.updateApplyStatus(
+                            _ = try self.cache.updateApplyStatus(
                                 flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applyFailed)
                         }
                     } catch let error {
