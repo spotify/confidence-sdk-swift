@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import KonfidensProvider
+@testable import ConfidenceProvider
 
 class RemoteKonfidensClientTest: XCTestCase {
     var flags: [String: MockedKonfidensClientURLProtocol.TestFlag] = [:]

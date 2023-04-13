@@ -2,10 +2,10 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import KonfidensProvider
+@testable import ConfidenceProvider
 
 class Konfidens: XCTestCase {
-    let clientToken = ProcessInfo.processInfo.environment["KONFIDENS_CLIENT_TOKEN"]
+    let clientToken = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
     let resolveFlag = setResolveFlag()
 
     private static func setResolveFlag() -> String {

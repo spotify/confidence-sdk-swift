@@ -1,7 +1,7 @@
 import Foundation
 import OpenFeature
 
-@testable import KonfidensProvider
+@testable import ConfidenceProvider
 
 class MockedKonfidensClientURLProtocol: URLProtocol {
     public static var callStats = 0

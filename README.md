@@ -6,11 +6,11 @@ Swift implementation of the Confidence feature provider, to be used in conjuncti
 
 ### Adding the package dependency
 
-If you manage dependencies through Xcode go to "Add package" and enter `git@github.com:spotify/openfeature-swift-provider.git`.
+If you manage dependencies through Xcode go to "Add package" and enter `git@github.com:spotify/confidence-openfeature-provider-swift.git`.
 
 If you manage dependencies through SPM, in the dependencies section of Package.swift add:
 ```swift
-.package(url: "git@github.com:spotify/openfeature-swift-provider.git", from: "0.1.0")
+.package(url: "git@github.com:spotify/confidence-openfeature-provider-swift.git", from: "0.1.0")
 ```
 
 and in the target dependencies section add:
@@ -31,7 +31,7 @@ let client = OpenFeatureAPI.shared.getClient()
 
 let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
 await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
-let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false, ctx: ctx)
+let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false)
 ```
 
 Notes:
@@ -80,7 +80,7 @@ You can automatically format your code using:
 
 ### Running tests
 
-IT tests require a Konfidens client token to reach remote servers. The token can be created on the Konfidens portal. The Konfidens project used for IT tests is named `konfidens_e2e`.
+IT tests require a Confidence client token to reach remote servers. The token can be created on the Confidence portal. The Confidence project used for IT tests is named `konfidens_e2e`.
 
 
 ```shell

@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import KonfidensProvider
+@testable import ConfidenceProvider
 
 class LocalStorageResolverTest: XCTestCase {
     func testStaleValueFromCache() throws {
@@ -40,7 +40,7 @@ class TestCache: ProviderCache {
         self.returnType = returnType
     }
 
-    func getValue(flag: String, ctx: EvaluationContext) -> KonfidensProvider.CacheGetValueResult? {
+    func getValue(flag: String, ctx: EvaluationContext) -> ConfidenceProvider.CacheGetValueResult? {
         switch returnType {
         case .noValue:
             return nil
@@ -50,14 +50,14 @@ class TestCache: ProviderCache {
     }
 
     func clearAndSetValues(
-        values: [KonfidensProvider.ResolvedValue], ctx: OpenFeature.EvaluationContext, resolveToken: String
+        values: [ConfidenceProvider.ResolvedValue], ctx: OpenFeature.EvaluationContext, resolveToken: String
     ) {}
 
     func updateApplyStatus(
         flag: String,
         ctx: OpenFeature.EvaluationContext,
         resolveToken: String,
-        applyStatus: KonfidensProvider.ApplyStatus
+        applyStatus: ConfidenceProvider.ApplyStatus
     ) throws -> Bool { return true }
 
     func getCurResolveToken() -> String? {

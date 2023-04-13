@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import KonfidensProvider
+@testable import ConfidenceProvider
 
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
