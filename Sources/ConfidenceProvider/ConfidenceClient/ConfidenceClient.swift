@@ -1,7 +1,7 @@
 import Foundation
 import OpenFeature
 
-public protocol KonfidensClient: Resolver {
+public protocol ConfidenceClient: Resolver {
     func resolve(ctx: EvaluationContext) throws -> ResolvesResult
 
     func apply(flag: String, resolveToken: String, applyTime: Date) throws

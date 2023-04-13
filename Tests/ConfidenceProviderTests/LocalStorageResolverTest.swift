@@ -14,7 +14,7 @@ class LocalStorageResolverTest: XCTestCase {
             try resolver.resolve(flag: "test", ctx: ctx)
         ) { error in
             XCTAssertEqual(
-                error as? KonfidensError, KonfidensError.cachedValueExpired)
+                error as? ConfidenceError, ConfidenceError.cachedValueExpired)
         }
     }
 
@@ -27,7 +27,7 @@ class LocalStorageResolverTest: XCTestCase {
             try resolver.resolve(flag: "test", ctx: ctx)
         ) { error in
             XCTAssertEqual(
-                error as? KonfidensError, KonfidensError.flagNotFoundInCache)
+                error as? ConfidenceError, ConfidenceError.flagNotFoundInCache)
         }
     }
 }

@@ -4,7 +4,7 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-class Konfidens: XCTestCase {
+class Confidence: XCTestCase {
     let clientToken = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
     let resolveFlag = setResolveFlag()
 
@@ -23,14 +23,14 @@ class Konfidens: XCTestCase {
         try await super.setUp()
     }
 
-    func testKonfidensFeatureIntegration() async throws {
+    func testConfidenceFeatureIntegration() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
         await OpenFeatureAPI.shared.setProvider(
             provider:
-                KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: clientToken))
+                ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: clientToken))
                 .build())
         let client = OpenFeatureAPI.shared.getClient()
 
@@ -54,21 +54,21 @@ class Konfidens: XCTestCase {
         XCTAssertNil(boolResult.errorMessage)
     }
 
-    func testKonfidensFeatureApplies() async throws {
+    func testConfidenceFeatureApplies() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
         let cache = PersistentProviderCache.fromDefaultStorage()
 
-        let konfidensFeatureProvider = KonfidensFeatureProvider.Builder(
+        let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
         .with(applyQueue: DispatchQueueFake())
         .with(cache: cache)
         .build()
 
-        await OpenFeatureAPI.shared.setProvider(provider: konfidensFeatureProvider)
+        await OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
 
         let ctx = MutableContext(
             targetingKey: "user_foo",
@@ -89,21 +89,21 @@ class Konfidens: XCTestCase {
             .applied)
     }
 
-    func testKonfidensFeatureNoSegmentMatch() async throws {
+    func testConfidenceFeatureNoSegmentMatch() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
         let cache = PersistentProviderCache.fromDefaultStorage()
 
-        let konfidensFeatureProvider = KonfidensFeatureProvider.Builder(
+        let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
         .with(applyQueue: DispatchQueueFake())
         .with(cache: cache)
         .build()
 
-        await OpenFeatureAPI.shared.setProvider(provider: konfidensFeatureProvider)
+        await OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
 
         let ctx = MutableContext(
             targetingKey: "user_foo",

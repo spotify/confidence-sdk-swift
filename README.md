@@ -15,16 +15,16 @@ If you manage dependencies through SPM, in the dependencies section of Package.s
 
 and in the target dependencies section add:
 ```swift
-.product(name: "KonfidensProvider", package: "openfeature-swift-provider"),
+.product(name: "ConfidenceProvider", package: "openfeature-swift-provider"),
 ```
 
 ### Enabling the provider, setting the evaluation context and resolving flags
 
 ```swift
-import KonfidensProvider
+import ConfidenceProvider
 import OpenFeature
 
-let provider = KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
+let provider = ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
     .build()
 await OpenFeatureAPI.shared.setProvider(provider: provider)
 let client = OpenFeatureAPI.shared.getClient()
@@ -52,7 +52,7 @@ then you can locally override the size property by
 
 ```swift
 OpenFeatureAPI.shared.provider =
-    KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
+    ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         .overrides(.field(path: "button.size", variant: "control", value: .integer(4)))
         .build()
 ```

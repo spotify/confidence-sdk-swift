@@ -11,7 +11,7 @@ class DefaultStorageTest: XCTestCase {
         let numComponents = url.pathComponents.count
 
         XCTAssertEqual(url.pathComponents[numComponents - 1], "resolver.cache")
-        XCTAssertEqual(url.pathComponents[numComponents - 3], "com.konfidens.cache")
+        XCTAssertEqual(url.pathComponents[numComponents - 3], "com.confidence.cache")
         XCTAssertEqual(url.pathComponents[numComponents - 4], "Application Support")
     }
 

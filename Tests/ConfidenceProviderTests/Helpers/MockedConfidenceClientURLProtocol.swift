@@ -3,7 +3,7 @@ import OpenFeature
 
 @testable import ConfidenceProvider
 
-class MockedKonfidensClientURLProtocol: URLProtocol {
+class MockedConfidenceClientURLProtocol: URLProtocol {
     public static var callStats = 0
     public static var resolveStats = 0
     public static var applyStats = 0
@@ -11,23 +11,23 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
     public static var failFirstApply = false
 
     static func set(flags: [String: TestFlag]) {
-        MockedKonfidensClientURLProtocol.flags = flags
+        MockedConfidenceClientURLProtocol.flags = flags
     }
 
     static func mockedSession(flags: [String: TestFlag]) -> URLSession {
-        MockedKonfidensClientURLProtocol.set(flags: flags)
+        MockedConfidenceClientURLProtocol.set(flags: flags)
         let config = URLSessionConfiguration.default
-        config.protocolClasses = [MockedKonfidensClientURLProtocol.self]
+        config.protocolClasses = [MockedConfidenceClientURLProtocol.self]
 
         return URLSession(configuration: config)
     }
 
     static func reset() {
-        MockedKonfidensClientURLProtocol.flags = [:]
-        MockedKonfidensClientURLProtocol.callStats = 0
-        MockedKonfidensClientURLProtocol.resolveStats = 0
-        MockedKonfidensClientURLProtocol.applyStats = 0
-        MockedKonfidensClientURLProtocol.failFirstApply = false
+        MockedConfidenceClientURLProtocol.flags = [:]
+        MockedConfidenceClientURLProtocol.callStats = 0
+        MockedConfidenceClientURLProtocol.resolveStats = 0
+        MockedConfidenceClientURLProtocol.applyStats = 0
+        MockedConfidenceClientURLProtocol.failFirstApply = false
     }
 
     override class func canInit(with request: URLRequest) -> Bool {
@@ -48,7 +48,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
         case _ where path.hasSuffix(":resolve"):
             return resolve()
         case _ where path.hasSuffix(":apply"):
-            return MockedKonfidensClientURLProtocol.failFirstApply
+            return MockedConfidenceClientURLProtocol.failFirstApply
                 ? apply(failAt: 1)
                 : apply()
         default:
@@ -62,9 +62,9 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
     }
 
     private func resolve() {
-        MockedKonfidensClientURLProtocol.callStats += 1
-        MockedKonfidensClientURLProtocol.resolveStats += 1
-        guard let request = request.decodeBody(type: RemoteKonfidensClient.ResolveFlagsRequest.self) else {
+        MockedConfidenceClientURLProtocol.callStats += 1
+        MockedConfidenceClientURLProtocol.resolveStats += 1
+        guard let request = request.decodeBody(type: RemoteConfidenceClient.ResolveFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
@@ -79,7 +79,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
             return
         }
 
-        let flags = MockedKonfidensClientURLProtocol.flags
+        let flags = MockedConfidenceClientURLProtocol.flags
             .filter { _, flag in
                 flag.isArchived == false
             }
@@ -91,7 +91,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
             }
             .map { flagName, flag in
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
-                    return RemoteKonfidensClient.ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
+                    return RemoteConfidenceClient.ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
                 }
                 var responseValue: Struct?
                 do {
@@ -106,22 +106,22 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
                         code: GrpcStatusCode.invalidArgument.rawValue,
                         message: "Could not convert value to response")
                 }
-                return RemoteKonfidensClient.ResolvedFlag(
+                return RemoteConfidenceClient.ResolvedFlag(
                     flag: flagName, value: responseValue, variant: resolved.variant, flagSchema: schema, reason: .match)
             }
         respondWithSuccess(
-            response: RemoteKonfidensClient.ResolveFlagsResponse(resolvedFlags: flags, resolveToken: "token1"))
+            response: RemoteConfidenceClient.ResolveFlagsResponse(resolvedFlags: flags, resolveToken: "token1"))
     }
 
     private func apply(failAt: Int = 0) {
-        MockedKonfidensClientURLProtocol.callStats += 1
-        MockedKonfidensClientURLProtocol.applyStats += 1
-        if MockedKonfidensClientURLProtocol.applyStats == failAt {
+        MockedConfidenceClientURLProtocol.callStats += 1
+        MockedConfidenceClientURLProtocol.applyStats += 1
+        if MockedConfidenceClientURLProtocol.applyStats == failAt {
             respondWithError(
                 statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "Server error")
         }
 
-        guard let request = request.decodeBody(type: RemoteKonfidensClient.ApplyFlagsRequest.self) else {
+        guard let request = request.decodeBody(type: RemoteConfidenceClient.ApplyFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
@@ -134,7 +134,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
                 return
             }
         }
-        respondWithSuccess(response: RemoteKonfidensClient.ApplyFlagsResponse())
+        respondWithSuccess(response: RemoteConfidenceClient.ApplyFlagsResponse())
     }
 
     private func respondWithError(statusCode: Int, code: Int, message: String) {
@@ -166,7 +166,7 @@ class MockedKonfidensClientURLProtocol: URLProtocol {
     }
 }
 
-extension MockedKonfidensClientURLProtocol {
+extension MockedConfidenceClientURLProtocol {
     struct ResolvedTestFlag {
         var variant: String
         var value: Value

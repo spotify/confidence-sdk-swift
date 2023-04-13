@@ -9,7 +9,7 @@
 - [ ] Figure out how to handle re-installation
 - [X] Improve testing around the "apply" being executed by the batch provider
 - [ ] Automatically retry "apply" for entries in cached marked as "appliedFailed"
-- [X] Don't use the KonfidensFeatureProvider inside the KonfidensBatchFeatureProvider, share common logic instead
+- [X] Don't use the ConfidenceFeatureProvider inside the ConfidenceBatchFeatureProvider, share common logic instead
 - [ ] Figure out how to deal with different EvaluationContexts between cache and user input
   - How to separate identifiers and other context properties
   - Store multiple caches for different identifiers

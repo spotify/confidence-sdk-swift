@@ -1,7 +1,7 @@
 import Foundation
 
-public enum KonfidensError: Error, Equatable {
-    /// Signifies that the provider is not connected to the konfidens backend
+public enum ConfidenceError: Error, Equatable {
+    /// Signifies that the provider is not connected to the Confidence backend
     case providerNotConnected
     /// GRPC-specific error during the connection
     case grpcError(message: String)
@@ -27,7 +27,7 @@ public enum KonfidensError: Error, Equatable {
     case internalError(message: String)
 }
 
-extension KonfidensError: CustomStringConvertible {
+extension ConfidenceError: CustomStringConvertible {
     public var description: String {
         switch self {
         case .providerNotConnected:

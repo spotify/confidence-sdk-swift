@@ -1,5 +1,5 @@
 import OpenFeature
 
-public struct KonfidensMetadata: Metadata {
-    public var name: String? = "Konfidens"
+public struct ConfidenceMetadata: Metadata {
+    public var name: String? = "Confidence"
 }
