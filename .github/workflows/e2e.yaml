@@ -15,6 +15,6 @@ jobs:
         ssh-private-key: ${{ secrets.SDK_REPO_PRIVATE_KEY }}
     - name: Build and Test
       env:
-        KONFIDENS_CLIENT_TOKEN: ${{ secrets.KONFIDENS_CLIENT_TOKEN }}
+        CLIENT_TOKEN: ${{ secrets.KONFIDENS_CLIENT_TOKEN }}
         TEST_FLAG_NAME: ${{ secrets.E2E_RESOLVE_FLAG }}
-      run: scripts/run_tests.sh $KONFIDENS_CLIENT_TOKEN $TEST_FLAG_NAME
+      run: scripts/run_tests.sh $CLIENT_TOKEN $TEST_FLAG_NAME
