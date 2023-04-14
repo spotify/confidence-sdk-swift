@@ -4,8 +4,8 @@ import OpenFeature
 import os
 
 public class PersistentProviderCache: ProviderCache {
-    private var rwCacheQueue = DispatchQueue(label: "com.konfidens.cache.rw", attributes: .concurrent)
-    private var persistQueue = DispatchQueue(label: "com.konfidens.cache.persist")
+    private var rwCacheQueue = DispatchQueue(label: "com.confidence.cache.rw", attributes: .concurrent)
+    private var persistQueue = DispatchQueue(label: "com.confidence.cache.persist")
     private static let currentVersion = "0.0.1"
 
     private var storage: Storage
@@ -27,7 +27,7 @@ public class PersistentProviderCache: ProviderCache {
                 do {
                     try self.persist()
                 } catch {
-                    Logger(subsystem: "com.konfidens.cache", category: "persist")
+                    Logger(subsystem: "com.confidence.cache", category: "persist")
                         .error("Unable to persist cache: \(error)")
                 }
             }
@@ -38,7 +38,7 @@ public class PersistentProviderCache: ProviderCache {
         return try rwCacheQueue.sync {
             if let value = self.cache[flag] {
                 guard let curResolveToken = curResolveToken else {
-                    throw KonfidensError.noResolveTokenFromCache
+                    throw ConfidenceError.noResolveTokenFromCache
                 }
                 return .init(
                     resolvedValue: value, needsUpdate: curEvalContextHash != ctx.hash(), resolveToken: curResolveToken)
@@ -65,15 +65,15 @@ public class PersistentProviderCache: ProviderCache {
     {
         let success = try rwCacheQueue.sync(flags: .barrier) {
             if ctx.hash() != curEvalContextHash {
-                throw KonfidensError.cachedValueExpired
+                throw ConfidenceError.cachedValueExpired
             }
 
             guard var value = self.cache[flag] else {
-                throw KonfidensError.flagNotFoundInCache
+                throw ConfidenceError.flagNotFoundInCache
             }
 
             guard resolveToken == curResolveToken else {
-                throw KonfidensError.cachedValueExpired
+                throw ConfidenceError.cachedValueExpired
             }
 
             switch applyStatus {
@@ -83,10 +83,10 @@ public class PersistentProviderCache: ProviderCache {
                 }
             case .applied, .applyFailed:
                 if value.applyStatus != .applying {
-                    throw KonfidensError.applyStatusTransitionError
+                    throw ConfidenceError.applyStatusTransitionError
                 }
             case .notApplied:
-                throw KonfidensError.applyStatusTransitionError
+                throw ConfidenceError.applyStatusTransitionError
             }
 
             value.applyStatus = applyStatus
@@ -123,10 +123,10 @@ public class PersistentProviderCache: ProviderCache {
                 curResolveToken: storedCache.curResolveToken,
                 curEvalContextHash: storedCache.curEvalContextHash)
         } catch {
-            Logger(subsystem: "com.konfidens.cache", category: "storage").error(
+            Logger(subsystem: "com.confidence.cache", category: "storage").error(
                 "Error when trying to load resolver cache, clearing cache: \(error)")
 
-            if case .corruptedCache = error as? KonfidensError {
+            if case .corruptedCache = error as? ConfidenceError {
                 try? storage.clear()
             }
 

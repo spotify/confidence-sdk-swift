@@ -1,8 +1,8 @@
 import Foundation
 
 public class DefaultStorage: Storage {
-    private static let storageQueue = DispatchQueue(label: "com.konfidens.storage")
-    public static let resolverCacheBundleId = "com.konfidens.cache"
+    private static let storageQueue = DispatchQueue(label: "com.confidence.storage")
+    public static let resolverCacheBundleId = "com.confidence.cache"
     public static let resolverCacheFilename = "resolver.cache"
 
     public func save(data: Encodable) throws {
@@ -18,7 +18,7 @@ public class DefaultStorage: Storage {
             do {
                 try encoded.write(to: configUrl, options: .atomic)
             } catch {
-                throw KonfidensError.cacheError(message: "Unable to encode: \(error)")
+                throw ConfidenceError.cacheError(message: "Unable to encode: \(error)")
             }
         }
     }
@@ -34,14 +34,14 @@ public class DefaultStorage: Storage {
                 do {
                     return try Data(contentsOf: configUrl)
                 } catch {
-                    throw KonfidensError.cacheError(message: "Unable to load cache file: \(error)")
+                    throw ConfidenceError.cacheError(message: "Unable to load cache file: \(error)")
                 }
             }()
 
             do {
                 return try JSONDecoder().decode(type, from: data)
             } catch {
-                throw KonfidensError.corruptedCache(message: "Unable to decode: \(error)")
+                throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
             }
         }
     }
@@ -56,7 +56,7 @@ public class DefaultStorage: Storage {
             do {
                 try FileManager.default.removeItem(atPath: configUrl.backport.path)
             } catch {
-                throw KonfidensError.cacheError(message: "Unable to clear cache: \(error)")
+                throw ConfidenceError.cacheError(message: "Unable to clear cache: \(error)")
             }
         }
     }
@@ -66,11 +66,11 @@ public class DefaultStorage: Storage {
             let applicationSupportUrl = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
                 .last
         else {
-            throw KonfidensError.cacheError(message: "Could not get URL for application directory")
+            throw ConfidenceError.cacheError(message: "Could not get URL for application directory")
         }
 
         guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
-            throw KonfidensError.cacheError(message: "Unable to get bundle identifier")
+            throw ConfidenceError.cacheError(message: "Unable to get bundle identifier")
         }
 
         return applicationSupportUrl.backport.appending(

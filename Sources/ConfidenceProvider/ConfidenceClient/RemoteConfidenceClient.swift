@@ -1,18 +1,18 @@
 import Foundation
 import OpenFeature
 
-public class RemoteKonfidensClient: KonfidensClient {
+public class RemoteConfidenceClient: ConfidenceClient {
     private let domain = "konfidens.services"
     private let resolveRoute = "/v1/flags"
     private let targetingKey = "targeting_key"
 
     private let baseUrl: String
-    private var options: KonfidensClientOptions
+    private var options: ConfidenceClientOptions
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
 
-    init(options: KonfidensClientOptions, session: URLSession? = nil, applyOnResolve: Bool) {
+    init(options: ConfidenceClientOptions, session: URLSession? = nil, applyOnResolve: Bool) {
         self.options = options
         self.baseUrl = "https://resolver.\(options.region.rawValue).\(domain)"
         if let session = session {
@@ -31,7 +31,7 @@ public class RemoteKonfidensClient: KonfidensClient {
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve)
         guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute):resolve") else {
-            throw KonfidensError.internalError(message: "Could not create service url")
+            throw ConfidenceError.internalError(message: "Could not create service url")
         }
 
         do {
@@ -75,7 +75,7 @@ public class RemoteKonfidensClient: KonfidensClient {
             clientSecret: options.credentials.getSecret(),
             resolveToken: resolveToken)
         guard let url = URL(string: "\(self.baseUrl)\(self.resolveRoute):apply") else {
-            throw KonfidensError.internalError(message: "Could not create service url")
+            throw ConfidenceError.internalError(message: "Could not create service url")
         }
 
         do {
@@ -123,22 +123,22 @@ public class RemoteKonfidensClient: KonfidensClient {
         case .notFound:
             return OpenFeatureError.flagNotFoundError(key: flag)
         case .badRequest:
-            return KonfidensError.badRequest(message: error?.message ?? "")
+            return ConfidenceError.badRequest(message: error?.message ?? "")
         default:
             return defaultError
         }
     }
 
     private func handleError(error: Error) -> Error {
-        if error is KonfidensError || error is OpenFeatureError {
+        if error is ConfidenceError || error is OpenFeatureError {
             return error
         } else {
-            return KonfidensError.grpcError(message: "\(error)")
+            return ConfidenceError.grpcError(message: "\(error)")
         }
     }
 }
 
-extension RemoteKonfidensClient {
+extension RemoteConfidenceClient {
     struct ResolveFlagsRequest: Codable {
         var flags: [String]
         var evaluationContext: Struct
@@ -184,14 +184,14 @@ extension RemoteKonfidensClient {
     }
 }
 
-extension RemoteKonfidensClient {
-    public struct KonfidensClientOptions {
-        public var credentials: KonfidensClientCredentials
+extension RemoteConfidenceClient {
+    public struct ConfidenceClientOptions {
+        public var credentials: ConfidenceClientCredentials
         public var timeout: TimeInterval
-        public var region: KonfidensRegion
+        public var region: ConfidenceRegion
 
         public init(
-            credentials: KonfidensClientCredentials, timeout: TimeInterval? = nil, region: KonfidensRegion? = nil
+            credentials: ConfidenceClientCredentials, timeout: TimeInterval? = nil, region: ConfidenceRegion? = nil
         ) {
             self.credentials = credentials
             self.timeout = timeout ?? 10.0
@@ -199,7 +199,7 @@ extension RemoteKonfidensClient {
         }
     }
 
-    public enum KonfidensClientCredentials {
+    public enum ConfidenceClientCredentials {
         case clientSecret(secret: String)
 
         public func getSecret() -> String {
@@ -210,7 +210,7 @@ extension RemoteKonfidensClient {
         }
     }
 
-    public enum KonfidensRegion: String {
+    public enum ConfidenceRegion: String {
         case europe = "eu"
         case usa = "us"
     }
@@ -218,7 +218,7 @@ extension RemoteKonfidensClient {
     private func displayName(resolvedFlag: ResolvedFlag) throws -> String {
         let flagNameComponents = resolvedFlag.flag.components(separatedBy: "/")
         if flagNameComponents.count <= 1 || flagNameComponents[0] != "flags" {
-            throw KonfidensError.internalError(message: "Unxpected flag name: \(resolvedFlag.flag)")
+            throw ConfidenceError.internalError(message: "Unxpected flag name: \(resolvedFlag.flag)")
         }
         return resolvedFlag.flag.components(separatedBy: "/")[1]
     }

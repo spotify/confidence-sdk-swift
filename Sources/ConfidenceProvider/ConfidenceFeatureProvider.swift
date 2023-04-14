@@ -2,28 +2,28 @@ import Foundation
 import OpenFeature
 import os
 
-/// The implementation of the konfidens feature provider. This implementation allows to pre-cache evaluations.
+/// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
 ///
 ///
 ///
-public class KonfidensFeatureProvider: FeatureProvider {
+public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
-    public var metadata: Metadata = KonfidensMetadata()
+    public var metadata: Metadata = ConfidenceMetadata()
     private var applyQueue: DispatchQueueType
     private var lock = UnfairLock()
     private var resolver: Resolver
-    private var client: KonfidensClient
+    private var client: ConfidenceClient
     private var cache: ProviderCache
     private var resolverWrapper: ResolverWrapper
     private var currentCtx: EvaluationContext?
 
-    /// Should not be called externally, use `KonfidensFeatureProvider.Builder` instead.
+    /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
         resolver: Resolver,
-        client: RemoteKonfidensClient,
+        client: RemoteConfidenceClient,
         cache: ProviderCache,
         overrides: [String: LocalOverride] = [:],
-        applyQueue: DispatchQueueType = DispatchQueue(label: "com.konfidens.apply", attributes: .concurrent)
+        applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
     ) {
         self.applyQueue = applyQueue
         self.resolver = resolver
@@ -136,7 +136,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     ///
     /// For example
     ///
-    ///     (OpenFeatureAPI.shared.provider as? KonfidensFeatureProvider)?
+    ///     (OpenFeatureAPI.shared.provider as? ConfidenceFeatureProvider)?
     ///         .overrides(.field(path: "button.size", variant: "control", value: .integer(4)))
     public func overrides(_ overrides: LocalOverride...) {
         lock.locked {
@@ -152,12 +152,12 @@ public class KonfidensFeatureProvider: FeatureProvider {
         do {
             let resolveResult = try client.resolve(ctx: context)
             guard let resolveToken = resolveResult.resolveToken else {
-                throw KonfidensError.noResolveTokenFromServer
+                throw ConfidenceError.noResolveTokenFromServer
             }
             try cache.clearAndSetValues(
                 values: resolveResult.resolvedValues, ctx: context, resolveToken: resolveToken)
         } catch let error {
-            Logger(subsystem: "com.konfidens.provider", category: "initialize").error(
+            Logger(subsystem: "com.confidence.provider", category: "initialize").error(
                 "Error while executing \"initialize\": \(error)")
         }
     }
@@ -199,7 +199,7 @@ public class KonfidensFeatureProvider: FeatureProvider {
     }
 
     private func executeApply(
-        client: KonfidensClient, flag: String, resolveToken: String, completion: @escaping (Bool) -> Void
+        client: ConfidenceClient, flag: String, resolveToken: String, completion: @escaping (Bool) -> Void
     ) {
         applyQueue.async {
             do {
@@ -214,39 +214,39 @@ public class KonfidensFeatureProvider: FeatureProvider {
 
     private func logApplyError(error: Error) {
         switch error {
-        case KonfidensError.applyStatusTransitionError, KonfidensError.cachedValueExpired,
-            KonfidensError.flagNotFoundInCache:
-            Logger(subsystem: "com.konfidens.provider", category: "apply").debug(
+        case ConfidenceError.applyStatusTransitionError, ConfidenceError.cachedValueExpired,
+            ConfidenceError.flagNotFoundInCache:
+            Logger(subsystem: "com.confidence.provider", category: "apply").debug(
                 "Cache data for flag was updated while executing \"apply\", aborting")
         default:
-            Logger(subsystem: "com.konfidens.provider", category: "apply").error(
+            Logger(subsystem: "com.confidence.provider", category: "apply").error(
                 "Error while executing \"apply\": \(error)")
         }
     }
 }
 
-extension KonfidensFeatureProvider {
+extension ConfidenceFeatureProvider {
     public struct Builder {
-        var options: RemoteKonfidensClient.KonfidensClientOptions
+        var options: RemoteConfidenceClient.ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
-        var applyQueue: DispatchQueueType = DispatchQueue(label: "com.konfidens.apply", attributes: .concurrent)
+        var applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
         var cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
 
         /// Initializes the builder with the given credentails.
         ///
         ///     OpenFeatureAPI.shared.setProvider(provider:
-        ///     KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
+        ///     ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .build()
-        public init(credentials: RemoteKonfidensClient.KonfidensClientCredentials) {
-            self.options = RemoteKonfidensClient.KonfidensClientOptions(credentials: credentials)
+        public init(credentials: RemoteConfidenceClient.ConfidenceClientCredentials) {
+            self.options = RemoteConfidenceClient.ConfidenceClientOptions(credentials: credentials)
         }
 
         init(
-            options: RemoteKonfidensClient.KonfidensClientOptions,
+            options: RemoteConfidenceClient.ConfidenceClientOptions,
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
-            applyQueue: DispatchQueueType = DispatchQueue(label: "com.konfidens.apply", attributes: .concurrent),
+            applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
             cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
         ) {
             self.options = options
@@ -256,7 +256,7 @@ extension KonfidensFeatureProvider {
             self.cache = cache
         }
 
-        /// Allows the `KonfidensClient` to be configured with a custom URLSession, useful for
+        /// Allows the `ConfidenceClient` to be configured with a custom URLSession, useful for
         /// setting up unit tests.
         ///
         /// - Parameters:
@@ -302,14 +302,14 @@ extension KonfidensFeatureProvider {
         /// For example, the following will override the size field of a flag called button:
         ///
         ///     OpenFeatureAPI.shared.setProvider(provider:
-        ///         KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
+        ///         ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .overrides(.field(path: "button.size", variant: "control", value: .integer(4)))
         ///         .build()
         ///
         /// You can alsow override the complete flag by:
         ///
         ///     OpenFeatureAPI.shared.setProvider(provider:
-        ///         KonfidensFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
+        ///         ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .overrides(.flag(name: "button", variant: "control", value: ["size": .integer(4)]))
         ///         .build()
         ///
@@ -326,11 +326,11 @@ extension KonfidensFeatureProvider {
                 cache: cache)
         }
 
-        /// Creates the `KonfidensFeatureProvider` according to the settings specified in the builder.
-        public func build() -> KonfidensFeatureProvider {
-            let client = RemoteKonfidensClient(options: options, session: self.session, applyOnResolve: false)
+        /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
+        public func build() -> ConfidenceFeatureProvider {
+            let client = RemoteConfidenceClient(options: options, session: self.session, applyOnResolve: false)
             let resolver = LocalStorageResolver(cache: cache)
-            return KonfidensFeatureProvider(
+            return ConfidenceFeatureProvider(
                 resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue)
         }
     }

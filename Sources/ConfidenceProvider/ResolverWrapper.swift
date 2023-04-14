@@ -62,9 +62,9 @@ public class ResolverWrapper {
                     reason: Reason.targetingMatch.rawValue),
                 resolverResult
             )
-        } catch KonfidensError.flagIsArchived {
+        } catch ConfidenceError.flagIsArchived {
             return (ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.disabled.rawValue), nil)
-        } catch KonfidensError.cachedValueExpired {
+        } catch ConfidenceError.cachedValueExpired {
             return (ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue), nil)
         } catch {
             throw error

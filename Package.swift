@@ -4,31 +4,31 @@
 import PackageDescription
 
 let package = Package(
-    name: "KonfidensProvider",
+    name: "ConfidenceProvider",
     platforms: [
         .iOS(.v14),
         .macOS(.v12)
     ],
     products: [
         .library(
-            name: "KonfidensProvider",
-            targets: ["KonfidensProvider"])
+            name: "ConfidenceProvider",
+            targets: ["ConfidenceProvider"])
     ],
     dependencies: [
         .package(url: "git@github.com:spotify/openfeature-swift-sdk.git", from: "0.2.1"),
     ],
     targets: [
         .target(
-            name: "KonfidensProvider",
+            name: "ConfidenceProvider",
             dependencies: [
                 .product(name: "OpenFeature", package: "openfeature-swift-sdk"),
             ],
             plugins: []
         ),
         .testTarget(
-            name: "KonfidensProviderTests",
+            name: "ConfidenceProviderTests",
             dependencies: [
-                "KonfidensProvider",
+                "ConfidenceProvider",
             ]
         )
     ]

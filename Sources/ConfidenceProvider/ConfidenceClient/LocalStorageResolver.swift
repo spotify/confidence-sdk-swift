@@ -11,10 +11,10 @@ public class LocalStorageResolver: Resolver {
     public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
         let getResult = try self.cache.getValue(flag: flag, ctx: ctx)
         guard let getResult = getResult else {
-            throw KonfidensError.flagNotFoundInCache
+            throw ConfidenceError.flagNotFoundInCache
         }
         guard !getResult.needsUpdate else {
-            throw KonfidensError.cachedValueExpired
+            throw ConfidenceError.cachedValueExpired
         }
         return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken)
     }

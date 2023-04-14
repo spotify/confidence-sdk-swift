@@ -4,7 +4,7 @@ excluded:
   - ${PWD}/DerivedData
   - ${PWD}/.build
   - ${PWD}/Tools/*/.build
-  - ${PWD}/Sources/KonfidensProvider/FlagResolver/
+  - ${PWD}/Sources/ConfidenceProvider/FlagResolver/
 
 disabled_rules:
   - discarded_notification_center_observer

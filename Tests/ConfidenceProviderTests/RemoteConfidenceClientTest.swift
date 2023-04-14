@@ -2,13 +2,13 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import KonfidensProvider
+@testable import ConfidenceProvider
 
-class RemoteKonfidensClientTest: XCTestCase {
-    var flags: [String: MockedKonfidensClientURLProtocol.TestFlag] = [:]
-    let resolvedFlag1 = MockedKonfidensClientURLProtocol.ResolvedTestFlag(
+class RemoteConfidenceClientTest: XCTestCase {
+    var flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [:]
+    let resolvedFlag1 = MockedConfidenceClientURLProtocol.ResolvedTestFlag(
         variant: "control", value: .structure(["size": .integer(3)]))
-    let resolvedFlag2 = MockedKonfidensClientURLProtocol.ResolvedTestFlag(
+    let resolvedFlag2 = MockedConfidenceClientURLProtocol.ResolvedTestFlag(
         variant: "treatment", value: .structure(["size": .integer(2)]))
 
     override func setUp() {
@@ -17,15 +17,15 @@ class RemoteKonfidensClientTest: XCTestCase {
             "flags/flag2": .init(resolve: ["user1": resolvedFlag2]),
         ]
 
-        MockedKonfidensClientURLProtocol.reset()
+        MockedConfidenceClientURLProtocol.reset()
 
         super.setUp()
     }
 
     func testResolveSingleFlagSucceeds() throws {
-        let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
 
-        let client = RemoteKonfidensClient(
+        let client = RemoteConfidenceClient(
             options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
         let value = try client.resolve(flag: "flag1", ctx: MutableContext(targetingKey: "user1"))
@@ -34,9 +34,9 @@ class RemoteKonfidensClientTest: XCTestCase {
     }
 
     func testResolveMultipleFlagsSucceeds() throws {
-        let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
 
-        let client = RemoteKonfidensClient(
+        let client = RemoteConfidenceClient(
             options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
         let result = try client.resolve(ctx: MutableContext(targetingKey: "user1"))
@@ -51,9 +51,9 @@ class RemoteKonfidensClientTest: XCTestCase {
     }
 
     func testApplySucceeds() throws {
-        let session = MockedKonfidensClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
 
-        let client = RemoteKonfidensClient(
+        let client = RemoteConfidenceClient(
             options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
 
         try client.apply(flag: "flag1", resolveToken: "test", applyTime: Date.backport.now)
