@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 
 public class RemoteConfidenceClient: ConfidenceClient {
-    private let domain = "konfidens.services"
+    private let domain = "confidence.dev"
     private let resolveRoute = "/v1/flags"
     private let targetingKey = "targeting_key"
 
