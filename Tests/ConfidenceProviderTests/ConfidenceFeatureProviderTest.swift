@@ -296,6 +296,41 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
     }
 
+    func testStaleEvaluationContextInCache() throws {
+        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+            "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
+        ]
+
+        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+            "flags/flag": .init(resolve: resolve)
+        ]
+
+        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let provider = builder
+            .with(session: session)
+            .with(cache: cache)
+            .build()
+        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+
+        // Simulating a cache with an old evaluation context
+        try cache.clearAndSetValues(
+            values: [ResolvedValue(flag: "flag", applyStatus: .notApplied)],
+            ctx: MutableContext(targetingKey: "user0"),
+            resolveToken: "token0")
+
+        let evaluation = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 0)
+
+        XCTAssertEqual(evaluation.value, 0)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+    }
+
     func testResolveDoubleFlag() throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .double(3.1)]))
