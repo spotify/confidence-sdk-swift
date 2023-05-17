@@ -25,7 +25,6 @@ class PersistentProviderCacheTest: XCTestCase {
         let value = ResolvedValue(
             value: Value.double(3.14),
             flag: flag,
-            applyStatus: .applied,
             resolveReason: .match)
 
         try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
@@ -45,12 +44,10 @@ class PersistentProviderCacheTest: XCTestCase {
         let value1 = ResolvedValue(
             value: Value.double(3.14),
             flag: "flag1",
-            applyStatus: .applied,
             resolveReason: .match)
         let value2 = ResolvedValue(
             value: Value.string("test"),
             flag: "flag2",
-            applyStatus: .notApplied,
             resolveReason: .match)
 
         XCTAssertFalse(try FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path))
@@ -71,32 +68,6 @@ class PersistentProviderCacheTest: XCTestCase {
         XCTAssertEqual(cachedValue2?.resolveToken, resolveToken)
     }
 
-    func testCacheStoresApply() throws {
-        let flag = "flag"
-        let resolveToken = "resolveToken1"
-        let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
-        let value = ResolvedValue(
-            value: Value.double(3.14),
-            flag: flag,
-            applyStatus: .applying,
-            resolveReason: .match)
-
-        try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
-        let success = try cache?.updateApplyStatus(
-            flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
-        XCTAssertTrue(success ?? false)
-        let cachedValue = try cache?.getValue(flag: flag, ctx: ctx)
-        XCTAssertEqual(cachedValue?.resolvedValue.applyStatus, .applied)
-    }
-
-    func testCacheThrowsIfFlagNotFoundWithApply() throws {
-        let flag = "flag"
-        let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
-
-        XCTAssertThrowsError(
-            try cache?.updateApplyStatus(flag: flag, ctx: ctx, resolveToken: "", applyStatus: .applied))
-    }
-
     func testNoValueFound() throws {
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
 
@@ -115,7 +86,6 @@ class PersistentProviderCacheTest: XCTestCase {
         let value = ResolvedValue(
             value: Value.double(3.14),
             flag: flag,
-            applyStatus: .applied,
             resolveReason: .match)
 
         try cache?.clearAndSetValues(values: [value], ctx: ctx1, resolveToken: resolveToken)

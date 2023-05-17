@@ -11,7 +11,6 @@ public struct ResolvedValue: Codable, Equatable {
     var variant: String?
     var value: Value?
     var flag: String
-    var applyStatus: ApplyStatus
     var resolveReason: Reason
 
     enum Reason: Int, Codable, Equatable {
@@ -26,11 +25,4 @@ public struct ResolvedValue: Codable, Equatable {
 public struct ResolvesResult: Codable, Equatable {
     var resolvedValues: [ResolvedValue]
     var resolveToken: String?
-}
-
-public enum ApplyStatus: Codable {
-    case notApplied
-    case applying
-    case applied
-    case applyFailed
 }
