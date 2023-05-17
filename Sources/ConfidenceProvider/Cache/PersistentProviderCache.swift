@@ -4,7 +4,7 @@ import OpenFeature
 import os
 
 public class PersistentProviderCache: ProviderCache {
-    private var rwCacheQueue = DispatchQueue(label: "com.confidence.cache.rw", attributes: .concurrent)
+    private var rwCacheQueue = DispatchQueue(label: "com.confidence.flags.cache.rw", attributes: .concurrent)
     private var persistQueue = DispatchQueue(label: "com.confidence.cache.persist")
     private static let currentVersion = "0.0.1"
 
@@ -66,10 +66,6 @@ public class PersistentProviderCache: ProviderCache {
             self.cache = [:]
             self.curResolveToken = nil
         }
-    }
-
-    public static func fromDefaultStorage() -> PersistentProviderCache {
-        return from(storage: DefaultStorage())
     }
 
     public static func from(storage: Storage) -> PersistentProviderCache {

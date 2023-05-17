@@ -6,17 +6,17 @@ import os
 ///
 ///
 ///
-// swiftlint:disable type_body_length
 // swiftlint:disable file_length
+// swiftlint:disable type_body_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
     public var metadata: Metadata = ConfidenceMetadata()
-    private var applyQueue: DispatchQueueType
     private var lock = UnfairLock()
     private var resolver: Resolver
     private var client: ConfidenceClient
     private var cache: ProviderCache
     private var overrides: [String: LocalOverride]
+    private var flagApplier: FlagAppier
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
@@ -24,13 +24,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         client: RemoteConfidenceClient,
         cache: ProviderCache,
         overrides: [String: LocalOverride] = [:],
-        applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
+        applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
+        applyStorage: Storage
     ) {
-        self.applyQueue = applyQueue
         self.resolver = resolver
         self.client = client
         self.cache = cache
         self.overrides = overrides
+        self.flagApplier = FlagApplierWithRetries(client: client, applyQueue: applyQueue, storage: applyStorage)
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
@@ -158,7 +159,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         do {
             let resolverResult = try self.resolver.resolve(flag: path.flag, ctx: ctx)
             guard let value = resolverResult.resolvedValue.value else {
-                return resolveFlagNoValue(defaultValue: defaultValue, resolverResult: resolverResult, ctx: ctx)
+                return resolveFlagNoValue(defaultValue: defaultValue, resolverResult: resolverResult)
             }
 
             let pathValue: Value = try getValue(path: path.path, value: value)
@@ -170,10 +171,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
                 reason: Reason.targetingMatch.rawValue)
-            processResultForApply(
-                resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now)
+            processResultForApply(resolverResult: resolverResult)
             return evaluationResult
         } catch ConfidenceError.cachedValueExpired {
             return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
@@ -182,15 +180,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: EvaluationContext)
+    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult)
         -> ProviderEvaluation<T>
     {
         switch resolverResult.resolvedValue.resolveReason {
         case .noMatch:
             processResultForApply(
-                resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now)
+                resolverResult: resolverResult)
             return ProviderEvaluation(
                 value: defaultValue,
                 variant: nil,
@@ -281,23 +277,17 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func processResultForApply(
-        resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext?,
-        applyTime: Date
+        resolverResult: ResolveResult
     ) {
-        guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken else {
+        guard let resolveToken = resolverResult.resolveToken
+        else {
+            Logger(subsystem: "com.confidence.provider", category: "apply").error(
+                "Error while processing \"apply\": missing resolve token")
             return
         }
-
-        let flag = resolverResult.resolvedValue.flag
-        applyQueue.async {
-            do {
-                try self.client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
-            } catch let error {
-                self.logApplyError(error: error)
-            }
-        }
+        self.flagApplier.apply(flagName: resolverResult.resolvedValue.flag, resolveToken: resolveToken)
     }
+
     private func logApplyError(error: Error) {
         switch error {
         case ConfidenceError.applyStatusTransitionError, ConfidenceError.cachedValueExpired,
@@ -316,8 +306,10 @@ extension ConfidenceFeatureProvider {
         var options: RemoteConfidenceClient.ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
+        var cache: ProviderCache = PersistentProviderCache.from(
+            storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
         var applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
-        var cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+        var applyStorage: Storage = DefaultStorage(resolverCacheFilename: "resolver.apply.cache")
 
         /// Initializes the builder with the given credentails.
         ///
@@ -331,15 +323,17 @@ extension ConfidenceFeatureProvider {
         init(
             options: RemoteConfidenceClient.ConfidenceClientOptions,
             session: URLSession? = nil,
-            localOverrides: [String: LocalOverride] = [:],
-            applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
-            cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+            localOverrides: [String: LocalOverride],
+            cache: ProviderCache,
+            applyQueue: DispatchQueueType,
+            applyStorage: Storage
         ) {
             self.options = options
             self.session = session
             self.localOverrides = localOverrides
             self.applyQueue = applyQueue
             self.cache = cache
+            self.applyStorage = applyStorage
         }
 
         /// Allows the `ConfidenceClient` to be configured with a custom URLSession, useful for
@@ -352,8 +346,9 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
+                cache: cache,
                 applyQueue: applyQueue,
-                cache: cache)
+                applyStorage: applyStorage)
         }
 
         /// Inject custom queue for Apply request operations, useful for testing
@@ -365,8 +360,9 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
+                cache: cache,
                 applyQueue: applyQueue,
-                cache: cache)
+                applyStorage: applyStorage)
         }
 
         /// Inject custom cache, useful for testing
@@ -378,8 +374,23 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
+                cache: cache,
                 applyQueue: applyQueue,
-                cache: cache)
+                applyStorage: applyStorage)
+        }
+
+        /// Inject custom storage for apply events, useful for testing
+        ///
+        /// - Parameters:
+        ///      - storage: apply storage for the provider to use.
+        public func with(applyStorage: Storage) -> Builder {
+            return Builder(
+                options: options,
+                session: session,
+                localOverrides: localOverrides,
+                cache: cache,
+                applyQueue: applyQueue,
+                applyStorage: applyStorage)
         }
 
         /// Locally overrides resolves for specific flags or even fields within a flag. Field-level overrides are
@@ -408,8 +419,9 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: self.localOverrides.merging(localOverrides) { _, new in new },
+                cache: cache,
                 applyQueue: applyQueue,
-                cache: cache)
+                applyStorage: applyStorage)
         }
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
@@ -417,7 +429,12 @@ extension ConfidenceFeatureProvider {
             let client = RemoteConfidenceClient(options: options, session: self.session, applyOnResolve: false)
             let resolver = LocalStorageResolver(cache: cache)
             return ConfidenceFeatureProvider(
-                resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue)
+                resolver: resolver,
+                client: client,
+                cache: cache,
+                overrides: localOverrides,
+                applyQueue: applyQueue,
+                applyStorage: applyStorage)
         }
     }
 }

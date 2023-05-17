@@ -5,12 +5,14 @@ import XCTest
 @testable import ConfidenceProvider
 
 class PersistentProviderCacheTest: XCTestCase {
-    var cache: PersistentProviderCache? = PersistentProviderCache.fromDefaultStorage()
+    var cache: PersistentProviderCache? = PersistentProviderCache.from(
+        storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
     var formatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }
+    var storage = DefaultStorage(resolverCacheFilename: "resolver.flags.cache")
 
     override func setUp() {
         try? cache?.clear()
@@ -26,7 +28,6 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
-
         try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
 
         let cachedValue = try cache?.getValue(flag: flag, ctx: ctx)
@@ -49,15 +50,15 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.string("test"),
             flag: "flag2",
             resolveReason: .match)
-
-        XCTAssertFalse(try FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path))
+        XCTAssertFalse(try FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path))
 
         try cache?.clearAndSetValues(values: [value1, value2], ctx: ctx, resolveToken: resolveToken)
 
         expectToEventually(
-            (try? FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path)) ?? false)
+            (try? FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path)) ?? false)
 
-        let newCache = PersistentProviderCache.fromDefaultStorage()
+        let newCache = PersistentProviderCache.from(
+            storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
         let cachedValue1 = try newCache.getValue(flag: flag1, ctx: ctx)
         let cachedValue2 = try newCache.getValue(flag: flag2, ctx: ctx)
         XCTAssertEqual(cachedValue1?.resolvedValue, value1)
@@ -87,7 +88,6 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
-
         try cache?.clearAndSetValues(values: [value], ctx: ctx1, resolveToken: resolveToken)
 
         let cachedValue = try cache?.getValue(flag: flag, ctx: ctx2)

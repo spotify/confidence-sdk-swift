@@ -6,7 +6,7 @@ import XCTest
 
 class DefaultStorageTest: XCTestCase {
     func testGetConfigUrl() throws {
-        let url = try DefaultStorage.getConfigUrl()
+        let url = try DefaultStorage(resolverCacheFilename: "resolver.cache").getConfigUrl()
 
         let numComponents = url.pathComponents.count
 
@@ -16,7 +16,7 @@ class DefaultStorageTest: XCTestCase {
     }
 
     func testSaveConfig() throws {
-        let storage = DefaultStorage()
+        let storage = DefaultStorage(resolverCacheFilename: "resolver.cache")
 
         let value: Value = .structure([
             "int": .integer(3),
@@ -31,12 +31,12 @@ class DefaultStorageTest: XCTestCase {
     }
 
     func testLoadNonExistingFileReturnsDefault() throws {
-        let url = try DefaultStorage.getConfigUrl()
+        let url = try DefaultStorage(resolverCacheFilename: "resolver.cache").getConfigUrl()
         if FileManager.default.fileExists(atPath: url.backport.path) {
             try FileManager.default.removeItem(atPath: url.backport.path)
         }
 
-        let storage = DefaultStorage()
+        let storage = DefaultStorage(resolverCacheFilename: "resolver.cache")
         let value = try storage.load(Value.self, defaultValue: .integer(3))
 
         XCTAssertEqual(value, Value.integer(3))
