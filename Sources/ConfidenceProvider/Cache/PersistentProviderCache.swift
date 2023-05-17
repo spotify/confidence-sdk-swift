@@ -60,45 +60,6 @@ public class PersistentProviderCache: ProviderCache {
         self.persistPublisher.send(.persist)
     }
 
-    public func updateApplyStatus(flag: String, ctx: EvaluationContext, resolveToken: String, applyStatus: ApplyStatus)
-        throws -> Bool
-    {
-        let success = try rwCacheQueue.sync(flags: .barrier) {
-            if ctx.hash() != curEvalContextHash {
-                throw ConfidenceError.cachedValueExpired
-            }
-
-            guard var value = self.cache[flag] else {
-                throw ConfidenceError.flagNotFoundInCache
-            }
-
-            guard resolveToken == curResolveToken else {
-                throw ConfidenceError.cachedValueExpired
-            }
-
-            switch applyStatus {
-            case .applying:
-                if value.applyStatus == .applying || value.applyStatus == .applied {
-                    return false
-                }
-            case .applied, .applyFailed:
-                if value.applyStatus != .applying {
-                    throw ConfidenceError.applyStatusTransitionError
-                }
-            case .notApplied:
-                throw ConfidenceError.applyStatusTransitionError
-            }
-
-            value.applyStatus = applyStatus
-            self.cache[flag] = value
-            return true
-        }
-        if success {
-            self.persistPublisher.send(.persist)
-        }
-        return success
-    }
-
     public func clear() throws {
         try rwCacheQueue.sync(flags: .barrier) {
             try self.storage.clear()
