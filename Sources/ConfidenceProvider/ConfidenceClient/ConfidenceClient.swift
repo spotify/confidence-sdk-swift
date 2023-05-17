@@ -11,7 +11,6 @@ public struct ResolvedValue: Codable, Equatable {
     var variant: String?
     var value: Value?
     var flag: String
-    var applyStatus: ApplyStatus
 }
 
 public struct ResolvesResult: Codable, Equatable {

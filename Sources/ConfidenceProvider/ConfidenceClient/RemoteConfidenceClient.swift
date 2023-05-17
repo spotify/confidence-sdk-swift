@@ -95,8 +95,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         else {
             return ResolvedValue(
                 value: nil,
-                flag: try displayName(resolvedFlag: resolvedFlag),
-                applyStatus: applyOnResolve ? .applied : .notApplied)
+                flag: try displayName(resolvedFlag: resolvedFlag))
         }
 
         let value = try TypeMapper.from(object: responseValue, schema: responseFlagSchema)
@@ -105,8 +104,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         return ResolvedValue(
             variant: variant,
             value: value,
-            flag: try displayName(resolvedFlag: resolvedFlag),
-            applyStatus: applyOnResolve ? .applied : .notApplied)
+            flag: try displayName(resolvedFlag: resolvedFlag))
     }
 
     private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> Struct {

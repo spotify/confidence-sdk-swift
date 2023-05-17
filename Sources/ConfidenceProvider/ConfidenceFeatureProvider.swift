@@ -176,38 +176,18 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
         let flag = resolverResult.resolvedValue.flag
         do {
-            if try cache.updateApplyStatus(
-                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)
-            {
-                executeApply(client: client, flag: flag, resolveToken: resolveToken) { success in
-                    do {
-                        if success {
-                            _ = try self.cache.updateApplyStatus(
-                                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
-                        } else {
-                            _ = try self.cache.updateApplyStatus(
-                                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applyFailed)
-                        }
-                    } catch let error {
-                        self.logApplyError(error: error)
-                    }
-                }
-            }
+            executeApply(client: client, flag: flag, resolveToken: resolveToken)
         } catch let error {
             logApplyError(error: error)
         }
     }
 
-    private func executeApply(
-        client: ConfidenceClient, flag: String, resolveToken: String, completion: @escaping (Bool) -> Void
-    ) {
+    private func executeApply(client: ConfidenceClient, flag: String, resolveToken: String) {
         applyQueue.async {
             do {
                 try client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
-                completion(true)
             } catch let error {
                 self.logApplyError(error: error)
-                completion(false)
             }
         }
     }
