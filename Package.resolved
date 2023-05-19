@@ -6,8 +6,8 @@
         "repositoryURL": "git@github.com:spotify/openfeature-swift-sdk.git",
         "state": {
           "branch": null,
-          "revision": "4e28848bb63cf8ebea3b2104790b66474b77f706",
-          "version": "0.2.1"
+          "revision": "239d1017fec404927894c792b6608e4616ed5913",
+          "version": "0.2.2"
         }
       }
     ]

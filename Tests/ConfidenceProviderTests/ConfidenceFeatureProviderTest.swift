@@ -30,7 +30,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertThrowsError(
             try provider.getStringEvaluation(
                 key: "flag.size",
-                defaultValue: "value")
+                defaultValue: "value",
+                context: MutableContext(targetingKey: "user1"))
         ) { error in
             XCTAssertEqual(
                 error as? OpenFeatureError,
@@ -52,7 +53,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user2"))
 
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
@@ -80,7 +82,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
@@ -113,7 +116,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
             .applied)
@@ -151,7 +155,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user2"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user2"))?.resolvedValue.applyStatus,
             .applied)
@@ -187,13 +192,15 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
             .applied)
         _ = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
             .applied)
@@ -231,10 +238,12 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         _ = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
             .applying)
@@ -276,13 +285,15 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
             .applyFailed)
         _ = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 1)
+            defaultValue: 1,
+            context: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(
             try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
             .applied)
@@ -320,7 +331,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.value, 0)
         XCTAssertNil(evaluation.errorCode)
@@ -348,7 +360,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getDoubleEvaluation(
             key: "flag.size",
-            defaultValue: 1.1)
+            defaultValue: 1.1,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.value, 3.1)
         XCTAssertNil(evaluation.errorCode)
@@ -376,7 +389,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getBooleanEvaluation(
             key: "flag.visible",
-            defaultValue: true)
+            defaultValue: true,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.value, false)
         XCTAssertNil(evaluation.errorCode)
@@ -404,7 +418,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
         let evaluation = try provider.getObjectEvaluation(
             key: "flag",
-            defaultValue: .structure(["size": .integer(0)]))
+            defaultValue: .structure(["size": .integer(0)]),
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.value, .structure(["size": .integer(3)]))
         XCTAssertNil(evaluation.errorCode)
@@ -436,7 +451,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 42)
+            defaultValue: 42,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.value, 42)
         XCTAssertNil(evaluation.errorCode)
@@ -459,7 +475,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertThrowsError(
             try provider.getObjectEvaluation(
                 key: "flag",
-                defaultValue: .structure(["size": .integer(0)]))
+                defaultValue: .structure(["size": .integer(0)]),
+                context: MutableContext(targetingKey: "user1"))
         ) { error in
             XCTAssertEqual(
                 error as? OpenFeatureError,
@@ -493,10 +510,11 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertThrowsError(
             try provider.getIntegerEvaluation(
                 key: "flag.size",
-                defaultValue: 3)
+                defaultValue: 3,
+                context: nil)
         ) { error in
             XCTAssertEqual(
-                error as? OpenFeatureError, OpenFeatureError.providerNotReadyError)
+                error as? OpenFeatureError, OpenFeatureError.invalidContextError)
         }
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 0)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
@@ -520,7 +538,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertThrowsError(
             try provider.getStringEvaluation(
                 key: "flag.size",
-                defaultValue: "value")
+                defaultValue: "value",
+                context: MutableContext(targetingKey: "user1"))
         ) { error in
             XCTAssertEqual(
                 error as? OpenFeatureError, OpenFeatureError.parseError(message: "Unable to parse flag value: 3"))
@@ -546,7 +565,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
@@ -572,7 +592,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let sizeEvaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(sizeEvaluation.variant, "treatment")
         XCTAssertEqual(sizeEvaluation.reason, Reason.defaultReason.rawValue)
@@ -580,7 +601,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let colorEvaluation = try provider.getStringEvaluation(
             key: "flag.color",
-            defaultValue: "blue")
+            defaultValue: "blue",
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(colorEvaluation.variant, "control")
         XCTAssertEqual(colorEvaluation.reason, Reason.targetingMatch.rawValue)
@@ -605,7 +627,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let sizeEvaluation1 = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: nil)
 
         XCTAssertEqual(sizeEvaluation1.variant, "treatment")
         XCTAssertEqual(sizeEvaluation1.reason, Reason.defaultReason.rawValue)
@@ -615,7 +638,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let sizeEvaluation2 = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(sizeEvaluation2.variant, "treatment")
         XCTAssertEqual(sizeEvaluation2.reason, Reason.defaultReason.rawValue)
@@ -642,7 +666,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.variant, "treatment")
         XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
@@ -670,7 +695,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
-            defaultValue: 0)
+            defaultValue: 0,
+            context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.variant, "treatment")
         XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
