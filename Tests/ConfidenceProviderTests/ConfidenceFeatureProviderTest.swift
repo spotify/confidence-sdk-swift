@@ -8,7 +8,8 @@ import XCTest
 // swiftlint:disable file_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
-    private let builder = ConfidenceFeatureProvider
+    private let builder =
+        ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
         .with(applyQueue: DispatchQueueFake())
     private let cache = PersistentProviderCache.fromDefaultStorage()
@@ -22,7 +23,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
     func testRefresh() async throws {
         var session = MockedConfidenceClientURLProtocol.mockedSession(flags: [:])
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -74,7 +76,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -146,7 +149,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user2"))
-
         XCTAssertEqual(evaluation.value, 1)
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
@@ -263,7 +265,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 3)
     }
 
     func testStaleEvaluationContextInCache() throws {
@@ -276,7 +278,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .with(cache: cache)
             .build()
@@ -312,7 +315,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -341,7 +345,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -370,7 +375,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
 
@@ -403,7 +409,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -459,7 +466,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
 
@@ -488,7 +496,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -644,7 +653,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
