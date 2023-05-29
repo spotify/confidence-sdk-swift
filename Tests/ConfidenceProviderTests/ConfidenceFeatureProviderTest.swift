@@ -149,7 +149,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user2"))
-
         XCTAssertEqual(evaluation.value, 1)
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
@@ -266,7 +265,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 3)
     }
 
     func testStaleEvaluationContextInCache() throws {

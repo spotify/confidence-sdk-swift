@@ -11,12 +11,12 @@ import os
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
     public var metadata: Metadata = ConfidenceMetadata()
-    private var applyQueue: DispatchQueueType
     private var lock = UnfairLock()
     private var resolver: Resolver
     private var client: ConfidenceClient
     private var cache: ProviderCache
     private var overrides: [String: LocalOverride]
+    private var flagApplier: FlagAppier
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
@@ -26,11 +26,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         overrides: [String: LocalOverride] = [:],
         applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
     ) {
-        self.applyQueue = applyQueue
         self.resolver = resolver
         self.client = client
         self.cache = cache
         self.overrides = overrides
+        self.flagApplier = FlagApplierWithRetries(client: client, applyQueue: applyQueue)
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
@@ -170,10 +170,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
                 reason: Reason.targetingMatch.rawValue)
-            processResultForApply(
-                resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now)
+            processResultForApply(resolverResult: resolverResult)
             return evaluationResult
         } catch ConfidenceError.cachedValueExpired {
             return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
@@ -188,9 +185,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         switch resolverResult.resolvedValue.resolveReason {
         case .noMatch:
             processResultForApply(
-                resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now)
+                resolverResult: resolverResult)
             return ProviderEvaluation(
                 value: defaultValue,
                 variant: nil,
@@ -281,43 +276,15 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func processResultForApply(
-        resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext?,
-        applyTime: Date
+        resolverResult: ResolveResult
     ) {
-        guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken, let ctx = ctx
+        guard let resolveToken = resolverResult.resolveToken
         else {
+            Logger(subsystem: "com.confidence.provider", category: "apply").error(
+                "Error while processing \"apply\": missing resolve token")
             return
         }
-
-        let flag = resolverResult.resolvedValue.flag
-        do {
-            executeApply(client: client, flag: flag, resolveToken: resolveToken)
-        } catch let error {
-            logApplyError(error: error)
-        }
-    }
-
-    private func executeApply(client: ConfidenceClient, flag: String, resolveToken: String) {
-        applyQueue.async {
-            do {
-                try client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
-            } catch let error {
-                self.logApplyError(error: error)
-            }
-        }
-    }
-
-    private func logApplyError(error: Error) {
-        switch error {
-        case ConfidenceError.applyStatusTransitionError, ConfidenceError.cachedValueExpired,
-            ConfidenceError.flagNotFoundInCache:
-            Logger(subsystem: "com.confidence.provider", category: "apply").debug(
-                "Cache data for flag was updated while executing \"apply\", aborting")
-        default:
-            Logger(subsystem: "com.confidence.provider", category: "apply").error(
-                "Error while executing \"apply\": \(error)")
-        }
+        self.flagApplier.apply(flagName: resolverResult.resolvedValue.flag, resolveToken: resolveToken)
     }
 }
 
