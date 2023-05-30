@@ -6,6 +6,8 @@ import os
 ///
 ///
 ///
+// swiftlint:disable type_body_length
+// swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
     public var metadata: Metadata = ConfidenceMetadata()
@@ -14,8 +16,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private var resolver: Resolver
     private var client: ConfidenceClient
     private var cache: ProviderCache
-    private var resolverWrapper: ResolverWrapper
-    private var currentCtx: EvaluationContext?
+    private var overrides: [String: LocalOverride]
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
@@ -29,107 +30,71 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.resolver = resolver
         self.client = client
         self.cache = cache
-        self.resolverWrapper = ResolverWrapper(resolver: resolver, overrides: overrides)
+        self.overrides = overrides
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
         guard let initialContext = initialContext else {
-            self.currentCtx = nil
             return
         }
         processNewContext(context: initialContext)
     }
 
     public func onContextSet(oldContext: OpenFeature.EvaluationContext?, newContext: OpenFeature.EvaluationContext) {
-        guard self.currentCtx?.hash() != newContext.hash() else {
+        guard oldContext?.hash() != newContext.hash() else {
             return
         }
         processNewContext(context: newContext)
     }
 
-    public func getBooleanEvaluation(key: String, defaultValue: Bool) throws
+    public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
         -> OpenFeature.ProviderEvaluation<Bool>
     {
-        let invocationCtx = self.currentCtx
-        let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
+        return try errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: invocationCtx,
+            ctx: context,
             errorPrefix: "Error during boolean evaluation for key \(key)")
-        processResultForApply(
-            evaluationResult: evaluationResult,
-            resolverResult: resolverResult,
-            ctx: invocationCtx,
-            applyTime: Date.backport.now)
-        return evaluationResult
     }
 
-    public func getStringEvaluation(key: String, defaultValue: String) throws
+    public func getStringEvaluation(key: String, defaultValue: String, context: EvaluationContext?) throws
         -> OpenFeature.ProviderEvaluation<String>
     {
-        let invocationCtx = self.currentCtx
-        let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
+        return try errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: invocationCtx,
+            ctx: context,
             errorPrefix: "Error during string evaluation for key \(key)")
-        processResultForApply(
-            evaluationResult: evaluationResult,
-            resolverResult: resolverResult,
-            ctx: invocationCtx,
-            applyTime: Date.backport.now)
-        return evaluationResult
     }
 
-    public func getIntegerEvaluation(key: String, defaultValue: Int64) throws
+    public func getIntegerEvaluation(key: String, defaultValue: Int64, context: EvaluationContext?) throws
         -> OpenFeature.ProviderEvaluation<Int64>
     {
-        let invocationCtx = self.currentCtx
-        let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
+        return try errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: invocationCtx,
+            ctx: context,
             errorPrefix: "Error during integer evaluation for key \(key)")
-        processResultForApply(
-            evaluationResult: evaluationResult,
-            resolverResult: resolverResult,
-            ctx: invocationCtx,
-            applyTime: Date.backport.now)
-        return evaluationResult
     }
 
-    public func getDoubleEvaluation(key: String, defaultValue: Double) throws
+    public func getDoubleEvaluation(key: String, defaultValue: Double, context: EvaluationContext?) throws
         -> OpenFeature.ProviderEvaluation<Double>
     {
-        let invocationCtx = self.currentCtx
-        let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
+        return try errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: invocationCtx,
+            ctx: context,
             errorPrefix: "Error during double evaluation for key \(key)")
-        processResultForApply(
-            evaluationResult: evaluationResult,
-            resolverResult: resolverResult,
-            ctx: invocationCtx,
-            applyTime: Date.backport.now)
-        return evaluationResult
     }
 
-    public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value)
+    public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)
         throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
-        let invocationCtx = self.currentCtx
-        let (evaluationResult, resolverResult) = try resolverWrapper.errorWrappedResolveFlag(
+        return try errorWrappedResolveFlag(
             flag: key,
             defaultValue: defaultValue,
-            ctx: invocationCtx,
+            ctx: context,
             errorPrefix: "Error during object evaluation for key \(key)")
-        processResultForApply(
-            evaluationResult: evaluationResult,
-            resolverResult: resolverResult,
-            ctx: invocationCtx,
-            applyTime: Date.backport.now)
-        return evaluationResult
     }
 
     /// Allows you to override directly on the provider. See `overrides` on ``Builder`` for more information.
@@ -141,14 +106,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func overrides(_ overrides: LocalOverride...) {
         lock.locked {
             overrides.forEach { localOverride in
-                resolverWrapper.overrides[localOverride.key()] = localOverride
+                self.overrides[localOverride.key()] = localOverride
             }
         }
     }
 
     private func processNewContext(context: OpenFeature.EvaluationContext) {
-        self.currentCtx = context
-        // Racy: local ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
+        // Racy: eval ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
         do {
             let resolveResult = try client.resolve(ctx: context)
             guard let resolveToken = resolveResult.resolveToken else {
@@ -162,14 +126,131 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func processResultForApply<T>(
-        evaluationResult: ProviderEvaluation<T>,
+    public func errorWrappedResolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?, errorPrefix: String)
+        throws -> ProviderEvaluation<T>
+    {
+        do {
+            return try resolveFlag(flag: flag, defaultValue: defaultValue, ctx: ctx)
+        } catch let error {
+            if error is OpenFeatureError {
+                throw error
+            } else {
+                throw OpenFeatureError.generalError(message: "\(errorPrefix): \(error)")
+            }
+        }
+    }
+
+    private func resolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?) throws -> ProviderEvaluation<T>
+    {
+        let path = try FlagPath.getPath(for: flag)
+
+        if let overrideValue: (value: T, variant: String?) = getOverride(path: path) {
+            return ProviderEvaluation(
+                value: overrideValue.value,
+                variant: overrideValue.variant,
+                reason: Reason.defaultReason.rawValue)
+        }
+
+        guard let ctx = ctx else {
+            throw OpenFeatureError.invalidContextError
+        }
+
+        do {
+            let resolverResult = try self.resolver.resolve(flag: path.flag, ctx: ctx)
+            guard let value = resolverResult.resolvedValue.value else {
+                // Sending "apply" is still expected in case of no value from backend (no target match)
+                processResultForApply(
+                    resolverResult: resolverResult,
+                    ctx: ctx,
+                    applyTime: Date.backport.now)
+                return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.defaultReason.rawValue)
+            }
+
+            let pathValue: Value = try getValue(path: path.path, value: value)
+            guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
+                throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
+            }
+
+            let evaluationResult = ProviderEvaluation(
+                value: typedValue,
+                variant: resolverResult.resolvedValue.variant,
+                reason: Reason.targetingMatch.rawValue)
+            processResultForApply(
+                resolverResult: resolverResult,
+                ctx: ctx,
+                applyTime: Date.backport.now)
+            return evaluationResult
+        } catch ConfidenceError.flagIsArchived {
+            return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.disabled.rawValue)
+        } catch ConfidenceError.cachedValueExpired {
+            return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
+        } catch {
+            throw error
+        }
+    }
+
+    private func getValue(path: [String], value: Value) throws -> Value {
+        if path.isEmpty {
+            guard case .structure = value else {
+                throw OpenFeatureError.parseError(
+                    message: "Flag path must contain path to the field for non-object values")
+            }
+        }
+
+        var pathValue = value
+        if !path.isEmpty {
+            pathValue = try getValueForPath(path: path, value: value)
+        }
+
+        return pathValue
+    }
+
+    private func getValueForPath(path: [String], value: Value) throws -> Value {
+        var curValue = value
+        for field in path {
+            guard case .structure(let values) = curValue, let newValue = values[field] else {
+                throw OpenFeatureError.generalError(message: "Unable to find key '\(field)'")
+            }
+
+            curValue = newValue
+        }
+
+        return curValue
+    }
+
+    private func getOverride<T>(path: FlagPath) -> (value: T, variant: String?)? {
+        let fieldPath = "\(path.flag).\(path.path.joined(separator: "."))"
+
+        guard let overrideValue = self.overrides[fieldPath] ?? self.overrides[path.flag] else {
+            return nil
+        }
+
+        switch overrideValue {
+        case let .flag(_, variant, value):
+            guard let pathValue = try? getValue(path: path.path, value: .structure(value)) else {
+                return nil
+            }
+            guard let typedValue: T = pathValue.getTyped() else {
+                return nil
+            }
+
+            return (typedValue, variant)
+
+        case let .field(_, variant, value):
+            guard let typedValue: T = value.getTyped() else {
+                return nil
+            }
+
+            return (typedValue, variant)
+        }
+    }
+
+    private func processResultForApply(
         resolverResult: ResolveResult?,
         ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
-        guard evaluationResult.errorCode == nil, let resolverResult = resolverResult,
-            let resolveToken = resolverResult.resolveToken, let ctx = ctx
+        guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken, let ctx = ctx
         else {
             return
         }
