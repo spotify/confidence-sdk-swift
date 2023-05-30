@@ -3,7 +3,11 @@ import Foundation
 public class DefaultStorage: Storage {
     private let storageQueue = DispatchQueue(label: "com.confidence.storage")
     public let resolverCacheBundleId = "com.confidence.cache"
-    public let resolverCacheFilename = "resolver.cache"
+    private let resolverCacheFilename: String
+
+    init(resolverCacheFilename: String) {
+        self.resolverCacheFilename = resolverCacheFilename
+    }
 
     public func save(data: Encodable) throws {
         try storageQueue.sync {

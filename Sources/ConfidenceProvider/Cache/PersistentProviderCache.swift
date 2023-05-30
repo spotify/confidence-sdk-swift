@@ -69,7 +69,7 @@ public class PersistentProviderCache: ProviderCache {
     }
 
     public static func fromDefaultStorage() -> PersistentProviderCache {
-        return from(storage: DefaultStorage())
+        return from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
     }
 
     public static func from(storage: Storage) -> PersistentProviderCache {

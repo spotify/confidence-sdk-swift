@@ -11,7 +11,7 @@ class PersistentProviderCacheTest: XCTestCase {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }
-    var storage = DefaultStorage()
+    var storage = DefaultStorage(resolverCacheFilename: "resolver.flags.cache")
 
     override func setUp() {
         try? cache?.clear()
