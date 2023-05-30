@@ -12,10 +12,12 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
         .with(applyQueue: DispatchQueueFake())
-    private let cache = PersistentProviderCache.fromDefaultStorage()
+    private let cache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
+    private let applyStorage = DefaultStorage.init(resolverCacheFilename: "test")
 
     override func setUp() {
         try? cache.clear()
+        try? applyStorage.clear()
         MockedConfidenceClientURLProtocol.reset()
 
         super.setUp()
@@ -26,6 +28,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -79,6 +82,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -110,6 +114,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -141,6 +146,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(applyStorage: applyStorage)
             .build()
 
         let ctx = MutableContext(targetingKey: "user2")
@@ -172,6 +178,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -203,12 +210,14 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let expectation = XCTestExpectation(description: "applied complete")
+        expectation.expectedFulfillmentCount = 3
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider =
             builder
             .with(session: session)
             .with(cache: cache)
             .with(applyQueue: DispatchQueueFakeSlow(expectation: expectation))
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -229,7 +238,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         wait(for: [expectation], timeout: 2.0)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 3)
     }
 
     func testResolveAndApplyIntegerFlagError() throws {
@@ -247,6 +256,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -282,6 +292,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -318,6 +329,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -348,6 +360,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -378,6 +391,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
 
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -412,6 +426,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -435,6 +450,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -469,6 +485,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
 
         // Note no context has been set via initialize or onContextSet
@@ -499,6 +516,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -527,6 +545,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .overrides(.flag(name: "flag", variant: "control", value: ["size": .integer(4)]))
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -554,6 +573,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -590,6 +610,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
+            .with(applyStorage: applyStorage)
             .build()
 
         let sizeEvaluation1 = try provider.getIntegerEvaluation(
@@ -628,6 +649,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider = builder.with(session: session)
             .overrides(.field(path: "flag.size", variant: "control", value: .integer(4)))
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(5)))
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -656,6 +678,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 

@@ -2,7 +2,7 @@ import Foundation
 
 public class DefaultStorage: Storage {
     private let storageQueue = DispatchQueue(label: "com.confidence.storage")
-    public let resolverCacheBundleId = "com.confidence.cache"
+    private let resolverCacheBundleId = "com.confidence.cache"
     private let resolverCacheFilename: String
 
     init(resolverCacheFilename: String) {
