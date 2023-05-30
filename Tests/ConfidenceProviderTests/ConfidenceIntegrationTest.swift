@@ -7,6 +7,7 @@ import XCTest
 class Confidence: XCTestCase {
     let clientToken = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
     let resolveFlag = setResolveFlag()
+    let cache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
 
     private static func setResolveFlag() -> String {
         if let flag = ProcessInfo.processInfo.environment["TEST_FLAG_NAME"], !flag.isEmpty {
@@ -16,7 +17,7 @@ class Confidence: XCTestCase {
     }
 
     override func setUp() async throws {
-        try? PersistentProviderCache.fromDefaultStorage().clear()
+        try cache.clear()
         OpenFeatureAPI.shared.clearProvider()
         await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: MutableContext())
 
@@ -59,8 +60,6 @@ class Confidence: XCTestCase {
             throw TestError.missingClientToken
         }
 
-        let cache = PersistentProviderCache.fromDefaultStorage()
-
         let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
@@ -91,8 +90,6 @@ class Confidence: XCTestCase {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
-
-        let cache = PersistentProviderCache.fromDefaultStorage()
 
         let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)

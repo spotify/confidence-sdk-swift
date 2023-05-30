@@ -24,13 +24,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         client: RemoteConfidenceClient,
         cache: ProviderCache,
         overrides: [String: LocalOverride] = [:],
-        applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
+        applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
+        applyStorage: Storage
     ) {
         self.resolver = resolver
         self.client = client
         self.cache = cache
         self.overrides = overrides
-        self.flagApplier = FlagApplierWithRetries(client: client, applyQueue: applyQueue)
+        self.flagApplier = FlagApplierWithRetries(client: client, applyQueue: applyQueue, storage: applyStorage)
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
@@ -294,7 +295,8 @@ extension ConfidenceFeatureProvider {
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
         var applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
-        var cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+        var cache: ProviderCache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
+        var applyStorage: Storage = DefaultStorage(resolverCacheFilename: "resolver.apply.cache")
 
         /// Initializes the builder with the given credentails.
         ///
@@ -310,13 +312,15 @@ extension ConfidenceFeatureProvider {
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
             applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
-            cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+            cache: ProviderCache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache")),
+            applyStorage: Storage
         ) {
             self.options = options
             self.session = session
             self.localOverrides = localOverrides
             self.applyQueue = applyQueue
             self.cache = cache
+            self.applyStorage = applyStorage
         }
 
         /// Allows the `ConfidenceClient` to be configured with a custom URLSession, useful for
@@ -330,7 +334,8 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 applyQueue: applyQueue,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage)
         }
 
         /// Inject custom queue for Apply request operations, useful for testing
@@ -343,7 +348,8 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 applyQueue: applyQueue,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage)
         }
 
         /// Inject custom cache, useful for testing
@@ -356,7 +362,18 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 applyQueue: applyQueue,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage)
+        }
+
+        public func with(applyStorage: Storage) -> Builder {
+            return Builder(
+                options: options,
+                session: session,
+                localOverrides: localOverrides,
+                applyQueue: applyQueue,
+                cache: cache,
+                applyStorage: applyStorage)
         }
 
         /// Locally overrides resolves for specific flags or even fields within a flag. Field-level overrides are
@@ -386,7 +403,8 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: self.localOverrides.merging(localOverrides) { _, new in new },
                 applyQueue: applyQueue,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage)
         }
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
@@ -394,7 +412,7 @@ extension ConfidenceFeatureProvider {
             let client = RemoteConfidenceClient(options: options, session: self.session, applyOnResolve: false)
             let resolver = LocalStorageResolver(cache: cache)
             return ConfidenceFeatureProvider(
-                resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue)
+                resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue, applyStorage: applyStorage)
         }
     }
 }
