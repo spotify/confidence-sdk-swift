@@ -1,14 +1,14 @@
 import Foundation
 
 public class DefaultStorage: Storage {
-    private static let storageQueue = DispatchQueue(label: "com.confidence.storage")
-    public static let resolverCacheBundleId = "com.confidence.cache"
-    public static let resolverCacheFilename = "resolver.cache"
+    private let storageQueue = DispatchQueue(label: "com.confidence.storage")
+    public let resolverCacheBundleId = "com.confidence.cache"
+    public let resolverCacheFilename = "resolver.cache"
 
     public func save(data: Encodable) throws {
-        try DefaultStorage.storageQueue.sync {
+        try storageQueue.sync {
             let encoded = try JSONEncoder().encode(data)
-            let configUrl = try DefaultStorage.getConfigUrl()
+            let configUrl = try getConfigUrl()
 
             if !FileManager.default.fileExists(atPath: configUrl.backport.path) {
                 try FileManager.default.createDirectory(
@@ -24,8 +24,8 @@ public class DefaultStorage: Storage {
     }
 
     public func load<T>(_ type: T.Type, defaultValue: T) throws -> T where T: Decodable {
-        try DefaultStorage.storageQueue.sync {
-            let configUrl = try DefaultStorage.getConfigUrl()
+        try storageQueue.sync {
+            let configUrl = try getConfigUrl()
             guard FileManager.default.fileExists(atPath: configUrl.backport.path) else {
                 return defaultValue
             }
@@ -47,8 +47,8 @@ public class DefaultStorage: Storage {
     }
 
     public func clear() throws {
-        try DefaultStorage.storageQueue.sync {
-            let configUrl = try DefaultStorage.getConfigUrl()
+        try storageQueue.sync {
+            let configUrl = try getConfigUrl()
             if !FileManager.default.fileExists(atPath: configUrl.backport.path) {
                 return
             }
@@ -61,7 +61,7 @@ public class DefaultStorage: Storage {
         }
     }
 
-    static func getConfigUrl() throws -> URL {
+    func getConfigUrl() throws -> URL {
         guard
             let applicationSupportUrl = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
                 .last

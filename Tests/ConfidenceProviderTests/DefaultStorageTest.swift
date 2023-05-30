@@ -6,7 +6,7 @@ import XCTest
 
 class DefaultStorageTest: XCTestCase {
     func testGetConfigUrl() throws {
-        let url = try DefaultStorage.getConfigUrl()
+        let url = try DefaultStorage().getConfigUrl()
 
         let numComponents = url.pathComponents.count
 
@@ -31,7 +31,7 @@ class DefaultStorageTest: XCTestCase {
     }
 
     func testLoadNonExistingFileReturnsDefault() throws {
-        let url = try DefaultStorage.getConfigUrl()
+        let url = try DefaultStorage().getConfigUrl()
         if FileManager.default.fileExists(atPath: url.backport.path) {
             try FileManager.default.removeItem(atPath: url.backport.path)
         }
