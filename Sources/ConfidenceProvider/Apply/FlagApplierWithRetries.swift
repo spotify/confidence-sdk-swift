@@ -10,6 +10,7 @@ public class FlagApplierWithRetries: FlagAppier {
     init(client: ConfidenceClient, applyQueue: DispatchQueueType) {
         self.client = client
         self.applyQueue = applyQueue
+        readFile()
     }
 
     public func apply(flagName: String, resolveToken: String) {
@@ -26,7 +27,9 @@ public class FlagApplierWithRetries: FlagAppier {
                     let eventEntry = [UUID(): applyTime]
                     self.cache.data[resolveToken] = FlagEvents(data: [flagName: eventEntry])
                 }
+                self.writeToFile()
             }
+            // TODO Revisit when to call triggerBatch
             self.triggerBatch()
         }
     }
@@ -56,8 +59,16 @@ public class FlagApplierWithRetries: FlagAppier {
     }
 
     struct FlagEvents: Codable {
-        // flagName -> [event]
+        // flagName -> [event time]
         var data: [String: [UUID: Date]]
+    }
+
+    private func writeToFile() {
+        // TODO
+    }
+
+    private func readFile() {
+        // TODO
     }
 
     private func logApplyError(error: Error) {

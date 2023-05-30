@@ -11,6 +11,7 @@ class PersistentProviderCacheTest: XCTestCase {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }
+    var storage = DefaultStorage()
 
     override func setUp() {
         try? cache?.clear()
@@ -50,12 +51,12 @@ class PersistentProviderCacheTest: XCTestCase {
             flag: "flag2",
             resolveReason: .match)
 
-        XCTAssertFalse(try FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path))
+        XCTAssertFalse(try FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path))
 
         try cache?.clearAndSetValues(values: [value1, value2], ctx: ctx, resolveToken: resolveToken)
 
         expectToEventually(
-            (try? FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path)) ?? false)
+            (try? FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path)) ?? false)
 
         let newCache = PersistentProviderCache.fromDefaultStorage()
         let cachedValue1 = try newCache.getValue(flag: flag1, ctx: ctx)
