@@ -4,6 +4,7 @@ import os
 public class FlagApplierWithRetries: FlagAppier {
     private var cache = CacheData(data: [:])
     private var rwCacheQueue = DispatchQueue(label: "com.confidence.apply.cache.rw", attributes: .concurrent)
+    private var rwFileQueue = DispatchQueue(label: "com.confidence.apply.file.rw", attributes: .concurrent)
     private var client: ConfidenceClient
     private let applyQueue: DispatchQueueType
     private let storage: Storage
@@ -12,7 +13,9 @@ public class FlagApplierWithRetries: FlagAppier {
         self.client = client
         self.applyQueue = applyQueue
         self.storage = storage
-        readFile()
+        rwFileQueue.async(flags: .barrier) {
+            self.readFile()
+        }
     }
 
     public func apply(flagName: String, resolveToken: String) {
@@ -29,26 +32,32 @@ public class FlagApplierWithRetries: FlagAppier {
                 self.cache.data[resolveToken] = FlagEvents(data: [flagName: eventEntry])
             }
         }
-        // Serial writes, but blockingo
-        self.writeToFile()
-        // TODO Revisit when to call triggerBatch
+        rwFileQueue.async(flags: .barrier) {
+            self.writeToFile()
+        }
         self.triggerBatch()
     }
 
+    // TODO Define the logic on when / how often to call this function
+    // This function should never introduce bad state and any type of error is recoverable on the next try
     private func triggerBatch() {
         do {
-            // TODO Batch
+            // TODO Batch apply events
             self.cache.data.forEach { resolveEntry in
                 resolveEntry.value.data.forEach { flagEntry in
                     flagEntry.value.forEach { timeEntry in
-                        executeApply(flag: flagEntry.key, resolveToken: resolveEntry.key, applyTime: timeEntry.value) { success in
+                        executeApply(
+                            flag: flagEntry.key,
+                            resolveToken: resolveEntry.key,
+                            applyTime: timeEntry.value
+                        ) { success in
                             if success {
                                 self.rwCacheQueue.async(flags: .barrier) {
                                     self.cache.data[resolveEntry.key]?.data[flagEntry.key]?.removeValue(
                                         forKey: timeEntry.key)
                                 }
                             } else {
-                                // TODO
+                                // "triggerBatch" should not introduce bad state in case of any failure, will retry later
                             }
                         }
                     }
@@ -71,6 +80,23 @@ public class FlagApplierWithRetries: FlagAppier {
         }
     }
 
+    private func writeToFile() {
+        do {
+            try self.storage.save(data: self.cache)
+        } catch {
+            // Best effort writing to storage, nothing to do here
+        }
+    }
+
+    private func readFile() {
+        do {
+            // TODO DON'T REPLACE MEM CACHE, ONLY ADD VALUES READ FROM PERSISTENCE
+            self.cache = try storage.load(CacheData.self, defaultValue: CacheData(data: [:]))
+        } catch {
+            // TODO We shouldn't delete the cache if the read error is transient
+        }
+    }
+
     struct CacheData: Codable {
         // resolveToken -> data
         var data: [String: FlagEvents]
@@ -79,22 +105,6 @@ public class FlagApplierWithRetries: FlagAppier {
     struct FlagEvents: Codable {
         // flagName -> [event time]
         var data: [String: [UUID: Date]]
-    }
-
-    private func writeToFile() {
-        self.rwCacheQueue.async(flags: .barrier) {
-            do {
-                try self.storage.save(data: self.cache)
-            } catch {
-                // TODO
-            }
-        }
-    }
-
-    private func readFile() {
-        do {
-            self.cache = try storage.load(CacheData.self, defaultValue: CacheData(data: [:]))
-        } catch {}
     }
 
     private func logApplyError(error: Error) {

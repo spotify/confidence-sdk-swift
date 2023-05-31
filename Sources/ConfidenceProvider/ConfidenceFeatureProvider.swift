@@ -6,7 +6,7 @@ import os
 ///
 ///
 ///
-// swiftlint:disable type_body_length
+// swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
     public var metadata: Metadata = ConfidenceMetadata()
