@@ -90,8 +90,25 @@ public class FlagApplierWithRetries: FlagAppier {
 
     private func readFile() {
         do {
-            // TODO DON'T REPLACE MEM CACHE, ONLY ADD VALUES READ FROM PERSISTENCE
-            self.cache = try storage.load(CacheData.self, defaultValue: CacheData(data: [:]))
+            let readCache = try storage.load(CacheData.self, defaultValue: CacheData(data: [:]))
+            readCache.data.forEach { resolveToken, flags in
+                flags.data.forEach { flagName, events in
+                    events.forEach { id, applyTime in
+                        self.rwCacheQueue.sync(flags: .barrier) {
+                            if let resolveTokenData = self.cache.data[resolveToken] {
+                                if resolveTokenData.data[flagName] != nil {
+                                    self.cache.data[resolveToken]?.data[flagName]?[id] = applyTime
+                                } else {
+                                    self.cache.data[resolveToken]?.data[flagName] = [id: applyTime]
+                                }
+                            } else {
+                                let eventEntry = [id: applyTime]
+                                self.cache.data[resolveToken] = FlagEvents(data: [flagName: eventEntry])
+                            }
+                        }
+                    }
+                }
+            }
         } catch {
             // TODO We shouldn't delete the cache if the read error is transient
         }
