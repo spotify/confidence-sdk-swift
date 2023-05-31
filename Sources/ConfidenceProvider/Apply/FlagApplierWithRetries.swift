@@ -52,9 +52,12 @@ public class FlagApplierWithRetries: FlagAppier {
                             applyTime: timeEntry.value
                         ) { success in
                             if success {
-                                self.rwCacheQueue.async(flags: .barrier) {
+                                _ = self.rwCacheQueue.sync(flags: .barrier) {
                                     self.cache.data[resolveEntry.key]?.data[flagEntry.key]?.removeValue(
                                         forKey: timeEntry.key)
+                                }
+                                self.rwFileQueue.async(flags: .barrier) {
+                                    self.writeToFile()
                                 }
                             } else {
                                 // "triggerBatch" should not introduce bad state in case of any failure, will retry later
@@ -82,7 +85,14 @@ public class FlagApplierWithRetries: FlagAppier {
 
     private func writeToFile() {
         do {
-            try self.storage.save(data: self.cache)
+            let data = self.rwCacheQueue.sync {
+                return self.cache.data.filter { _, entries in
+                    !entries.data.values.allSatisfy { events in
+                        events.isEmpty
+                    }
+                }
+            }
+            try self.storage.save(data: data)
         } catch {
             // Best effort writing to storage, nothing to do here
         }
