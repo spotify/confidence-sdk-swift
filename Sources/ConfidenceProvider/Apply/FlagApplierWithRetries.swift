@@ -8,13 +8,21 @@ public class FlagApplierWithRetries: FlagAppier {
     private var client: ConfidenceClient
     private let applyQueue: DispatchQueueType
     private let storage: Storage
+    private let fileDG: DispatchGroup
 
-    init(client: ConfidenceClient, applyQueue: DispatchQueueType, storage: Storage) {
+    convenience init(client: ConfidenceClient, applyQueue: DispatchQueueType, storage: Storage) {
+        self.init(client: client, applyQueue: applyQueue, storage: storage, fileDG: DispatchGroup())
+    }
+
+    init(client: ConfidenceClient, applyQueue: DispatchQueueType, storage: Storage, fileDG: DispatchGroup) {
         self.client = client
         self.applyQueue = applyQueue
         self.storage = storage
+        self.fileDG = fileDG
         rwFileQueue.async(flags: .barrier) {
+            self.fileDG.enter()
             self.readFile()
+            self.fileDG.leave()
         }
     }
 
@@ -33,7 +41,9 @@ public class FlagApplierWithRetries: FlagAppier {
             }
         }
         rwFileQueue.async(flags: .barrier) {
+            self.fileDG.enter()
             self.writeToFile()
+            self.fileDG.leave()
         }
         self.triggerBatch()
     }
@@ -57,7 +67,9 @@ public class FlagApplierWithRetries: FlagAppier {
                                         forKey: timeEntry.key)
                                 }
                                 self.rwFileQueue.async(flags: .barrier) {
+                                    self.fileDG.enter()
                                     self.writeToFile()
+                                    self.fileDG.leave()
                                 }
                             } else {
                                 // "triggerBatch" should not introduce bad state in case of any failure, will retry later
@@ -92,7 +104,7 @@ public class FlagApplierWithRetries: FlagAppier {
                     }
                 }
             }
-            try self.storage.save(data: data)
+            try self.storage.save(data: CacheData(data: data))
         } catch {
             // Best effort writing to storage, nothing to do here
         }

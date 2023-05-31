@@ -238,7 +238,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        wait(for: [expectation], timeout: 2.0)
+        wait(for: [expectation], timeout: 5.0)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 3)
     }
@@ -712,7 +712,7 @@ final class DispatchQueueFakeSlow: DispatchQueueType {
     }
     func async(execute work: @escaping @convention(block) () -> Void) {
         Task {
-            try await Task.sleep(for: Duration.seconds(1))
+            try await Task.sleep(for: Duration.seconds(2))
             work()
             expectation.fulfill()
         }
