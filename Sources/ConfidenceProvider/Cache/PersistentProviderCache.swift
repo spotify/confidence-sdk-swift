@@ -4,7 +4,7 @@ import OpenFeature
 import os
 
 public class PersistentProviderCache: ProviderCache {
-    private var rwCacheQueue = DispatchQueue(label: "com.confidence.flag.cache.rw", attributes: .concurrent)
+    private var rwCacheQueue = DispatchQueue(label: "com.confidence.flags.cache.rw", attributes: .concurrent)
     private var persistQueue = DispatchQueue(label: "com.confidence.cache.persist")
     private static let currentVersion = "0.0.1"
 

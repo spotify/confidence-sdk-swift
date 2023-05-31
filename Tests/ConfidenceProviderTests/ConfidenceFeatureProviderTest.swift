@@ -12,8 +12,9 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
         .with(applyQueue: DispatchQueueFake())
-    private let cache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
-    private let applyStorage = DefaultStorage.init(resolverCacheFilename: "test")
+    private let cache = PersistentProviderCache.from(
+        storage: DefaultStorage(resolverCacheFilename: "test.cache1"))
+    private let applyStorage = DefaultStorage(resolverCacheFilename: "test.cache2")
 
     override func setUp() {
         try? cache.clear()

@@ -7,7 +7,6 @@ import os
 ///
 ///
 // swiftlint:disable type_body_length
-// swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
     public var metadata: Metadata = ConfidenceMetadata()
@@ -294,8 +293,9 @@ extension ConfidenceFeatureProvider {
         var options: RemoteConfidenceClient.ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
+        var cache: ProviderCache = PersistentProviderCache.from(
+            storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
         var applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
-        var cache: ProviderCache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
         var applyStorage: Storage = DefaultStorage(resolverCacheFilename: "resolver.apply.cache")
 
         /// Initializes the builder with the given credentails.
@@ -310,9 +310,9 @@ extension ConfidenceFeatureProvider {
         init(
             options: RemoteConfidenceClient.ConfidenceClientOptions,
             session: URLSession? = nil,
-            localOverrides: [String: LocalOverride] = [:],
-            applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
-            cache: ProviderCache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache")),
+            localOverrides: [String: LocalOverride],
+            cache: ProviderCache,
+            applyQueue: DispatchQueueType,
             applyStorage: Storage
         ) {
             self.options = options
@@ -333,8 +333,8 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
                 cache: cache,
+                applyQueue: applyQueue,
                 applyStorage: applyStorage)
         }
 
@@ -347,8 +347,8 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
                 cache: cache,
+                applyQueue: applyQueue,
                 applyStorage: applyStorage)
         }
 
@@ -361,18 +361,22 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
                 cache: cache,
+                applyQueue: applyQueue,
                 applyStorage: applyStorage)
         }
 
+        /// Inject custom storage for apply events, useful for testing
+        ///
+        /// - Parameters:
+        ///      - storage: apply storage for the provider to use.
         public func with(applyStorage: Storage) -> Builder {
             return Builder(
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
                 cache: cache,
+                applyQueue: applyQueue,
                 applyStorage: applyStorage)
         }
 
@@ -402,8 +406,8 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: self.localOverrides.merging(localOverrides) { _, new in new },
-                applyQueue: applyQueue,
                 cache: cache,
+                applyQueue: applyQueue,
                 applyStorage: applyStorage)
         }
 
@@ -412,7 +416,12 @@ extension ConfidenceFeatureProvider {
             let client = RemoteConfidenceClient(options: options, session: self.session, applyOnResolve: false)
             let resolver = LocalStorageResolver(cache: cache)
             return ConfidenceFeatureProvider(
-                resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue, applyStorage: applyStorage)
+                resolver: resolver,
+                client: client,
+                cache: cache,
+                overrides: localOverrides,
+                applyQueue: applyQueue,
+                applyStorage: applyStorage)
         }
     }
 }
