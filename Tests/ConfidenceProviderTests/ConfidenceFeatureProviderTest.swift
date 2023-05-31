@@ -83,6 +83,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(cache: cache)
             .with(applyStorage: applyStorage)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
