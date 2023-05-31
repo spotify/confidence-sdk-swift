@@ -16,7 +16,7 @@ public class FlagApplierWithRetries: FlagAppier {
     }
 
     public func apply(flagName: String, resolveToken: String) {
-            let applyTime = Date.backport.now
+        let applyTime = Date.backport.now
         self.rwCacheQueue.sync(flags: .barrier) {
             if let resolveTokenData = self.cache.data[resolveToken] {
                 if resolveTokenData.data[flagName] != nil {
@@ -44,7 +44,8 @@ public class FlagApplierWithRetries: FlagAppier {
                         executeApply(flag: flagEntry.key, resolveToken: resolveEntry.key, applyTime: timeEntry.value) { success in
                             if success {
                                 self.rwCacheQueue.async(flags: .barrier) {
-                                    self.cache.data[resolveEntry.key]?.data[flagEntry.key]?.removeValue(forKey: timeEntry.key)
+                                    self.cache.data[resolveEntry.key]?.data[flagEntry.key]?.removeValue(
+                                        forKey: timeEntry.key)
                                 }
                             } else {
                                 // TODO

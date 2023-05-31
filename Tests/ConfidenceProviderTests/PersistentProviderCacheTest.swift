@@ -5,7 +5,8 @@ import XCTest
 @testable import ConfidenceProvider
 
 class PersistentProviderCacheTest: XCTestCase {
-    var cache: PersistentProviderCache? = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
+    var cache: PersistentProviderCache? = PersistentProviderCache.from(
+        storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
     var formatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -55,7 +56,8 @@ class PersistentProviderCacheTest: XCTestCase {
         expectToEventually(
             (try? FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path)) ?? false)
 
-        let newCache = PersistentProviderCache.from(storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
+        let newCache = PersistentProviderCache.from(
+            storage: DefaultStorage(resolverCacheFilename: "resolver.flags.cache"))
         let cachedValue1 = try newCache.getValue(flag: flag1, ctx: ctx)
         let cachedValue2 = try newCache.getValue(flag: flag2, ctx: ctx)
         XCTAssertEqual(cachedValue1?.resolvedValue, value1)
