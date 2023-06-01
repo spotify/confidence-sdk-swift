@@ -567,7 +567,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(evaluation.value, 4)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
@@ -594,7 +594,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(sizeEvaluation.variant, "treatment")
-        XCTAssertEqual(sizeEvaluation.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(sizeEvaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(sizeEvaluation.value, 4)
 
         let colorEvaluation = try provider.getStringEvaluation(
@@ -629,7 +629,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             context: nil)
 
         XCTAssertEqual(sizeEvaluation1.variant, "treatment")
-        XCTAssertEqual(sizeEvaluation1.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(sizeEvaluation1.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(sizeEvaluation1.value, 4)
 
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -640,7 +640,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(sizeEvaluation2.variant, "treatment")
-        XCTAssertEqual(sizeEvaluation2.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(sizeEvaluation2.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(sizeEvaluation2.value, 4)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
@@ -668,7 +668,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.variant, "treatment")
-        XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(evaluation.value, 5)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
@@ -697,7 +697,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             context: MutableContext(targetingKey: "user1"))
 
         XCTAssertEqual(evaluation.variant, "treatment")
-        XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
+        XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(evaluation.value, 5)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
     }

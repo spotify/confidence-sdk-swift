@@ -148,7 +148,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return ProviderEvaluation(
                 value: overrideValue.value,
                 variant: overrideValue.variant,
-                reason: Reason.defaultReason.rawValue)
+                reason: Reason.staticReason.rawValue)
         }
 
         guard let ctx = ctx else {
