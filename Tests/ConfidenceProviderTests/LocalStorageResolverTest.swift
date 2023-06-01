@@ -27,7 +27,7 @@ class LocalStorageResolverTest: XCTestCase {
             try resolver.resolve(flag: "test", ctx: ctx)
         ) { error in
             XCTAssertEqual(
-                error as? ConfidenceError, ConfidenceError.flagNotFoundInCache)
+                error as? OpenFeatureError, OpenFeatureError.flagNotFoundError(key: "test"))
         }
     }
 }
