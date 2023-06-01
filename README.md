@@ -2,13 +2,24 @@
 
 Swift implementation of the Confidence feature provider, to be used in conjunction with the OpenFeature SDK.
 
-## Usage
+## Dependency Setup
 
-### Adding the package dependency
+### Xcode Dependencies
 
-If you manage dependencies through Xcode go to "Add package" and enter `git@github.com:spotify/confidence-openfeature-provider-swift.git`.
+First, ensure you have your GitHub account added as an option. You will need to create a 
+[Personal Access Token](https://github.com/settings/tokens) with the permissions defined in the Xcode interface.
 
-If you manage dependencies through SPM, in the dependencies section of Package.swift add:
+You then have two options.
+
+1. Search for `git@github.com:spotify/confidence-openfeature-provider-swift.git` and add it as a remote repository.
+2. Clone the repository and use the "Add Local..." button to select the local folder.
+
+Note: Option 2 is only recommended if you are making changes to the provider, you will also need to add
+the relevant OpenFeature SDK manually.
+
+### Swift Package Manager
+
+In the dependencies section of Package.swift add:
 ```swift
 .package(url: "git@github.com:spotify/confidence-openfeature-provider-swift.git", from: "0.1.0")
 ```
@@ -18,25 +29,46 @@ and in the target dependencies section add:
 .product(name: "ConfidenceProvider", package: "openfeature-swift-provider"),
 ```
 
-### Enabling the provider, setting the evaluation context and resolving flags
+## Usage
+
+### Import Modules
+
+Import the `ConfidenceProvider` and `OpenFeature` modules
 
 ```swift
 import ConfidenceProvider
 import OpenFeature
+```
 
-let provider = ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
-    .build()
+### Create and Apply the Provider
+
+```swift
+let provider = ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret")).build()
 await OpenFeatureAPI.shared.setProvider(provider: provider)
 let client = OpenFeatureAPI.shared.getClient()
+```
 
+### Create and Apply the Context
+
+```swift
 let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
 await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+```
+
+### Request a flag / value
+
+The `client` is used to retrieve values for the current user / context. For example, retrieving a boolean value for the
+flag `flag.my-boolean`:
+
+```swift
 let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false)
 ```
 
 Notes:
-- If a flag can't be resolved from cache, the provider doesn't automatically resort to calling remote: refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI
-- It's advised not to perform resolves while `setProvider` and `setEvaluationContext` are running: resolves might return the default value with reason `STALE` during such operations. 
+- If a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. 
+Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI
+- It's advised not to perform resolves while `setProvider` and `setEvaluationContext` are running: 
+resolves might return the default value with reason `STALE` during such operations. 
 
 ### Local overrides
 
@@ -48,7 +80,7 @@ Assume that you have a flag `button` with the schema:
 }
 ```
 
-then you can locally override the size property by
+Then you can locally override the size property by
 
 ```swift
 OpenFeatureAPI.shared.provider =
@@ -65,7 +97,8 @@ Open the project in Xcode and build by Product -> Build.
 
 ### Linting code
 
-Code is automatically linted during build in Xcode, if you need to manually lint:
+Code is automatically linted during a build in Xcode. If you need to manually lint:
+
 ```shell
 brew install swiftlint
 swiftlint
@@ -74,14 +107,19 @@ swiftlint
 ### Formatting code
 
 You can automatically format your code using:
+
 ```shell
 ./scripts/swift-format
 ```
 
 ### Running tests
 
-IT tests require a Confidence client token to reach remote servers. The token can be created on the Confidence portal. The Confidence project used for IT tests is named `konfidens_e2e`.
+IT tests require a Confidence client token to reach remote servers. The token can be created on the Confidence portal. 
+The Confidence organisation used for IT tests is named `konfidens-e2e` (you may need to request access).
 
+The tests use the flag `test-flag-1` and the client key can be found under `Swift Provider - E2E Tests` in the console.
+
+To run the tests:
 
 ```shell
 ./scripts/run_tests.sh <CLIENT_TOKEN>
