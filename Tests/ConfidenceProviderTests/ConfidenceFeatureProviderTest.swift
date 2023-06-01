@@ -35,8 +35,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ) { error in
             XCTAssertEqual(
                 error as? OpenFeatureError,
-                OpenFeatureError.generalError(
-                    message: "Error during string evaluation for key flag.size: Flag not found in the cache"))
+                OpenFeatureError.flagNotFoundError(key: "flag"))
         }
 
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
@@ -480,8 +479,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ) { error in
             XCTAssertEqual(
                 error as? OpenFeatureError,
-                OpenFeatureError.generalError(
-                    message: "Error during object evaluation for key flag: Flag not found in the cache"))
+                OpenFeatureError.flagNotFoundError(key: "flag"))
         }
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)

@@ -11,7 +11,7 @@ public class LocalStorageResolver: Resolver {
     public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
         let getResult = try self.cache.getValue(flag: flag, ctx: ctx)
         guard let getResult = getResult else {
-            throw ConfidenceError.flagNotFoundInCache
+            throw OpenFeatureError.flagNotFoundError(key: flag)
         }
         guard !getResult.needsUpdate else {
             throw ConfidenceError.cachedValueExpired
