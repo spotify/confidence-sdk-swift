@@ -6,13 +6,15 @@ Swift implementation of the Confidence feature provider, to be used in conjuncti
 
 ### Xcode Dependencies
 
-First, ensure you have your GitHub account added as an option. You will need to create a 
-[Personal Access Token](https://github.com/settings/tokens) with the permissions defined in the Xcode interface.
+You have two options, both start from File > Add Packages... in the code menu.
 
-You then have two options.
+First, ensure you have your GitHub account added as an option (+ > Add Source Control Account...). You will need to create a [Personal Access Token](https://github.com/settings/tokens) with the permissions defined in the Xcode interface.
 
-1. Search for `git@github.com:spotify/confidence-openfeature-provider-swift.git` and add it as a remote repository.
-2. Clone the repository and use the "Add Local..." button to select the local folder.
+1. Add as a remote repository
+    * Search for `git@github.com:spotify/confidence-openfeature-provider-swift.git` and click "Add Package"
+2. Clone the repository locally
+    * Clone locally using your preferred method
+    * Use the "Add Local..." button to select the local folder
 
 Note: Option 2 is only recommended if you are making changes to the provider, you will also need to add
 the relevant OpenFeature SDK manually.
