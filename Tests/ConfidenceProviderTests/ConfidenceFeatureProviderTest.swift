@@ -709,7 +709,6 @@ final class DispatchQueueFake: DispatchQueueType {
     }
 }
 
-@available(macOS 13.0, iOS 16.0, *)
 final class DispatchQueueFakeSlow: DispatchQueueType {
     var expectation: XCTestExpectation
     init(expectation: XCTestExpectation) {
@@ -717,7 +716,7 @@ final class DispatchQueueFakeSlow: DispatchQueueType {
     }
     func async(execute work: @escaping @convention(block) () -> Void) {
         Task {
-            try await Task.sleep(for: Duration.seconds(1))
+            try await Task.sleep(nanoseconds: 1 * 1_000_000_000)
             work()
             expectation.fulfill()
         }
