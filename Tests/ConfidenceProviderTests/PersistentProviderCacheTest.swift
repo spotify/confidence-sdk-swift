@@ -25,7 +25,8 @@ class PersistentProviderCacheTest: XCTestCase {
         let value = ResolvedValue(
             value: Value.double(3.14),
             flag: flag,
-            applyStatus: .applied)
+            applyStatus: .applied,
+            resolveReason: .match)
 
         try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
 
@@ -44,11 +45,13 @@ class PersistentProviderCacheTest: XCTestCase {
         let value1 = ResolvedValue(
             value: Value.double(3.14),
             flag: "flag1",
-            applyStatus: .applied)
+            applyStatus: .applied,
+            resolveReason: .match)
         let value2 = ResolvedValue(
             value: Value.string("test"),
             flag: "flag2",
-            applyStatus: .notApplied)
+            applyStatus: .notApplied,
+            resolveReason: .match)
 
         XCTAssertFalse(try FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path))
 
@@ -75,7 +78,8 @@ class PersistentProviderCacheTest: XCTestCase {
         let value = ResolvedValue(
             value: Value.double(3.14),
             flag: flag,
-            applyStatus: .applying)
+            applyStatus: .applying,
+            resolveReason: .match)
 
         try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
         let success = try cache?.updateApplyStatus(
@@ -111,7 +115,8 @@ class PersistentProviderCacheTest: XCTestCase {
         let value = ResolvedValue(
             value: Value.double(3.14),
             flag: flag,
-            applyStatus: .applied)
+            applyStatus: .applied,
+            resolveReason: .match)
 
         try cache?.clearAndSetValues(values: [value], ctx: ctx1, resolveToken: resolveToken)
 

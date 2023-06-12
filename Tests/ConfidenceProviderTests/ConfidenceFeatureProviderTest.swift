@@ -324,7 +324,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         // Simulating a cache with an old evaluation context
         try cache.clearAndSetValues(
-            values: [ResolvedValue(flag: "flag", applyStatus: .notApplied)],
+            values: [ResolvedValue(flag: "flag", applyStatus: .notApplied, resolveReason: .match)],
             ctx: MutableContext(targetingKey: "user0"),
             resolveToken: "token0")
 

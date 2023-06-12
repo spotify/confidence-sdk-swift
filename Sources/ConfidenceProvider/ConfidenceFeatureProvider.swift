@@ -158,12 +158,43 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         do {
             let resolverResult = try self.resolver.resolve(flag: path.flag, ctx: ctx)
             guard let value = resolverResult.resolvedValue.value else {
-                // Sending "apply" is still expected in case of no value from backend (no target match)
-                processResultForApply(
-                    resolverResult: resolverResult,
-                    ctx: ctx,
-                    applyTime: Date.backport.now)
-                return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.defaultReason.rawValue)
+                switch resolverResult.resolvedValue.resolveReason {
+                case .noMatch:
+                    processResultForApply(
+                        resolverResult: resolverResult,
+                        ctx: ctx,
+                        applyTime: Date.backport.now)
+                    return ProviderEvaluation(
+                        value: defaultValue,
+                        variant: nil,
+                        reason: Reason.defaultReason.rawValue)
+                case .match:
+                    return ProviderEvaluation(
+                        value: defaultValue,
+                        variant: nil,
+                        reason: Reason.error.rawValue,
+                        errorCode: ErrorCode.general,
+                        errorMessage: "Rule matched but no value was returned")
+                case .targetingKeyError:
+                    return ProviderEvaluation(
+                        value: defaultValue,
+                        variant: nil,
+                        reason: Reason.error.rawValue,
+                        errorCode: ErrorCode.invalidContext,
+                        errorMessage: "Invalid targeting key")
+                case .disabled:
+                    return ProviderEvaluation(
+                        value: defaultValue,
+                        variant: nil,
+                        reason: Reason.disabled.rawValue)
+                case .generalError:
+                    return ProviderEvaluation(
+                        value: defaultValue,
+                        variant: nil,
+                        reason: Reason.error.rawValue,
+                        errorCode: ErrorCode.general,
+                        errorMessage: "General error in the Confidence backend")
+                }
             }
 
             let pathValue: Value = try getValue(path: path.path, value: value)

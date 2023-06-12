@@ -12,6 +12,15 @@ public struct ResolvedValue: Codable, Equatable {
     var value: Value?
     var flag: String
     var applyStatus: ApplyStatus
+    var resolveReason: Reason
+
+    enum Reason: Int, Codable, Equatable {
+        case match = 0
+        case noMatch = 1
+        case targetingKeyError = 2
+        case generalError = 3
+        case disabled = 4
+    }
 }
 
 public struct ResolvesResult: Codable, Equatable {
