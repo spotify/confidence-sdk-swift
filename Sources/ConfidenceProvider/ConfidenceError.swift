@@ -9,8 +9,6 @@ public enum ConfidenceError: Error, Equatable {
     case cacheError(message: String)
     /// Corrupted cache file
     case corruptedCache(message: String)
-    /// Flag is archived
-    case flagIsArchived
     /// Flag not found in cache
     case flagNotFoundInCache
     /// Value in cache expired
@@ -38,8 +36,6 @@ extension ConfidenceError: CustomStringConvertible {
             return message
         case .corruptedCache(let message):
             return message
-        case .flagIsArchived:
-            return "Flag has been archived"
         case .flagNotFoundInCache:
             return "Flag not found in the cache"
         case .cachedValueExpired:

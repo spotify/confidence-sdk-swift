@@ -8,7 +8,8 @@ import XCTest
 // swiftlint:disable file_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
-    private let builder = ConfidenceFeatureProvider
+    private let builder =
+        ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
         .with(applyQueue: DispatchQueueFake())
     private let cache = PersistentProviderCache.fromDefaultStorage()
@@ -22,7 +23,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
     func testRefresh() async throws {
         var session = MockedConfidenceClientURLProtocol.mockedSession(flags: [:])
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -74,7 +76,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -316,7 +319,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .with(cache: cache)
             .build()
@@ -352,7 +356,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -381,7 +386,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -410,7 +416,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
 
@@ -443,7 +450,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -499,7 +507,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
 
@@ -528,7 +537,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -684,7 +694,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))

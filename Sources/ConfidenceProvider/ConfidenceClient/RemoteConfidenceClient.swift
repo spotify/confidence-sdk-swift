@@ -141,10 +141,11 @@ public class RemoteConfidenceClient: ConfidenceClient {
 
     private func convert(resolveReason: ResolveReason) -> ResolvedValue.Reason {
         switch resolveReason {
-            case .error, .unknown, .unspecified: return .generalError
-            case .noSegmentMatch, .noTreatmentMatch: return .noMatch
-            case .match: return .match
-            case .archived: return .disabled
+        case .error, .unknown, .unspecified: return .generalError
+        case .noSegmentMatch, .noTreatmentMatch: return .noMatch
+        case .match: return .match
+        case .archived: return .disabled
+        case .targetngKeyError: return .targetingKeyError
         }
     }
 }
@@ -176,6 +177,7 @@ extension RemoteConfidenceClient {
         case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
         case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
         case archived = "RESOLVE_REASON_FLAG_ARCHIVED"
+        case targetngKeyError = "RESOLVE_REASON_TARGETING_KEY_ERROR"
         case error = "RESOLVE_REASON_ERROR"
         case unknown
     }
