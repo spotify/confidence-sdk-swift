@@ -130,7 +130,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         throws -> ProviderEvaluation<T>
     {
         do {
-            return try resolveFlag(flag: flag, defaultValue: defaultValue, ctx: ctx)
+            let path = try FlagPath.getPath(for: flag)
+            return try resolveFlag(path: path, defaultValue: defaultValue, ctx: ctx)
         } catch let error {
             if error is OpenFeatureError {
                 throw error
@@ -140,10 +141,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func resolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?) throws -> ProviderEvaluation<T>
-    {
-        let path = try FlagPath.getPath(for: flag)
-
+    private func resolveFlag<T>(path: FlagPath, defaultValue: T, ctx: EvaluationContext?) throws -> ProviderEvaluation<
+        T
+    > {
         if let overrideValue: (value: T, variant: String?) = getOverride(path: path) {
             return ProviderEvaluation(
                 value: overrideValue.value,
@@ -158,12 +158,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         do {
             let resolverResult = try self.resolver.resolve(flag: path.flag, ctx: ctx)
             guard let value = resolverResult.resolvedValue.value else {
-                // Sending "apply" is still expected in case of no value from backend (no target match)
-                processResultForApply(
-                    resolverResult: resolverResult,
-                    ctx: ctx,
-                    applyTime: Date.backport.now)
-                return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.defaultReason.rawValue)
+                return resolveFlagNoValue(defaultValue: defaultValue, resolverResult: resolverResult, ctx: ctx)
             }
 
             let pathValue: Value = try getValue(path: path.path, value: value)
@@ -180,12 +175,52 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 ctx: ctx,
                 applyTime: Date.backport.now)
             return evaluationResult
-        } catch ConfidenceError.flagIsArchived {
-            return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.disabled.rawValue)
         } catch ConfidenceError.cachedValueExpired {
             return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
         } catch {
             throw error
+        }
+    }
+
+    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: EvaluationContext)
+        -> ProviderEvaluation<T>
+    {
+        switch resolverResult.resolvedValue.resolveReason {
+        case .noMatch:
+            processResultForApply(
+                resolverResult: resolverResult,
+                ctx: ctx,
+                applyTime: Date.backport.now)
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: Reason.defaultReason.rawValue)
+        case .match:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: Reason.error.rawValue,
+                errorCode: ErrorCode.general,
+                errorMessage: "Rule matched but no value was returned")
+        case .targetingKeyError:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: Reason.error.rawValue,
+                errorCode: ErrorCode.invalidContext,
+                errorMessage: "Invalid targeting key")
+        case .disabled:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: Reason.disabled.rawValue)
+        case .generalError:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: Reason.error.rawValue,
+                errorCode: ErrorCode.general,
+                errorMessage: "General error in the Confidence backend")
         }
     }
 

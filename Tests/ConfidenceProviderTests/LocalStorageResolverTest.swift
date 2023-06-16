@@ -34,7 +34,7 @@ class LocalStorageResolverTest: XCTestCase {
 
 class TestCache: ProviderCache {
     private let returnType: ReturnType
-    private let mockedResolvedValue = ResolvedValue(flag: "flag1", applyStatus: .applied)
+    private let mockedResolvedValue = ResolvedValue(flag: "flag1", applyStatus: .applied, resolveReason: .match)
 
     init(returnType: ReturnType) {
         self.returnType = returnType

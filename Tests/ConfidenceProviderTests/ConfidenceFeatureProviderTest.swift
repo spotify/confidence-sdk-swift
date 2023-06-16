@@ -8,7 +8,8 @@ import XCTest
 // swiftlint:disable file_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
-    private let builder = ConfidenceFeatureProvider
+    private let builder =
+        ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
         .with(applyQueue: DispatchQueueFake())
     private let cache = PersistentProviderCache.fromDefaultStorage()
@@ -22,7 +23,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
     func testRefresh() async throws {
         var session = MockedConfidenceClientURLProtocol.mockedSession(flags: [:])
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -74,7 +76,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -316,7 +319,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .with(cache: cache)
             .build()
@@ -324,7 +328,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         // Simulating a cache with an old evaluation context
         try cache.clearAndSetValues(
-            values: [ResolvedValue(flag: "flag", applyStatus: .notApplied)],
+            values: [ResolvedValue(flag: "flag", applyStatus: .notApplied, resolveReason: .match)],
             ctx: MutableContext(targetingKey: "user0"),
             resolveToken: "token0")
 
@@ -352,7 +356,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -381,7 +386,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -410,7 +416,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
 
@@ -443,7 +450,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -499,7 +507,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
 
@@ -518,6 +527,41 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
     }
 
+    func testProviderTargetingKeyError() throws {
+        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+            "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
+        ]
+
+        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+            "flags/flag": .init(resolve: resolve)
+        ]
+
+        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let provider =
+            builder
+            .with(session: session)
+            .build()
+        // note "custom_targeting_key" is treated specially in the MockedSession
+        provider.initialize(
+            initialContext: MutableContext(
+                targetingKey: "user1",
+                structure: MutableStructure(attributes: ["custom_targeting_key": Value.integer(2)])))
+
+        let evaluation = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 1,
+            context: MutableContext(
+                targetingKey: "user1",
+                structure: MutableStructure(attributes: ["custom_targeting_key": Value.integer(2)])))
+        XCTAssertEqual(evaluation.value, 1)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(evaluation.errorCode, ErrorCode.invalidContext)
+        XCTAssertEqual(evaluation.errorMessage, "Invalid targeting key")
+        XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+    }
+
     func testProviderCannotParse() throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
@@ -528,7 +572,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -684,7 +729,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider = builder
+        let provider =
+            builder
             .with(session: session)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))

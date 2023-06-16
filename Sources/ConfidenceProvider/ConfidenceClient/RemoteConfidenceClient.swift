@@ -96,7 +96,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
             return ResolvedValue(
                 value: nil,
                 flag: try displayName(resolvedFlag: resolvedFlag),
-                applyStatus: applyOnResolve ? .applied : .notApplied)
+                applyStatus: applyOnResolve ? .applied : .notApplied,
+                resolveReason: convert(resolveReason: resolvedFlag.reason))
         }
 
         let value = try TypeMapper.from(object: responseValue, schema: responseFlagSchema)
@@ -106,7 +107,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
             variant: variant,
             value: value,
             flag: try displayName(resolvedFlag: resolvedFlag),
-            applyStatus: applyOnResolve ? .applied : .notApplied)
+            applyStatus: applyOnResolve ? .applied : .notApplied,
+            resolveReason: convert(resolveReason: resolvedFlag.reason))
     }
 
     private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> Struct {
@@ -134,6 +136,16 @@ public class RemoteConfidenceClient: ConfidenceClient {
             return error
         } else {
             return ConfidenceError.grpcError(message: "\(error)")
+        }
+    }
+
+    private func convert(resolveReason: ResolveReason) -> ResolvedValue.Reason {
+        switch resolveReason {
+        case .error, .unknown, .unspecified: return .generalError
+        case .noSegmentMatch, .noTreatmentMatch: return .noMatch
+        case .match: return .match
+        case .archived: return .disabled
+        case .targetngKeyError: return .targetingKeyError
         }
     }
 }
@@ -165,6 +177,8 @@ extension RemoteConfidenceClient {
         case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
         case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
         case archived = "RESOLVE_REASON_FLAG_ARCHIVED"
+        case targetngKeyError = "RESOLVE_REASON_TARGETING_KEY_ERROR"
+        case error = "RESOLVE_REASON_ERROR"
         case unknown
     }
 

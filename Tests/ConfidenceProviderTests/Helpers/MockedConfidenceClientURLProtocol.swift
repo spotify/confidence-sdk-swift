@@ -70,7 +70,6 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
             return
         }
 
-        // TODO support case where a different field is used for targeting
         guard case .string(let targetingKey) = request.evaluationContext.fields["targeting_key"] else {
             respondWithError(
                 statusCode: 400,
@@ -105,6 +104,14 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                         statusCode: 400,
                         code: GrpcStatusCode.invalidArgument.rawValue,
                         message: "Could not convert value to response")
+                }
+
+                // Assume that, if present, "custom_targeting_key" is the targeting key field configured for a flag
+                if request.evaluationContext.fields["custom_targeting_key"] != nil {
+                    guard case .string = request.evaluationContext.fields["custom_targeting_key"] else {
+                        return RemoteConfidenceClient.ResolvedFlag(
+                            flag: flagName, reason: .targetngKeyError)
+                    }
                 }
                 return RemoteConfidenceClient.ResolvedFlag(
                     flag: flagName, value: responseValue, variant: resolved.variant, flagSchema: schema, reason: .match)
