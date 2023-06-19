@@ -285,49 +285,19 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
-        guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken, let ctx = ctx
-        else {
+        guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken else {
             return
         }
 
         let flag = resolverResult.resolvedValue.flag
-        do {
-            if try cache.updateApplyStatus(
-                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applying)
-            {
-                executeApply(client: client, flag: flag, resolveToken: resolveToken) { success in
-                    do {
-                        if success {
-                            _ = try self.cache.updateApplyStatus(
-                                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applied)
-                        } else {
-                            _ = try self.cache.updateApplyStatus(
-                                flag: flag, ctx: ctx, resolveToken: resolveToken, applyStatus: .applyFailed)
-                        }
-                    } catch let error {
-                        self.logApplyError(error: error)
-                    }
-                }
-            }
-        } catch let error {
-            logApplyError(error: error)
-        }
-    }
-
-    private func executeApply(
-        client: ConfidenceClient, flag: String, resolveToken: String, completion: @escaping (Bool) -> Void
-    ) {
         applyQueue.async {
             do {
-                try client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
-                completion(true)
+                try self.client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
             } catch let error {
                 self.logApplyError(error: error)
-                completion(false)
             }
         }
     }
-
     private func logApplyError(error: Error) {
         switch error {
         case ConfidenceError.applyStatusTransitionError, ConfidenceError.cachedValueExpired,
