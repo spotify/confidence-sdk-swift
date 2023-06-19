@@ -711,7 +711,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 }
 
 final class DispatchQueueFake: DispatchQueueType {
+    var count = 0
+
     func async(execute work: @escaping @convention(block) () -> Void) {
+        count += 1
         work()
     }
 }
