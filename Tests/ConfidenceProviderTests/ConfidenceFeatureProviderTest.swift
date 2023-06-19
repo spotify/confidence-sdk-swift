@@ -205,6 +205,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let expectation = XCTestExpectation(description: "applied complete")
+        expectation.expectedFulfillmentCount = 2
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider =
             builder
