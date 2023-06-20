@@ -34,7 +34,7 @@ class LocalStorageResolverTest: XCTestCase {
 
 class TestCache: ProviderCache {
     private let returnType: ReturnType
-    private let mockedResolvedValue = ResolvedValue(flag: "flag1", applyStatus: .applied, resolveReason: .match)
+    private let mockedResolvedValue = ResolvedValue(flag: "flag1", resolveReason: .match)
 
     init(returnType: ReturnType) {
         self.returnType = returnType
@@ -52,13 +52,6 @@ class TestCache: ProviderCache {
     func clearAndSetValues(
         values: [ConfidenceProvider.ResolvedValue], ctx: OpenFeature.EvaluationContext, resolveToken: String
     ) {}
-
-    func updateApplyStatus(
-        flag: String,
-        ctx: OpenFeature.EvaluationContext,
-        resolveToken: String,
-        applyStatus: ConfidenceProvider.ApplyStatus
-    ) throws -> Bool { return true }
 
     func getCurResolveToken() -> String? {
         return nil

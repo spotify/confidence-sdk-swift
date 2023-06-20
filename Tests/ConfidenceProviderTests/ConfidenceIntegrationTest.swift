@@ -60,11 +60,12 @@ class Confidence: XCTestCase {
         }
 
         let cache = PersistentProviderCache.fromDefaultStorage()
+        let fakeApplyQueue = DispatchQueueFake()
 
         let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
-        .with(applyQueue: DispatchQueueFake())
+        .with(applyQueue: fakeApplyQueue)
         .with(cache: cache)
         .build()
 
@@ -84,9 +85,7 @@ class Confidence: XCTestCase {
         XCTAssertNotNil(result.variant)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
-        XCTAssertEqual(
-            try cache.getValue(flag: "\(resolveFlag)", ctx: ctx)?.resolvedValue.applyStatus,
-            .applied)
+        XCTAssertEqual(fakeApplyQueue.count, 1)
     }
 
     func testConfidenceFeatureNoSegmentMatch() async throws {
@@ -95,11 +94,12 @@ class Confidence: XCTestCase {
         }
 
         let cache = PersistentProviderCache.fromDefaultStorage()
+        let fakeApplyQueue = DispatchQueueFake()
 
         let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
-        .with(applyQueue: DispatchQueueFake())
+        .with(applyQueue: fakeApplyQueue)
         .with(cache: cache)
         .build()
 
@@ -118,9 +118,7 @@ class Confidence: XCTestCase {
         XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
-        XCTAssertEqual(
-            try cache.getValue(flag: "\(resolveFlag)", ctx: ctx)?.resolvedValue.applyStatus,
-            .applied)
+        XCTAssertEqual(fakeApplyQueue.count, 1)
     }
 }
 

@@ -96,7 +96,6 @@ public class RemoteConfidenceClient: ConfidenceClient {
             return ResolvedValue(
                 value: nil,
                 flag: try displayName(resolvedFlag: resolvedFlag),
-                applyStatus: applyOnResolve ? .applied : .notApplied,
                 resolveReason: convert(resolveReason: resolvedFlag.reason))
         }
 
@@ -107,7 +106,6 @@ public class RemoteConfidenceClient: ConfidenceClient {
             variant: variant,
             value: value,
             flag: try displayName(resolvedFlag: resolvedFlag),
-            applyStatus: applyOnResolve ? .applied : .notApplied,
             resolveReason: convert(resolveReason: resolvedFlag.reason))
     }
 

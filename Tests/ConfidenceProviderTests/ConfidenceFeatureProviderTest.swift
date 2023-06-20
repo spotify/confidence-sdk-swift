@@ -113,16 +113,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applied)
 
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
@@ -152,16 +146,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let ctx = MutableContext(targetingKey: "user2")
         provider.initialize(initialContext: ctx)
 
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user2"))?.resolvedValue.applyStatus,
-            .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user2"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user2"))?.resolvedValue.applyStatus,
-            .applied)
 
         XCTAssertEqual(evaluation.value, 1)
         XCTAssertNil(evaluation.errorCode)
@@ -189,23 +177,14 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applied)
         _ = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applied)
 
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
@@ -213,7 +192,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
     }
 
     func testResolveAndApplyIntegerFlagTwiceSlow() throws {
@@ -226,6 +205,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let expectation = XCTestExpectation(description: "applied complete")
+        expectation.expectedFulfillmentCount = 2
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider =
             builder
@@ -235,9 +215,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
@@ -246,9 +223,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applying)
 
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
@@ -257,11 +231,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
         wait(for: [expectation], timeout: 2.0)
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applied)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
     }
 
     func testResolveAndApplyIntegerFlagError() throws {
@@ -282,23 +253,14 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .notApplied)
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applyFailed)
         _ = try provider.getIntegerEvaluation(
             key: "flag.size",
             defaultValue: 1,
             context: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(
-            try cache.getValue(flag: "flag", ctx: MutableContext(targetingKey: "user1"))?.resolvedValue.applyStatus,
-            .applied)
 
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
@@ -328,7 +290,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         // Simulating a cache with an old evaluation context
         try cache.clearAndSetValues(
-            values: [ResolvedValue(flag: "flag", applyStatus: .notApplied, resolveReason: .match)],
+            values: [ResolvedValue(flag: "flag", resolveReason: .match)],
             ctx: MutableContext(targetingKey: "user0"),
             resolveToken: "token0")
 
@@ -750,7 +712,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 }
 
 final class DispatchQueueFake: DispatchQueueType {
+    var count = 0
+
     func async(execute work: @escaping @convention(block) () -> Void) {
+        count += 1
         work()
     }
 }
