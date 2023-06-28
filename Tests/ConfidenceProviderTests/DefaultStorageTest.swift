@@ -25,7 +25,7 @@ class DefaultStorageTest: XCTestCase {
 
         try storage.save(data: value)
 
-        let restoredValue = try storage.load(Value.self, defaultValue: .null)
+        let restoredValue: Value = try storage.load(defaultValue: .null)
 
         XCTAssertEqual(restoredValue, value)
     }
@@ -37,7 +37,7 @@ class DefaultStorageTest: XCTestCase {
         }
 
         let storage = DefaultStorage()
-        let value = try storage.load(Value.self, defaultValue: .integer(3))
+        let value: Value = try storage.load(defaultValue: .integer(3))
 
         XCTAssertEqual(value, Value.integer(3))
     }
