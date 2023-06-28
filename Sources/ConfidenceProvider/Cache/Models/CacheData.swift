@@ -26,58 +26,61 @@ struct CacheData: Codable {
     }
 
     mutating func add(resolveToken: String, flagName: String, applyTime: Date) {
-        let resolveEventIndex = resolveEvents.firstIndex(where: { resolveEvent in
+        let resolveEventIndex = resolveEvents.firstIndex { resolveEvent in
             resolveEvent.resolveToken == resolveToken
-        })
+        }
 
         if let resolveEventIndex {
-            let resolveEvent =  resolveEvents[resolveEventIndex]
+            // Resolve event with given resolve token exists
+            let resolveEvent = resolveEvents[resolveEventIndex]
             let flagEventIndex = resolveEvent.events.firstIndex { flagEvent in
                 flagEvent.name == flagName
             }
             if let flagEventIndex {
+                // Flag event for given flag name exists, adding new apply record to it
                 let applyEvent = ApplyEvent(id: UUID(), applyTime: applyTime)
                 resolveEvents[resolveEventIndex].events[flagEventIndex].applyEvents.append(applyEvent)
             } else {
+                // No flag event for given resolve token, adding new record
                 let flagEvent = FlagEvent(name: flagName, applyTime: applyTime)
                 resolveEvents[resolveEventIndex].events.append(flagEvent)
             }
         } else {
+            // No resolve event for given resolve token, adding new record
             let event = ResolveEvent(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
             resolveEvents.append(event)
         }
     }
 
-    mutating func remove(resolveToken:String, flagName: String, uuid: UUID) {
-        let resolveEventIndex = resolveEvents.firstIndex(where: { resolveEvent in
+    mutating func remove(resolveToken: String, flagName: String, uuid: UUID) {
+        let resolveEventIndex = resolveEvents.firstIndex { resolveEvent in
             resolveEvent.resolveToken == resolveToken
-        })
+        }
 
         guard let resolveEventIndex else {
             return
         }
-
         let resolveEvent = resolveEvents[resolveEventIndex]
-        let flagEventIndex = resolveEvent.events.firstIndex(where: { event in
-            event.name == flagName
-        })
 
+        let flagEventIndex = resolveEvent.events.firstIndex { event in
+            event.name == flagName
+        }
         guard let flagEventIndex else {
             return
         }
 
+        // Flag event with given flag name exists
         var flagEvent = resolveEvent.events[flagEventIndex]
-
-        let applyEventIndex = flagEvent.applyEvents.firstIndex(where: { applyEvent in
+        let applyEventIndex = flagEvent.applyEvents.firstIndex { applyEvent in
             applyEvent.id == uuid
-        })
+        }
 
         guard let applyEventIndex = applyEventIndex else {
             return
         }
-
         flagEvent.applyEvents.remove(at: applyEventIndex)
 
+        // Clean flag event if apply events are empty
         if flagEvent.applyEvents.isEmpty {
             resolveEvents[resolveEventIndex].events.remove(at: flagEventIndex)
         }

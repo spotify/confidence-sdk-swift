@@ -5,7 +5,6 @@ import XCTest
 @testable import ConfidenceProvider
 
 final class CacheDataTests: XCTestCase {
-
     func testCacheData_addEvent_emptyCache() throws {
         let applyTime = Date()
         var cacheData = CacheData(resolveToken: "token1", events: [])
@@ -35,7 +34,7 @@ final class CacheDataTests: XCTestCase {
 
         cacheData.add(resolveToken: "token0", flagName: "prefilled", applyTime: date)
 
-        let index = try XCTUnwrap(cacheData.resolveEvents.first?.events.firstIndex(where: { $0.name == "prefilled" }))
+        let index = try XCTUnwrap(cacheData.resolveEvents.first?.events.firstIndex { $0.name == "prefilled" })
         XCTAssertEqual(cacheData.resolveEvents.first?.events.count, 3)
         XCTAssertEqual(cacheData.resolveEvents.first?.events[index].applyEvents.count, 2)
     }
@@ -85,6 +84,7 @@ final class CacheDataTests: XCTestCase {
         let cacheData = CacheData.empty()
         XCTAssertEqual(cacheData.isEmpty, true)
     }
+
     func testCacheData_prefilledDataIsNotEmpty() throws {
         let cacheData = try prefilledCacheData()
         XCTAssertEqual(cacheData.isEmpty, false)
@@ -104,5 +104,4 @@ final class CacheDataTests: XCTestCase {
 
         return cacheData
     }
-
 }
