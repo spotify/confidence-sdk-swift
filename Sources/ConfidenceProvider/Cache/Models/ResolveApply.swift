@@ -1,19 +1,19 @@
 import Foundation
 
-struct ResolveEvent: Codable {
+struct ResolveApply: Codable {
     let resolveToken: String
-    var events: [FlagEvent]
+    var events: [FlagApply]
 
     var isEmpty: Bool {
-        resolveToken.isEmpty
+        resolveToken.isEmpty || events.isEmpty
     }
 
     init(resolveToken: String, flagName: String, applyTime: Date) {
         self.resolveToken = resolveToken
-        self.events = [FlagEvent(name: flagName, applyTime: applyTime)]
+        self.events = [FlagApply(name: flagName, applyTime: applyTime)]
     }
 
-    init(resolveToken: String, events: [FlagEvent]) {
+    init(resolveToken: String, events: [FlagApply]) {
         self.resolveToken = resolveToken
         self.events = events
     }
