@@ -5,7 +5,9 @@ import OpenFeature
 
 class ClientMock: ConfidenceClient {
     var applyCount = 0
+    var batchApplyCount = 0
     var testMode: TestMode
+    var batchItems: [FlagApply] = []
 
     enum TestMode {
         case success
@@ -22,6 +24,18 @@ class ClientMock: ConfidenceClient {
 
     func apply(flag: String, resolveToken: String, applyTime: Date) throws {
         applyCount += 1
+
+        switch testMode {
+        case .success:
+            return
+        case .error:
+            throw HttpClientError.invalidResponse
+        }
+    }
+
+    func apply(resolveToken: String, items: [FlagApply]) throws {
+        batchApplyCount += 1
+        batchItems = items
 
         switch testMode {
         case .success:

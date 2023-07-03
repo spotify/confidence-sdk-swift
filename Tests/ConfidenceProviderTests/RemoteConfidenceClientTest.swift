@@ -24,9 +24,14 @@ class RemoteConfidenceClientTest: XCTestCase {
 
     func testResolveSingleFlagSucceeds() throws {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let flagApplier = FlagApplierMock()
 
         let client = RemoteConfidenceClient(
-            options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
+            options: .init(credentials: .clientSecret(secret: "test")),
+            session: session,
+            applyOnResolve: true,
+            flagApplier: flagApplier
+        )
 
         let value = try client.resolve(flag: "flag1", ctx: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(resolvedFlag1.value, value.resolvedValue.value)
@@ -35,9 +40,14 @@ class RemoteConfidenceClientTest: XCTestCase {
 
     func testResolveMultipleFlagsSucceeds() throws {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let flagApplier = FlagApplierMock()
 
         let client = RemoteConfidenceClient(
-            options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
+            options: .init(credentials: .clientSecret(secret: "test")),
+            session: session,
+            applyOnResolve: true,
+            flagApplier: flagApplier
+        )
 
         let result = try client.resolve(ctx: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(result.resolvedValues.count, 2)
@@ -48,14 +58,5 @@ class RemoteConfidenceClientTest: XCTestCase {
         XCTAssertEqual(resolvedFlag1.variant, sortedResultValues[0].variant)
         XCTAssertEqual(resolvedFlag2.value, sortedResultValues[1].value)
         XCTAssertEqual(resolvedFlag2.variant, sortedResultValues[1].variant)
-    }
-
-    func testApplySucceeds() throws {
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-
-        let client = RemoteConfidenceClient(
-            options: .init(credentials: .clientSecret(secret: "test")), session: session, applyOnResolve: true)
-
-        try client.apply(flag: "flag1", resolveToken: "test", applyTime: Date.backport.now)
     }
 }

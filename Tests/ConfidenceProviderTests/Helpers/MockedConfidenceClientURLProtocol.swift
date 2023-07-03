@@ -64,7 +64,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
     private func resolve() {
         MockedConfidenceClientURLProtocol.callStats += 1
         MockedConfidenceClientURLProtocol.resolveStats += 1
-        guard let request = request.decodeBody(type: RemoteConfidenceClient.ResolveFlagsRequest.self) else {
+        guard let request = request.decodeBody(type: ResolveFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
@@ -90,7 +90,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
             }
             .map { flagName, flag in
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
-                    return RemoteConfidenceClient.ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
+                    return ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
                 }
                 var responseValue: Struct?
                 do {
@@ -109,15 +109,15 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                 // Assume that, if present, "custom_targeting_key" is the targeting key field configured for a flag
                 if request.evaluationContext.fields["custom_targeting_key"] != nil {
                     guard case .string = request.evaluationContext.fields["custom_targeting_key"] else {
-                        return RemoteConfidenceClient.ResolvedFlag(
+                        return ResolvedFlag(
                             flag: flagName, reason: .targetngKeyError)
                     }
                 }
-                return RemoteConfidenceClient.ResolvedFlag(
+                return ResolvedFlag(
                     flag: flagName, value: responseValue, variant: resolved.variant, flagSchema: schema, reason: .match)
             }
         respondWithSuccess(
-            response: RemoteConfidenceClient.ResolveFlagsResponse(resolvedFlags: flags, resolveToken: "token1"))
+            response: ResolveFlagsResponse(resolvedFlags: flags, resolveToken: "token1"))
     }
 
     private func apply(failAt: Int = 0) {
@@ -128,7 +128,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                 statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "Server error")
         }
 
-        guard let request = request.decodeBody(type: RemoteConfidenceClient.ApplyFlagsRequest.self) else {
+        guard let request = request.decodeBody(type: ApplyFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
@@ -141,7 +141,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                 return
             }
         }
-        respondWithSuccess(response: RemoteConfidenceClient.ApplyFlagsResponse())
+        respondWithSuccess(response: ApplyFlagsResponse())
     }
 
     private func respondWithError(statusCode: Int, code: Int, message: String) {
