@@ -9,7 +9,7 @@ struct CacheData: Codable {
     var resolveEvents: [ResolveApply]
 
     var isEmpty: Bool {
-        resolveEvents.isEmpty
+        resolveEvents.isEmpty || resolveEvents.allSatisfy { $0.isEmpty }
     }
 
     init(resolveToken: String, flagName: String, applyTime: Date) {
@@ -30,10 +30,23 @@ struct CacheData: Codable {
         CacheData(resolveEvents: [])
     }
 
-    mutating func add(resolveToken: String, flagName: String, applyTime: Date) {
-        let resolveEventIndex = resolveEvents.firstIndex { resolveEvent in
-            resolveEvent.resolveToken == resolveToken
+    func applyEventExists(resolveToken: String, name: String) -> Bool {
+        let resolveTokenIndex = applyEventIndex(resolveToken: resolveToken, name: name)
+        return resolveTokenIndex != nil
+    }
+
+    mutating func setEventSent(resolveToken: String, name: String, sent: Bool = true) {
+        let flagEventIndexes = flagEventIndex(resolveToken: resolveToken, name: name)
+        guard let resolveIndex = flagEventIndexes.resolveEventIndex,
+              let flagIndex = flagEventIndexes.flagEventIndex else {
+            return
         }
+
+        resolveEvents[resolveIndex].events[flagIndex].applyEvent.sent = sent
+    }
+
+    mutating func add(resolveToken: String, flagName: String, applyTime: Date) {
+        let resolveEventIndex = resolveEventIndex(resolveToken: resolveToken)
 
         if let resolveEventIndex {
             // Resolve apply event with given resolve token exists
@@ -53,6 +66,18 @@ struct CacheData: Codable {
         }
     }
 
+    mutating func remove(resolveToken: String) {
+        let resolveEventIndex = resolveEvents.firstIndex { resolveEvent in
+            resolveEvent.resolveToken == resolveToken
+        }
+
+        guard let resolveEventIndex else {
+            return
+        }
+
+        resolveEvents.remove(at: resolveEventIndex)
+    }
+
     mutating func remove(resolveToken: String, flagName: String) {
         let resolveEventIndex = resolveEvents.firstIndex { resolveEvent in
             resolveEvent.resolveToken == resolveToken
@@ -70,11 +95,54 @@ struct CacheData: Codable {
             return
         }
 
-        // Flag apply event with given flag name exists, cleaning it  up
+        // Flag apply event with given flag name exists, cleaning it up
         resolveEvents[resolveEventIndex].events.remove(at: flagEventIndex)
 
         if resolveEvents[resolveEventIndex].isEmpty {
             resolveEvents.remove(at: resolveEventIndex)
         }
+    }
+
+    // MARK: Private
+
+    private func flagEvent(resolveToken: String, name: String) -> FlagApply? {
+        guard let resolveTokenIndex = resolveEventIndex(resolveToken: resolveToken),
+              let flagEventIndex = applyEventIndex(resolveToken: resolveToken, name: name) else {
+            return nil
+        }
+
+        return resolveEvents[resolveTokenIndex].events[flagEventIndex]
+    }
+
+    private func flagEventIndex(resolveToken: String, name: String) -> (resolveEventIndex: Int?, flagEventIndex: Int?) {
+        guard let resolveTokenIndex = resolveEventIndex(resolveToken: resolveToken) else {
+            return (nil, nil)
+        }
+
+        guard let flagEventIndex = applyEventIndex(resolveToken: resolveToken, name: name) else {
+            return (resolveTokenIndex, nil)
+        }
+
+        return (resolveTokenIndex, flagEventIndex)
+    }
+
+    private func resolveEventIndex(resolveToken: String) -> Int? {
+        let resolveTokenIndex = resolveEvents.firstIndex { resolveEvent in
+            resolveEvent.resolveToken == resolveToken
+        }
+
+        return resolveTokenIndex
+    }
+
+    private func applyEventIndex(resolveToken: String, name: String) -> Int? {
+        guard let resolveTokenIndex = resolveEventIndex(resolveToken: resolveToken) else {
+            return nil
+        }
+
+        let flagEventIndex = resolveEvents[resolveTokenIndex].events.firstIndex { applyEvent in
+            applyEvent.name == name
+        }
+
+        return flagEventIndex
     }
 }

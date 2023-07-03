@@ -1,33 +1,61 @@
 import Foundation
 
-class HttpClient {
-    private var headers: [String: String]
-    private var retry: Retry
-    private var timeout: TimeInterval
-    private var session: URLSession
+protocol HttpClient {
+    func post<T: Decodable>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T>
+}
 
-    convenience init(defaultHeaders: [String: String] = [:], timeout: TimeInterval = 30.0, retry: Retry = .none) {
+final class NetworkClient: HttpClient {
+    private let headers: [String: String]
+    private let retry: Retry
+    private let timeout: TimeInterval
+    private let session: URLSession
+    private let region: ConfidenceRegion
+
+    private var baseUrl: String {
+        let region = region.rawValue
+        let domain = "confidence.dev"
+        let resolveRoute = "/v1/flags"
+
+        return "https://resolver.\(region).\(domain)\(resolveRoute)"
+    }
+
+    convenience init(
+        region: ConfidenceRegion,
+        defaultHeaders: [String: String] = [:],
+        timeout: TimeInterval = 30.0,
+        retry: Retry = .none
+    ) {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = timeout
         configuration.httpAdditionalHeaders = defaultHeaders
 
         self.init(
             session: URLSession(configuration: configuration),
+            region: region,
             defaultHeaders: defaultHeaders,
             timeout: timeout,
             retry: retry)
     }
 
     init(
-        session: URLSession, defaultHeaders: [String: String] = [:], timeout: TimeInterval = 30.0, retry: Retry = .none
+        session: URLSession,
+        region: ConfidenceRegion,
+        defaultHeaders: [String: String] = [:],
+        timeout: TimeInterval = 30.0,
+        retry: Retry = .none
     ) {
         self.headers = defaultHeaders
         self.retry = retry
         self.timeout = timeout
         self.session = session
+        self.region = region
     }
 
-    func post<T: Decodable>(url: URL, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T> {
+    func post<T: Decodable>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T> {
+        guard let url = URL(string: baseUrl + path) else {
+            throw ConfidenceError.internalError(message: "Could not create service url")
+        }
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
 

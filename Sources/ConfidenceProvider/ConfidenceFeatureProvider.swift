@@ -10,13 +10,13 @@ import os
 // swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [AnyHook] = []
-    public var metadata: Metadata = ConfidenceMetadata()
-    private var applyQueue: DispatchQueueType
-    private var lock = UnfairLock()
-    private var resolver: Resolver
-    private var client: ConfidenceClient
-    private var cache: ProviderCache
+    public let metadata: Metadata = ConfidenceMetadata()
+    private let lock = UnfairLock()
+    private let resolver: Resolver
+    private let client: ConfidenceClient
+    private let cache: ProviderCache
     private var overrides: [String: LocalOverride]
+    private let flagApplier: FlagApplier
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
@@ -24,13 +24,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         client: RemoteConfidenceClient,
         cache: ProviderCache,
         overrides: [String: LocalOverride] = [:],
-        applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
+        flagApplier: FlagApplier
     ) {
-        self.applyQueue = applyQueue
         self.resolver = resolver
         self.client = client
         self.cache = cache
         self.overrides = overrides
+        self.flagApplier = flagApplier
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
@@ -290,12 +290,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         let flag = resolverResult.resolvedValue.flag
-        applyQueue.async {
-            do {
-                try self.client.apply(flag: flag, resolveToken: resolveToken, applyTime: Date.backport.now)
-            } catch let error {
-                self.logApplyError(error: error)
-            }
+        Task {
+            await flagApplier.apply(flagName: flag, resolveToken: resolveToken)
         }
     }
     private func logApplyError(error: Error) {
@@ -313,7 +309,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
 extension ConfidenceFeatureProvider {
     public struct Builder {
-        var options: RemoteConfidenceClient.ConfidenceClientOptions
+        var options: ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
         var applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
@@ -324,12 +320,12 @@ extension ConfidenceFeatureProvider {
         ///     OpenFeatureAPI.shared.setProvider(provider:
         ///     ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .build()
-        public init(credentials: RemoteConfidenceClient.ConfidenceClientCredentials) {
-            self.options = RemoteConfidenceClient.ConfidenceClientOptions(credentials: credentials)
+        public init(credentials: ConfidenceClientCredentials) {
+            self.options = ConfidenceClientOptions(credentials: credentials)
         }
 
         init(
-            options: RemoteConfidenceClient.ConfidenceClientOptions,
+            options: ConfidenceClientOptions,
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
             applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
@@ -414,10 +410,26 @@ extension ConfidenceFeatureProvider {
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
-            let client = RemoteConfidenceClient(options: options, session: self.session, applyOnResolve: false)
+            let flagApplier = FlagApplierWithRetries(
+                httpClient: NetworkClient(region: options.region),
+                storage: DefaultStorage(),
+                options: options
+            )
+
+            let client = RemoteConfidenceClient(
+                options: options,
+                session: self.session,
+                applyOnResolve: false,
+                flagApplier: flagApplier
+            )
             let resolver = LocalStorageResolver(cache: cache)
             return ConfidenceFeatureProvider(
-                resolver: resolver, client: client, cache: cache, overrides: localOverrides, applyQueue: applyQueue)
+                resolver: resolver,
+                client: client,
+                cache: cache,
+                overrides: localOverrides,
+                flagApplier: flagApplier
+            )
         }
     }
 }
