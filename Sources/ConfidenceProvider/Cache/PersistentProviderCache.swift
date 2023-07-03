@@ -75,7 +75,6 @@ public class PersistentProviderCache: ProviderCache {
     public static func from(storage: Storage) -> PersistentProviderCache {
         do {
             let storedCache = try storage.load(
-                StoredCacheData.self,
                 defaultValue: StoredCacheData(
                     version: currentVersion, cache: [:], curResolveToken: nil, curEvalContextHash: nil))
             return PersistentProviderCache(

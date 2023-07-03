@@ -23,7 +23,7 @@ public class DefaultStorage: Storage {
         }
     }
 
-    public func load<T>(_ type: T.Type, defaultValue: T) throws -> T where T: Decodable {
+    public func load<T>(defaultValue: T) throws -> T where T: Decodable {
         try DefaultStorage.storageQueue.sync {
             let configUrl = try DefaultStorage.getConfigUrl()
             guard FileManager.default.fileExists(atPath: configUrl.backport.path) else {
@@ -39,7 +39,7 @@ public class DefaultStorage: Storage {
             }()
 
             do {
-                return try JSONDecoder().decode(type, from: data)
+                return try JSONDecoder().decode(T.self, from: data)
             } catch {
                 throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
             }
