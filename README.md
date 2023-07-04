@@ -6,7 +6,7 @@ For documentation related to flags management in Confidence, refer to the [Confi
 Functionalities:
 - Managed integration with the Confidence backend
 - Pre-fetch and cache flag evaluations, for fast value reads even when the application is offline
-- Automatic data collection (in the backend) about which flags have been read by the application
+- Automatic data collection (in the backend) about which flags have been accessed by the application
 
 ## Dependency Setup
 
@@ -22,7 +22,7 @@ First, ensure you have your GitHub account added as an option (+ > Add Source Co
     * Clone locally using your preferred method
     * Use the "Add Local..." button to select the local folder
 
-Note: Option 2 is only recommended if you are making changes to the provider, you will also need to add
+**Note:** Option 2 is only recommended if you are making changes to the provider, you will also need to add
 the relevant OpenFeature SDK manually.
 
 ### Swift Package Manager
@@ -57,12 +57,12 @@ let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStruc
 await OpenFeatureAPI.shared.setProvider(provider: provider, initialContext:)
 ```
 
-The `client secret` for your application is obtained in the Confidence portal.
-The evaluation context is the way for the client to specify contextual data that Confidence use to evaluate rules defined on the flag.
+The `client secret` for your application is obtained in the Confidence portal [link](https://confidence.spotify.com/platform/flags/resolve-flags#creating-a-flag-client).
+The evaluation context is the way for the client to specify contextual data that Confidence uses to evaluate rules defined on the flag.
 
-The `setProvider()` function is asynchronous as it involves the network request to the Confidence backend to fetch the flag evaluation for all the flags configured for your application.
+The `setProvider()` function is asynchronous as it involves the network request to the Confidence backend to fetch all the flags configured for your application.
 
-Note: it's advised not to read flag values while `setProvider` is running: reads might return the default value with reason `STALE` during such operations.
+Note: it is advised to _not_ read flag values while `setProvider` is running: reads might return the default value with reason `STALE` during such operations.
 
 It's possible to update the evaluation context within an application's session via the following API:
 ```swift
@@ -70,9 +70,9 @@ let ctx = MutableContext(targetingKey: "myNewTargetingKey", structure: MutableSt
 await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 ```
 
-`setEvaluationContext()` is an asynchronous function: as for `setProvider()`, it calls the Confidence backend to fetch the flag evaluations according to the new evaluation context; if the call is successful, it replaces the on-device cache with the new flags data.
+`setEvaluationContext()` is an asynchronous function just us `setProvider()`. It calls the Confidence backend to fetch the flag evaluations according to the new evaluation context; if the call is successful, it replaces the on-device cache with the new flags data.
 
-Note: a "targeting key" in the evaluation context is expected by the Confidence backend: each key gets assigned a different flag's variant (consistently). The `targetingKey` argument is the default place where to provide a targeting key at runtime (as defined by the OpenFeature APIs), but a different custom field inside the `structure` value can also be configured for this purpose in the Confidence portal (making the `targetingKey` argument redundant, i.e. feel free to set it to empty string).
+**Note:** a "targeting key" in the evaluation context is expected by the Confidence backend: each key gets assigned a different flag's variant (consistently). The `targetingKey` argument is the default place where to provide a targeting key at runtime (as defined by the OpenFeature APIs), but a different custom field inside the `structure` value can also be configured for this purpose in the Confidence portal (making the `targetingKey` argument redundant, i.e. feel free to set it to empty string).
 
 
 ### Request a flag / value
@@ -90,7 +90,7 @@ Confidence allows each flag value to be a complex data structure including multi
 let result = client.getObjectValue(key: "my-flag", defaultValue: Value.null)
 ```
 
-Note: if a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI.
+**Note:** if a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI.
 
 
 ### Local overrides
