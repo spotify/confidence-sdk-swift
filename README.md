@@ -1,6 +1,12 @@
 # OpenFeature Swift Confidence Provider
 
-Swift implementation of the Confidence feature provider, to be used in conjunction with the OpenFeature SDK.
+Swift implementation of the Confidence Provider, to be used in conjunction with the [OpenFeature SDK](https://openfeature.dev/docs/reference/concepts/provider).
+For documentation related to flags management in Confidence, refer to the [Confidence documentation portal](https://confidence.spotify.com/platform/flags).
+
+Functionalities:
+- Managed integration with the Confidence backend
+- Pre-fetch and cache flag evaluations, for fast value reads even when the application is offline
+- Automatic data collection (in the backend) about which flags have been read by the application
 
 ## Dependency Setup
 
@@ -42,20 +48,32 @@ import ConfidenceProvider
 import OpenFeature
 ```
 
-### Create and Apply the Provider
+### Create and set the Provider
 
+The Confidence Provider instance needs to be created and then set in the global OpenFeatureAPI:
 ```swift
 let provider = ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret")).build()
-await OpenFeatureAPI.shared.setProvider(provider: provider)
-let client = OpenFeatureAPI.shared.getClient()
+let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
+await OpenFeatureAPI.shared.setProvider(provider: provider, initialContext:)
 ```
 
-### Create and Apply the Context
+The `client secret` for your application is obtained in the Confidence portal.
+The evaluation context is the way for the client to specify contextual data that Confidence use to evaluate rules defined on the flag.
 
+The `setProvider()` function is asynchronous as it involves the network request to the Confidence backend to fetch the flag evaluation for all the flags configured for your application.
+
+Note: it's advised not to read flag values while `setProvider` is running: reads might return the default value with reason `STALE` during such operations.
+
+It's possible to update the evaluation context within an application's session via the following API:
 ```swift
-let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
+let ctx = MutableContext(targetingKey: "myNewTargetingKey", structure: MutableStructure())
 await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 ```
+
+`setEvaluationContext()` is an asynchronous function: as for `setProvider()`, it calls the Confidence backend to fetch the flag evaluations according to the new evaluation context; if the call is successful, it replaces the on-device cache with the new flags data.
+
+Note: a "targeting key" in the evaluation context is expected by the Confidence backend: each key gets assigned a different flag's variant (consistently). The `targetingKey` argument is the default place where to provide a targeting key at runtime (as defined by the OpenFeature APIs), but a different custom field inside the `structure` value can also be configured for this purpose in the Confidence portal (making the `targetingKey` argument redundant, i.e. feel free to set it to empty string).
+
 
 ### Request a flag / value
 
@@ -63,14 +81,17 @@ The `client` is used to retrieve values for the current user / context. For exam
 flag `flag.my-boolean`:
 
 ```swift
-let result = client.getBooleanValue(key: "flag.my-boolean", defaultValue: false)
+let client = OpenFeatureAPI.shared.getClient()
+let result = client.getBooleanValue(key: "my-flag.my-boolean", defaultValue: false)
 ```
 
-Notes:
-- If a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. 
-Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI
-- It's advised not to perform resolves while `setProvider` and `setEvaluationContext` are running: 
-resolves might return the default value with reason `STALE` during such operations. 
+Confidence allows each flag value to be a complex data structure including multiple properties of different type. To access a specific flag's property, the dot notation in the example above is used. The full data structure for a flag can be always fetched via:
+```swift
+let result = client.getObjectValue(key: "my-flag", defaultValue: Value.null)
+```
+
+Note: if a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI.
+
 
 ### Local overrides
 
@@ -93,7 +114,7 @@ OpenFeatureAPI.shared.provider =
 
 now, all resolves of `button.size` will return 4.
 
-## Development
+## Contributing
 
 Open the project in Xcode and build by Product -> Build.
 
@@ -117,7 +138,7 @@ You can automatically format your code using:
 ### Running tests
 
 IT tests require a Confidence client token to reach remote servers. The token can be created on the Confidence portal. 
-The Confidence organisation used for IT tests is named `konfidens-e2e` (you may need to request access).
+The Confidence organization used for IT tests is named `konfidens-e2e` (you may need to request access).
 
 The tests use the flag `test-flag-1` and the client key can be found under `Swift Provider - E2E Tests` in the console.
 
