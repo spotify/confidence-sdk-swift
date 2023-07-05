@@ -79,12 +79,16 @@ class Confidence: XCTestCase {
         let client = OpenFeatureAPI.shared.getClient()
         await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
-        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let evaluationTask = Task {
+            let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
-        XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
-        XCTAssertNotNil(result.variant)
-        XCTAssertNil(result.errorCode)
-        XCTAssertNil(result.errorMessage)
+            XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
+            XCTAssertNotNil(result.variant)
+            XCTAssertNil(result.errorCode)
+            XCTAssertNil(result.errorMessage)
+        }
+
+        await evaluationTask.value
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
@@ -111,13 +115,18 @@ class Confidence: XCTestCase {
         await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
         let client = OpenFeatureAPI.shared.getClient()
-        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
-        XCTAssertEqual(result.value, 1)
-        XCTAssertNil(result.variant)
-        XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
-        XCTAssertNil(result.errorCode)
-        XCTAssertNil(result.errorMessage)
+        let evaluationTask = Task {
+            let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+
+            XCTAssertEqual(result.value, 1)
+            XCTAssertNil(result.variant)
+            XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
+            XCTAssertNil(result.errorCode)
+            XCTAssertNil(result.errorMessage)
+        }
+
+        await evaluationTask.value
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 }
