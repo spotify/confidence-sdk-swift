@@ -5,7 +5,7 @@ import XCTest
 @testable import ConfidenceProvider
 
 class Confidence: XCTestCase {
-    let clientToken = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
+    let clientToken: String? = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
     let resolveFlag = setResolveFlag()
 
     private static func setResolveFlag() -> String {

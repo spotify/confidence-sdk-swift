@@ -12,15 +12,18 @@ final class FlagApplierWithRetries: FlagApplier {
         httpClient: HttpClient,
         storage: Storage,
         options: ConfidenceClientOptions,
-        cacheDataInteractor: CacheDataActor? = nil
+        cacheDataInteractor: CacheDataActor? = nil,
+        triggerBatch: Bool = true
     ) {
         self.storage = storage
         self.httpClient = httpClient
         self.options = options
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(storage: storage)
 
-        Task {
-            await triggerBatch()
+        if triggerBatch {
+            Task {
+                await self.triggerBatch()
+            }
         }
     }
 
