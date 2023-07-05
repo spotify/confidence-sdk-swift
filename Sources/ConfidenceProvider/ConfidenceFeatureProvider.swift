@@ -312,8 +312,8 @@ extension ConfidenceFeatureProvider {
         var options: ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
-        var applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent)
         var cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+        var flagApplier: (any FlagApplier)?
 
         /// Initializes the builder with the given credentails.
         ///
@@ -328,13 +328,13 @@ extension ConfidenceFeatureProvider {
             options: ConfidenceClientOptions,
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
-            applyQueue: DispatchQueueType = DispatchQueue(label: "com.confidence.apply", attributes: .concurrent),
+            flagApplier: FlagApplier?,
             cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
         ) {
             self.options = options
             self.session = session
             self.localOverrides = localOverrides
-            self.applyQueue = applyQueue
+            self.flagApplier = flagApplier
             self.cache = cache
         }
 
@@ -348,7 +348,7 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
+                flagApplier: flagApplier,
                 cache: cache)
         }
 
@@ -356,12 +356,12 @@ extension ConfidenceFeatureProvider {
         ///
         /// - Parameters:
         ///      - applyQueue: queue to use for sending Apply requests.
-        public func with(applyQueue: DispatchQueueType) -> Builder {
+        public func with(flagApplier: FlagApplier) -> Builder {
             return Builder(
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
+                flagApplier: flagApplier,
                 cache: cache)
         }
 
@@ -374,7 +374,7 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: localOverrides,
-                applyQueue: applyQueue,
+                flagApplier: flagApplier,
                 cache: cache)
         }
 
@@ -404,13 +404,13 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: session,
                 localOverrides: self.localOverrides.merging(localOverrides) { _, new in new },
-                applyQueue: applyQueue,
+                flagApplier: flagApplier,
                 cache: cache)
         }
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
-            let flagApplier = FlagApplierWithRetries(
+            let flagApplier = flagApplier ?? FlagApplierWithRetries(
                 httpClient: NetworkClient(region: options.region),
                 storage: DefaultStorage(),
                 options: options

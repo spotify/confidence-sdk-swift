@@ -60,12 +60,12 @@ class Confidence: XCTestCase {
         }
 
         let cache = PersistentProviderCache.fromDefaultStorage()
-        let fakeApplyQueue = DispatchQueueFake()
+        let flagApplier = FlagApplierMock()
 
         let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
-        .with(applyQueue: fakeApplyQueue)
+        .with(flagApplier: flagApplier)
         .with(cache: cache)
         .build()
 
@@ -85,7 +85,7 @@ class Confidence: XCTestCase {
         XCTAssertNotNil(result.variant)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
-        XCTAssertEqual(fakeApplyQueue.count, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
     func testConfidenceFeatureNoSegmentMatch() async throws {
@@ -94,12 +94,12 @@ class Confidence: XCTestCase {
         }
 
         let cache = PersistentProviderCache.fromDefaultStorage()
-        let fakeApplyQueue = DispatchQueueFake()
+        let flagApplier = FlagApplierMock()
 
         let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
             credentials: .clientSecret(secret: clientToken)
         )
-        .with(applyQueue: fakeApplyQueue)
+        .with(flagApplier: flagApplier)
         .with(cache: cache)
         .build()
 
@@ -118,7 +118,7 @@ class Confidence: XCTestCase {
         XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
-        XCTAssertEqual(fakeApplyQueue.count, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 }
 
