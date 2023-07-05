@@ -8,15 +8,16 @@ import XCTest
 // swiftlint:disable file_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
+    private var flagApplier = FlagApplierMock()
     private let builder =
         ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
-        .with(applyQueue: DispatchQueueFake())
     private let cache = PersistentProviderCache.fromDefaultStorage()
 
     override func setUp() {
         try? cache.clear()
         MockedConfidenceClientURLProtocol.reset()
+        flagApplier = FlagApplierMock()
 
         super.setUp()
     }
@@ -26,6 +27,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
@@ -52,21 +54,25 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         provider.onContextSet(
             oldContext: MutableContext(targetingKey: "user1"), newContext: MutableContext(targetingKey: "user2"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user2"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user2"))
 
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 2)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveIntegerFlag() throws {
+    func testResolveIntegerFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -79,24 +85,29 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveAndApplyIntegerFlag() throws {
+    func testResolveAndApplyIntegerFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -110,24 +121,30 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
+
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveAndApplyIntegerFlagNoSegmentMatch() throws {
+    func testResolveAndApplyIntegerFlagNoSegmentMatch() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -141,26 +158,31 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(flagApplier: flagApplier)
             .build()
 
         let ctx = MutableContext(targetingKey: "user2")
         provider.initialize(initialContext: ctx)
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user2"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(targetingKey: "user2"))
 
-        XCTAssertEqual(evaluation.value, 1)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
-        XCTAssertEqual(evaluation.variant, nil)
+            XCTAssertEqual(evaluation.value, 1)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.defaultReason.rawValue)
+            XCTAssertEqual(evaluation.variant, nil)
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveAndApplyIntegerFlagTwice() throws {
+    func testResolveAndApplyIntegerFlagTwice() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -174,68 +196,33 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
-        _ = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(targetingKey: "user1"))
+            _ = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
+        XCTAssertEqual(flagApplier.applyCallCount, 2)
     }
 
-    func testResolveAndApplyIntegerFlagTwiceSlow() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
-            "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
-        ]
-
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
-            "flags/flag": .init(resolve: resolve)
-        ]
-
-        let expectation = XCTestExpectation(description: "applied complete")
-        expectation.expectedFulfillmentCount = 2
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let provider =
-            builder
-            .with(session: session)
-            .with(cache: cache)
-            .with(applyQueue: DispatchQueueFakeSlow(expectation: expectation))
-            .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
-
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
-        _ = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
-
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        wait(for: [expectation], timeout: 2.0)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
-    }
-
-    func testResolveAndApplyIntegerFlagError() throws {
+    func testResolveAndApplyIntegerFlagError() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -250,28 +237,33 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
-        _ = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(targetingKey: "user1"))
+            _ = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 2)
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+        }
+        try await evaluationTask.value
+
+        XCTAssertEqual(flagApplier.applyCallCount, 2)
     }
 
-    func testStaleEvaluationContextInCache() throws {
+    func testStaleEvaluationContextInCache() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -294,21 +286,24 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             ctx: MutableContext(targetingKey: "user0"),
             resolveToken: "token0")
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 0)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertNil(evaluation.variant)
-        XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+            XCTAssertEqual(evaluation.value, 0)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertNil(evaluation.variant)
+            XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
+            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+        }
+        try await evaluationTask.value
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testResolveDoubleFlag() throws {
+    func testResolveDoubleFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .double(3.1)]))
         ]
@@ -321,24 +316,29 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getDoubleEvaluation(
-            key: "flag.size",
-            defaultValue: 1.1,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getDoubleEvaluation(
+                key: "flag.size",
+                defaultValue: 1.1,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 3.1)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, 3.1)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveBooleanFlag() throws {
+    func testResolveBooleanFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["visible": .boolean(false)]))
         ]
@@ -351,24 +351,29 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getBooleanEvaluation(
-            key: "flag.visible",
-            defaultValue: true,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getBooleanEvaluation(
+                key: "flag.visible",
+                defaultValue: true,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, false)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, false)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveObjectFlag() throws {
+    func testResolveObjectFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -381,24 +386,30 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
 
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
-        let evaluation = try provider.getObjectEvaluation(
-            key: "flag",
-            defaultValue: .structure(["size": .integer(0)]),
-            context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, .structure(["size": .integer(3)]))
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+        let evaluationTask = Task {
+            let evaluation = try provider.getObjectEvaluation(
+                key: "flag",
+                defaultValue: .structure(["size": .integer(0)]),
+                context: MutableContext(targetingKey: "user1"))
+
+            XCTAssertEqual(evaluation.value, .structure(["size": .integer(3)]))
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveNullValues() throws {
+    func testResolveNullValues() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .null]))
         ]
@@ -415,47 +426,57 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 42,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 42,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.value, 42)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.value, 42)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testProviderThrowsFlagNotFound() throws {
+    func testProviderThrowsFlagNotFound() async throws {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: [:])
         let provider =
             builder
             .with(session: session)
             .with(cache: cache)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        XCTAssertThrowsError(
-            try provider.getObjectEvaluation(
-                key: "flag",
-                defaultValue: .structure(["size": .integer(0)]),
-                context: MutableContext(targetingKey: "user1"))
-        ) { error in
-            XCTAssertEqual(
-                error as? OpenFeatureError,
-                OpenFeatureError.flagNotFoundError(key: "flag"))
+        let evaluationTask = Task {
+            XCTAssertThrowsError(
+                try provider.getObjectEvaluation(
+                    key: "flag",
+                    defaultValue: .structure(["size": .integer(0)]),
+                    context: MutableContext(targetingKey: "user1"))
+            ) { error in
+                XCTAssertEqual(
+                    error as? OpenFeatureError,
+                    OpenFeatureError.flagNotFoundError(key: "flag"))
+            }
         }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testProviderNoTargetingKey() throws {
+    func testProviderNoTargetingKey() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .null]))
         ]
@@ -472,24 +493,29 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
 
         // Note no context has been set via initialize or onContextSet
 
-        XCTAssertThrowsError(
-            try provider.getIntegerEvaluation(
-                key: "flag.size",
-                defaultValue: 3,
-                context: nil)
-        ) { error in
-            XCTAssertEqual(
-                error as? OpenFeatureError, OpenFeatureError.invalidContextError)
+        let evaluationTask = Task {
+            XCTAssertThrowsError(
+                try provider.getIntegerEvaluation(
+                    key: "flag.size",
+                    defaultValue: 3,
+                    context: nil)
+            ) { error in
+                XCTAssertEqual(
+                    error as? OpenFeatureError, OpenFeatureError.invalidContextError)
+            }
         }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 0)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testProviderTargetingKeyError() throws {
+    func testProviderTargetingKeyError() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -502,6 +528,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         // note "custom_targeting_key" is treated specially in the MockedSession
         provider.initialize(
@@ -509,22 +536,26 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 targetingKey: "user1",
                 structure: MutableStructure(attributes: ["custom_targeting_key": Value.integer(2)])))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 1,
-            context: MutableContext(
-                targetingKey: "user1",
-                structure: MutableStructure(attributes: ["custom_targeting_key": Value.integer(2)])))
-        XCTAssertEqual(evaluation.value, 1)
-        XCTAssertNil(evaluation.variant)
-        XCTAssertEqual(evaluation.errorCode, ErrorCode.invalidContext)
-        XCTAssertEqual(evaluation.errorMessage, "Invalid targeting key")
-        XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 1,
+                context: MutableContext(
+                    targetingKey: "user1",
+                    structure: MutableStructure(attributes: ["custom_targeting_key": Value.integer(2)])))
+            XCTAssertEqual(evaluation.value, 1)
+            XCTAssertNil(evaluation.variant)
+            XCTAssertEqual(evaluation.errorCode, ErrorCode.invalidContext)
+            XCTAssertEqual(evaluation.errorMessage, "Invalid targeting key")
+            XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testProviderCannotParse() throws {
+    func testProviderCannotParse() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -537,23 +568,28 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        XCTAssertThrowsError(
-            try provider.getStringEvaluation(
-                key: "flag.size",
-                defaultValue: "value",
-                context: MutableContext(targetingKey: "user1"))
-        ) { error in
-            XCTAssertEqual(
-                error as? OpenFeatureError, OpenFeatureError.parseError(message: "Unable to parse flag value: 3"))
+        let evaluationTask = Task {
+            XCTAssertThrowsError(
+                try provider.getStringEvaluation(
+                    key: "flag.size",
+                    defaultValue: "value",
+                    context: MutableContext(targetingKey: "user1"))
+            ) { error in
+                XCTAssertEqual(
+                    error as? OpenFeatureError, OpenFeatureError.parseError(message: "Unable to parse flag value: 3"))
+            }
         }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testLocalOverrideReplacesFlag() throws {
+    func testLocalOverrideReplacesFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -564,23 +600,28 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
+            .with(flagApplier: flagApplier)
             .overrides(.flag(name: "flag", variant: "control", value: ["size": .integer(4)]))
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
-        XCTAssertEqual(evaluation.value, 4)
+            XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
+            XCTAssertEqual(evaluation.value, 4)
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testLocalOverridePartiallyReplacesFlag() throws {
+    func testLocalOverridePartiallyReplacesFlag() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3), "color": .string("green")]))
         ]
@@ -591,32 +632,37 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
+            .with(flagApplier: flagApplier)
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let sizeEvaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let sizeEvaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(sizeEvaluation.variant, "treatment")
-        XCTAssertEqual(sizeEvaluation.reason, Reason.staticReason.rawValue)
-        XCTAssertEqual(sizeEvaluation.value, 4)
+            XCTAssertEqual(sizeEvaluation.variant, "treatment")
+            XCTAssertEqual(sizeEvaluation.reason, Reason.staticReason.rawValue)
+            XCTAssertEqual(sizeEvaluation.value, 4)
 
-        let colorEvaluation = try provider.getStringEvaluation(
-            key: "flag.color",
-            defaultValue: "blue",
-            context: MutableContext(targetingKey: "user1"))
+            let colorEvaluation = try provider.getStringEvaluation(
+                key: "flag.color",
+                defaultValue: "blue",
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(colorEvaluation.variant, "control")
-        XCTAssertEqual(colorEvaluation.reason, Reason.targetingMatch.rawValue)
-        XCTAssertEqual(colorEvaluation.value, "green")
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 1)
+            XCTAssertEqual(colorEvaluation.variant, "control")
+            XCTAssertEqual(colorEvaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(colorEvaluation.value, "green")
+            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+        }
+
+        try await evaluationTask.value
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testLocalOverrideNoEvaluationContext() throws {
+    func testLocalOverrideNoEvaluationContext() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3), "color": .string("green")]))
         ]
@@ -627,33 +673,38 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
+            .with(flagApplier: flagApplier)
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
             .build()
 
-        let sizeEvaluation1 = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: nil)
+        let evaluationTask = Task {
+            let sizeEvaluation1 = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: nil)
 
-        XCTAssertEqual(sizeEvaluation1.variant, "treatment")
-        XCTAssertEqual(sizeEvaluation1.reason, Reason.staticReason.rawValue)
-        XCTAssertEqual(sizeEvaluation1.value, 4)
+            XCTAssertEqual(sizeEvaluation1.variant, "treatment")
+            XCTAssertEqual(sizeEvaluation1.reason, Reason.staticReason.rawValue)
+            XCTAssertEqual(sizeEvaluation1.value, 4)
 
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+            provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let sizeEvaluation2 = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+            let sizeEvaluation2 = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(sizeEvaluation2.variant, "treatment")
-        XCTAssertEqual(sizeEvaluation2.reason, Reason.staticReason.rawValue)
-        XCTAssertEqual(sizeEvaluation2.value, 4)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+            XCTAssertEqual(sizeEvaluation2.variant, "treatment")
+            XCTAssertEqual(sizeEvaluation2.reason, Reason.staticReason.rawValue)
+            XCTAssertEqual(sizeEvaluation2.value, 4)
+            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+        }
+
+        try await evaluationTask.value
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testLocalOverrideTwiceTakesSecondOverride() throws {
+    func testLocalOverrideTwiceTakesSecondOverride() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -664,24 +715,29 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
+            .with(flagApplier: flagApplier)
             .overrides(.field(path: "flag.size", variant: "control", value: .integer(4)))
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(5)))
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.variant, "treatment")
-        XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
-        XCTAssertEqual(evaluation.value, 5)
+            XCTAssertEqual(evaluation.variant, "treatment")
+            XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
+            XCTAssertEqual(evaluation.value, 5)
+        }
+
+        try await evaluationTask.value
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testOverridingInProvider() throws {
+    func testOverridingInProvider() async throws {
         let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -694,20 +750,25 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         provider.overrides(.field(path: "flag.size", variant: "treatment", value: .integer(5)))
 
-        let evaluation = try provider.getIntegerEvaluation(
-            key: "flag.size",
-            defaultValue: 0,
-            context: MutableContext(targetingKey: "user1"))
+        let evaluationTask = Task {
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
 
-        XCTAssertEqual(evaluation.variant, "treatment")
-        XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
-        XCTAssertEqual(evaluation.value, 5)
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.applyStats, 0)
+            XCTAssertEqual(evaluation.variant, "treatment")
+            XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
+            XCTAssertEqual(evaluation.value, 5)
+        }
+
+        try await evaluationTask.value
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 }
 

@@ -6,7 +6,6 @@ import OpenFeature
 class MockedConfidenceClientURLProtocol: URLProtocol {
     public static var callStats = 0
     public static var resolveStats = 0
-    public static var applyStats = 0
     public static var flags: [String: TestFlag] = [:]
     public static var failFirstApply = false
 
@@ -26,7 +25,6 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
         MockedConfidenceClientURLProtocol.flags = [:]
         MockedConfidenceClientURLProtocol.callStats = 0
         MockedConfidenceClientURLProtocol.resolveStats = 0
-        MockedConfidenceClientURLProtocol.applyStats = 0
         MockedConfidenceClientURLProtocol.failFirstApply = false
     }
 
@@ -47,10 +45,6 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
         switch path {
         case _ where path.hasSuffix(":resolve"):
             return resolve()
-        case _ where path.hasSuffix(":apply"):
-            return MockedConfidenceClientURLProtocol.failFirstApply
-                ? apply(failAt: 1)
-                : apply()
         default:
             client?.urlProtocol(self, didFailWithError: NSError(domain: "test", code: URLError.badURL.rawValue))
             return
@@ -118,30 +112,6 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
             }
         respondWithSuccess(
             response: ResolveFlagsResponse(resolvedFlags: flags, resolveToken: "token1"))
-    }
-
-    private func apply(failAt: Int = 0) {
-        MockedConfidenceClientURLProtocol.callStats += 1
-        MockedConfidenceClientURLProtocol.applyStats += 1
-        if MockedConfidenceClientURLProtocol.applyStats == failAt {
-            respondWithError(
-                statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "Server error")
-        }
-
-        guard let request = request.decodeBody(type: ApplyFlagsRequest.self) else {
-            client?.urlProtocol(
-                self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
-            return
-        }
-
-        request.flags.forEach { flag in
-            guard flag.flag.hasPrefix("flags/") else {
-                respondWithError(
-                    statusCode: 400, code: GrpcStatusCode.failedPrecondition.rawValue, message: "Incorrect flag name")
-                return
-            }
-        }
-        respondWithSuccess(response: ApplyFlagsResponse())
     }
 
     private func respondWithError(statusCode: Int, code: Int, message: String) {
