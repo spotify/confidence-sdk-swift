@@ -9,6 +9,11 @@ class StorageMock: Storage {
 
     var saveExpectation: XCTestExpectation?
 
+    convenience init(data: Encodable) throws {
+        self.init()
+        try self.save(data: data)
+    }
+
     func save(data: Encodable) throws {
         let dataB = try JSONEncoder().encode(data)
         self.data = String(data: dataB, encoding: .utf8) ?? ""
