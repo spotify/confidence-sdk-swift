@@ -98,7 +98,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_previoslyStoredData_batchTriggered() async throws {
         // Given storage that has previously stored data (100 records, same token)
         let prefilledStorage = StorageMock()
-        let prefilledCache = try prefilledCacheData(sameToken: true)
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
 
         let expectation = XCTestExpectation()
@@ -125,7 +125,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_previoslyStoredData_cleanAfterSending() async throws {
         // Given storage that has previously stored data (100 records, same token)
         let prefilledStorage = StorageMock()
-        let prefilledCache = try prefilledCacheData(sameToken: true)
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
 
         let expectation = XCTestExpectation(description: "Waiting for batch trigger")
@@ -155,7 +155,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // And storage that has previosly stored data (100 records, same token)
         let offlineClient = HttpClientMock(testMode: .error)
         let prefilledStorage = StorageMock()
-        let prefilledCache = try prefilledCacheData(sameToken: true)
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
 
         // When flag applier is initialised
@@ -265,7 +265,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // And storage that has previously stored 100 records with different tokens
         let offlineClient = HttpClientMock(testMode: .error)
         let prefilledStorage = StorageMock()
-        let prefilledCache = try prefilledCacheData()
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(resolveEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
         let applier = FlagApplierWithRetries(
             httpClient: offlineClient,
@@ -278,9 +278,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // And http client request fails with .invalidResponse
         await applier.apply(flagName: "flag1", resolveToken: "token1")
 
-        // Then 101 resolve event records are stored on disk
+        // Then 100 resolve event records are stored on disk
         let storedData: CacheData = try XCTUnwrap(prefilledStorage.load(defaultValue: CacheData.empty()))
-        XCTAssertEqual(storedData.resolveEvents.count, 101)
+        XCTAssertEqual(storedData.resolveEvents.count, 100)
     }
 
     func testApplyOffline_100applyCalls_sameToken() async throws {
@@ -288,7 +288,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // And storage that has previously stored 100 records with same token
         let offlineClient = HttpClientMock(testMode: .error)
         let prefilledStorage = StorageMock()
-        let prefilledCache = try prefilledCacheData(sameToken: true)
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
         let applier = FlagApplierWithRetries(
             httpClient: offlineClient,
@@ -308,40 +308,10 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertEqual(storedData.resolveEvents[0].events.count, 200)
     }
 
-    // MARK: Helpers
-
-    private func prefilledFlagEventsData() throws -> CacheData {
-        var execution = 1, total = 100
-        var flagEvents: [FlagApply] = []
-        while execution <= total {
-            let uuid = UUID()
-            let date = Date(timeIntervalSince1970: Double(execution * 1000))
-            let event = FlagApply(name: uuid.uuidString, applyTime: date)
-            flagEvents.append(event)
-
-            execution += 1
-        }
-
-        let cacheData = CacheData(resolveToken: "token0", events: flagEvents)
-        return cacheData
-    }
-
-    private func prefilledCacheData(sameToken: Bool = false) throws -> CacheData {
-        var cacheData = CacheData.empty()
-        for execution in 0..<100 {
-            let uuid = UUID()
-            let date = Date(timeIntervalSince1970: Double(execution * 1000))
-            let token = sameToken ? "token" : uuid.uuidString
-            cacheData.add(resolveToken: token, flagName: uuid.uuidString, applyTime: date)
-        }
-
-        return cacheData
-    }
-
     private func hundredApplyCalls(applier: FlagApplier, sameToken: Bool = false) async {
         for _ in 0..<100 {
             let uuid = UUID()
-            let token = sameToken ? "token" : uuid.uuidString
+            let token = sameToken ? "token0" : uuid.uuidString
             await applier.apply(flagName: uuid.uuidString, resolveToken: token)
         }
     }

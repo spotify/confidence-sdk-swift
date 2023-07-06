@@ -36,7 +36,8 @@ final class FlagApplierWithRetries: FlagApplier {
         }
 
         await cacheDataInteractor.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
-        executeApply(resolveToken: resolveToken, name: flagName, applyTime: applyTime) { success in
+        let flagApply = FlagApply(name: flagName, applyTime: applyTime)
+        executeApply(resolveToken: resolveToken, items: [flagApply]) { success in
             guard success else {
                 self.write(resolveToken: resolveToken, name: flagName, applyTime: applyTime)
                 return
@@ -90,29 +91,6 @@ final class FlagApplierWithRetries: FlagApplier {
             storedData.remove(resolveToken: resolveToken)
             try storage.save(data: storedData)
         } catch {}
-    }
-
-    private func executeApply(
-        resolveToken: String,
-        name: String,
-        applyTime: Date,
-        completion: @escaping (Bool) -> Void
-    ) {
-        let appliedFlagRequestItem = AppliedFlagRequestItem(
-            flag: name,
-            applyTime: applyTime)
-        let request = ApplyFlagsRequest(
-            flags: [appliedFlagRequestItem],
-            sendTime: Date.backport.nowISOString,
-            clientSecret: options.credentials.getSecret(),
-            resolveToken: resolveToken)
-        do {
-            try performRequest(request: request)
-            completion(true)
-        } catch {
-            self.logApplyError(error: error)
-            completion(false)
-        }
     }
 
     private func executeApply(resolveToken: String, items: [FlagApply], completion: @escaping (Bool) -> Void) {

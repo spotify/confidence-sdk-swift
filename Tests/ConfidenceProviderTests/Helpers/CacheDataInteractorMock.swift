@@ -5,14 +5,11 @@ import Foundation
 final actor CacheDataInteractorMock: CacheDataActor {
     var cache = CacheData.empty()
 
-    func add(resolveToken: String, flagName: String, applyTime: Date) {
-    }
+    func add(resolveToken: String, flagName: String, applyTime: Date) {}
 
-    func remove(resolveToken: String, flagName: String) {
-    }
+    func remove(resolveToken: String, flagName: String) {}
 
-    func remove(resolveToken: String) {
-    }
+    func remove(resolveToken: String) {}
 
     func applyEventExists(resolveToken: String, name: String) -> Bool {
         return false
