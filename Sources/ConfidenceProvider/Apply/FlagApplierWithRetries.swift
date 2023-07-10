@@ -21,9 +21,7 @@ final class FlagApplierWithRetries: FlagApplier {
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(storage: storage)
 
         if triggerBatch {
-            Task {
-                await self.triggerBatch()
-            }
+            self.triggerBatch()
         }
     }
 
@@ -31,7 +29,9 @@ final class FlagApplierWithRetries: FlagApplier {
         let applyTime = Date.backport.now
         let eventExists = await cacheDataInteractor.applyEventExists(resolveToken: resolveToken, name: flagName)
         guard eventExists == false else {
-            // If record is found in the cache, early return without taking further action (de-duplication).
+            // If record is found in the cache, early return (de-duplication).
+            // Triggerring batch apply in case if there are any unsent events stored
+            triggerBatch()
             return
         }
 
@@ -42,21 +42,19 @@ final class FlagApplierWithRetries: FlagApplier {
                 self.write(resolveToken: resolveToken, name: flagName, applyTime: applyTime)
                 return
             }
-            Task {
-                await self.cacheDataInteractor.setEventSent(resolveToken: resolveToken, name: flagName)
-            }
+            self.setEventSent(resolveToken: resolveToken, name: flagName)
+            self.triggerBatch()
         }
     }
 
     // MARK: private
 
-    private func triggerBatch() async {
-        let cache = await cacheDataInteractor.cache
-        guard cache.isEmpty == false else {
+    private func triggerBatch() {
+        guard let storedData = try? storage.load(defaultValue: CacheData.empty()), storedData.isEmpty == false else {
             return
         }
 
-        cache.resolveEvents.forEach { resolveEvent in
+        storedData.resolveEvents.forEach { resolveEvent in
             executeApply(
                 resolveToken: resolveEvent.resolveToken,
                 items: resolveEvent.events
@@ -64,33 +62,36 @@ final class FlagApplierWithRetries: FlagApplier {
                 guard success else {
                     return
                 }
+                // Remove events from storage that were successfully sent
+                // Set 'sent' property of apply events to true
                 self.remove(resolveToken: resolveEvent.resolveToken)
                 resolveEvent.events.forEach { applyEvent in
-                    Task {
-                        await self.cacheDataInteractor.setEventSent(
-                            resolveToken: resolveEvent.resolveToken,
-                            name: applyEvent.name
-                        )
-                    }
+                    self.setEventSent(resolveToken: resolveEvent.resolveToken, name: applyEvent.name)
                 }
             }
         }
     }
 
+    private func setEventSent(resolveToken: String, name: String) {
+        Task {
+            await self.cacheDataInteractor.setEventSent(resolveToken: resolveToken, name: name)
+        }
+    }
+
     private func write(resolveToken: String, name: String, applyTime: Date) {
-        do {
-            var storedData = try storage.load(defaultValue: CacheData.empty())
-            storedData.add(resolveToken: resolveToken, flagName: name, applyTime: applyTime)
-            try storage.save(data: storedData)
-        } catch {}
+        guard var storedData = try? storage.load(defaultValue: CacheData.empty()) else {
+            return
+        }
+        storedData.add(resolveToken: resolveToken, flagName: name, applyTime: applyTime)
+        try? storage.save(data: storedData)
     }
 
     private func remove(resolveToken: String) {
-        do {
-            var storedData = try storage.load(defaultValue: CacheData.empty())
-            storedData.remove(resolveToken: resolveToken)
-            try storage.save(data: storedData)
-        } catch {}
+        guard var storedData = try? storage.load(defaultValue: CacheData.empty()) else {
+            return
+        }
+        storedData.remove(resolveToken: resolveToken)
+        try? storage.save(data: storedData)
     }
 
     private func executeApply(resolveToken: String, items: [FlagApply], completion: @escaping (Bool) -> Void) {

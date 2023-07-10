@@ -6,7 +6,7 @@ import XCTest
 final class HttpClientMock: HttpClient {
     var testMode: TestMode
     var postCallCounter = 0
-    var data: Codable?
+    var data: [Codable]?
     var expectation: XCTestExpectation?
 
     enum TestMode {
@@ -24,7 +24,7 @@ final class HttpClientMock: HttpClient {
         }
 
         postCallCounter += 1
-        self.data = data
+        self.data == nil ? self.data = [data] : self.data?.append(data)
 
         switch testMode {
         case .success:

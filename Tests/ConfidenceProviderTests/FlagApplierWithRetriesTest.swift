@@ -117,9 +117,86 @@ class FlagApplierWithRetriesTest: XCTestCase {
         wait(for: [expectation], timeout: 5)
 
         // Then http client sends apply flags batch request, containing 100 records
-        let request = try XCTUnwrap(httpClient.data as? ApplyFlagsRequest)
+        let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
         XCTAssertEqual(httpClient.postCallCounter, 1)
         XCTAssertEqual(request.flags.count, 100)
+    }
+
+    func testApply_multipleApplyCalls_batchTriggered() async throws {
+        // Given flag applier with http client that is offline
+        let httpClient = HttpClientMock(testMode: .error)
+        let expectation = XCTestExpectation(description: "Waiting for batch trigger")
+        expectation.expectedFulfillmentCount = 3
+        httpClient.expectation = expectation
+
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient,
+            storage: storage,
+            options: options,
+            triggerBatch: false
+        )
+
+        // When first apply call is issued
+        // And http client request fails with .invalidResponse
+        await applier.apply(flagName: "flag1", resolveToken: "token1")
+
+        // And second apply call is issued
+        // With test mode .success
+        httpClient.testMode = .success
+        await applier.apply(flagName: "flag2", resolveToken: "token1")
+
+        wait(for: [expectation], timeout: 1)
+
+        // Then 3 post calls are issued (one offline, one single apply, one batch request)
+        XCTAssertEqual(httpClient.postCallCounter, 3)
+        XCTAssertEqual(httpClient.data?.count, 3)
+
+        let request1 = try XCTUnwrap(httpClient.data?[0] as? ApplyFlagsRequest)
+        let request2 = try XCTUnwrap(httpClient.data?[1] as? ApplyFlagsRequest)
+        let request3 = try XCTUnwrap(httpClient.data?[2] as? ApplyFlagsRequest)
+        XCTAssertEqual(request1.flags.count, 1)
+        XCTAssertEqual(request1.flags.first?.flag, "flags/flag1")
+        XCTAssertEqual(request2.flags.count, 1)
+        XCTAssertEqual(request2.flags.first?.flag, "flags/flag2")
+        XCTAssertEqual(request3.flags.count, 1)
+        XCTAssertEqual(request3.flags.first?.flag, "flags/flag1")
+    }
+
+    func testApply_multipleApplyCalls_sentSet() async throws {
+        // Given flag applier with http client that is offline
+        let cacheDataInteractor = CacheDataInteractor(storage: storage)
+        let httpClient = HttpClientMock(testMode: .error)
+        let expectation = XCTestExpectation(description: "Waiting for batch trigger")
+        expectation.expectedFulfillmentCount = 3
+        httpClient.expectation = expectation
+
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient,
+            storage: storage,
+            options: options,
+            cacheDataInteractor: cacheDataInteractor,
+            triggerBatch: false
+        )
+
+        // When first apply call is issued
+        // And http client request fails with .invalidResponse
+        await applier.apply(flagName: "flag1", resolveToken: "token1")
+
+        // And second apply call is issued
+        // With test mode .success
+        httpClient.testMode = .success
+        await applier.apply(flagName: "flag2", resolveToken: "token1")
+        wait(for: [expectation], timeout: 1)
+
+        Task {
+            // Then both requests are marked as sent in cache data
+            let cacheData = await cacheDataInteractor.cache
+            let flagEvent1 = cacheData.flagEvent(resolveToken: "token1", name: "flag1")
+            let flagEvent2 = cacheData.flagEvent(resolveToken: "token1", name: "flag2")
+
+            XCTAssertEqual(flagEvent1?.applyEvent.sent, true)
+            XCTAssertEqual(flagEvent2?.applyEvent.sent, true)
+        }
     }
 
     func testApply_previoslyStoredData_cleanAfterSending() async throws {
