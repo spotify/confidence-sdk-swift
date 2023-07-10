@@ -103,9 +103,7 @@ struct CacheData: Codable {
         }
     }
 
-    // MARK: Private
-
-    private func flagEvent(resolveToken: String, name: String) -> FlagApply? {
+    func flagEvent(resolveToken: String, name: String) -> FlagApply? {
         guard let resolveTokenIndex = resolveEventIndex(resolveToken: resolveToken),
               let flagEventIndex = applyEventIndex(resolveToken: resolveToken, name: name) else {
             return nil
@@ -113,6 +111,8 @@ struct CacheData: Codable {
 
         return resolveEvents[resolveTokenIndex].events[flagEventIndex]
     }
+
+    // MARK: Private
 
     private func flagEventIndex(resolveToken: String, name: String) -> (resolveEventIndex: Int?, flagEventIndex: Int?) {
         guard let resolveTokenIndex = resolveEventIndex(resolveToken: resolveToken) else {
