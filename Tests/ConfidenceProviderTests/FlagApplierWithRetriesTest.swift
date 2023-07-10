@@ -19,7 +19,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_differentTokens() async {
         // Given flag applier
-        let applier = FlagApplierWithRetries(httpClient: httpClient, storage: storage, options: options, triggerBatch: false)
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient, storage: storage, options: options, triggerBatch: false
+        )
 
         // When 3 apply calls are issued with different tokens
         await applier.apply(flagName: "flag1", resolveToken: "token1")
@@ -32,7 +34,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_duplicateEventsAreNotSent() async {
         // Given flag applier
-        let applier = FlagApplierWithRetries(httpClient: httpClient, storage: storage, options: options, triggerBatch: false)
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient, storage: storage, options: options, triggerBatch: false
+        )
 
         // When 3 identical apply calls are issued
         await applier.apply(flagName: "flag1", resolveToken: "token1")
@@ -45,7 +49,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_differentFlags() async {
         // Given flag applier
-        let applier = FlagApplierWithRetries(httpClient: httpClient, storage: storage, options: options, triggerBatch: false)
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient, storage: storage, options: options, triggerBatch: false
+        )
 
         // When 3 apply calls are issued with different flag names
         await applier.apply(flagName: "flag1", resolveToken: "token1")
@@ -58,7 +64,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_doesNotstoreOnDisk() async throws {
         // Given flag applier
-        let applier = FlagApplierWithRetries(httpClient: httpClient, storage: storage, options: options, triggerBatch: false)
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient, storage: storage, options: options, triggerBatch: false
+        )
 
         // When 3 apply calls are issued with different flag names
         await applier.apply(flagName: "flag1", resolveToken: "token1")
@@ -168,7 +176,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApplyOffline_storesOnDisk() async throws {
         // Given offline http client and flag applier
         let offlineClient = HttpClientMock(testMode: .error)
-        let applier = FlagApplierWithRetries(httpClient: offlineClient, storage: storage, options: options, triggerBatch: false)
+        let applier = FlagApplierWithRetries(
+            httpClient: offlineClient, storage: storage, options: options, triggerBatch: false
+        )
 
         // When 3 apply calls are issued with different flag names
         // And http client request fails with .invalidResponse
@@ -196,7 +206,9 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApplyOffline_storesOnDisk_multipleTokens() async throws {
         // Given offline http client and flag applier
         let offlineClient = HttpClientMock(testMode: .error)
-        let applier = FlagApplierWithRetries(httpClient: offlineClient, storage: storage, options: options, triggerBatch: false)
+        let applier = FlagApplierWithRetries(
+            httpClient: offlineClient, storage: storage, options: options, triggerBatch: false
+        )
 
         // When 3 apply calls are issued with different tokens
         // And http client request fails with .invalidResponse
