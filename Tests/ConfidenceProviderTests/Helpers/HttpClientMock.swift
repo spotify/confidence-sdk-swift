@@ -1,4 +1,5 @@
 import Foundation
+import XCTest
 
 @testable import ConfidenceProvider
 
@@ -6,6 +7,7 @@ final class HttpClientMock: HttpClient {
     var testMode: TestMode
     var postCallCounter = 0
     var data: Codable?
+    var expectation: XCTestExpectation?
 
     enum TestMode {
         case success
@@ -17,6 +19,10 @@ final class HttpClientMock: HttpClient {
     }
 
     func post<T>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T> where T: Decodable {
+        defer {
+            expectation?.fulfill()
+        }
+
         postCallCounter += 1
         self.data = data
 
