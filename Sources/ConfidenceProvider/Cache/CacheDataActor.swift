@@ -24,4 +24,7 @@ protocol CacheDataActor: Actor {
 
     /// Sets Flag Apply Event `sent` propery to `true`.
     func setEventSent(resolveToken: String, name: String)
+
+    /// Reads cache data from storage
+    func loadCacheFromStorage()
 }

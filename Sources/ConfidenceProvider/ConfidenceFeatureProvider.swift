@@ -4,8 +4,6 @@ import os
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
 ///
-///
-///
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {

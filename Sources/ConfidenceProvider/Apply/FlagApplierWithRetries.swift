@@ -20,8 +20,11 @@ final class FlagApplierWithRetries: FlagApplier {
         self.options = options
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(storage: storage)
 
-        if triggerBatch {
-            self.triggerBatch()
+        Task {
+            await self.cacheDataInteractor.loadCacheFromStorage()
+            if triggerBatch {
+                self.triggerBatch()
+            }
         }
     }
 

@@ -18,6 +18,7 @@ final class CacheDataInteractorTests: XCTestCase {
 
         // Then cache data is loaded from storage
         Task {
+            await cacheDataInteractor.loadCacheFromStorage()
             // Wrapped it in the Task in order to ensure that async code is completed before assertions
             let cache = await cacheDataInteractor.cache
             XCTAssertEqual(cache.resolveEvents.count, 10)
@@ -35,6 +36,7 @@ final class CacheDataInteractorTests: XCTestCase {
         }
 
         Task {
+            await cacheDataInteractor.loadCacheFromStorage()
             // When cache data add method is called
             await cacheDataInteractor.add(resolveToken: "token", flagName: "name", applyTime: Date())
 
@@ -51,6 +53,7 @@ final class CacheDataInteractorTests: XCTestCase {
         let cacheDataInteractor = CacheDataInteractor(storage: prefilledStorage)
 
         Task {
+            await cacheDataInteractor.loadCacheFromStorage()
             // When cache data add method is called
             await cacheDataInteractor.add(resolveToken: "token", flagName: "name", applyTime: Date())
 

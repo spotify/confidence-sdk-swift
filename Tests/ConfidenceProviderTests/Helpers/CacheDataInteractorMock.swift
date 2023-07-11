@@ -16,4 +16,6 @@ final actor CacheDataInteractorMock: CacheDataActor {
     }
 
     func setEventSent(resolveToken: String, name: String) {}
+
+    func loadCacheFromStorage() {}
 }

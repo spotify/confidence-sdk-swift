@@ -6,10 +6,6 @@ final actor CacheDataInteractor: CacheDataActor {
 
     init(storage: Storage) {
         self.storage = storage
-
-        Task {
-            await loadCacheFromStorage()
-        }
     }
 
     func add(resolveToken: String, flagName: String, applyTime: Date) {
@@ -40,7 +36,7 @@ final actor CacheDataInteractor: CacheDataActor {
         cache.setEventSent(resolveToken: resolveToken, name: name)
     }
 
-    private func loadCacheFromStorage() {
+    func loadCacheFromStorage() {
         guard let storedData = try? storage.load(defaultValue: cache),
               storedData.isEmpty == false else {
             return
