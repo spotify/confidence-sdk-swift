@@ -9,7 +9,7 @@ import os
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
-    public var hooks: [AnyHook] = []
+    public var hooks: [any Hook] = []
     public let metadata: Metadata = ConfidenceMetadata()
     private let lock = UnfairLock()
     private let resolver: Resolver
