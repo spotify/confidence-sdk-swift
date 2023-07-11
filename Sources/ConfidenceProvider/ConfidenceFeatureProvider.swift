@@ -408,11 +408,13 @@ extension ConfidenceFeatureProvider {
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
-            let flagApplier = flagApplier ?? FlagApplierWithRetries(
-                httpClient: NetworkClient(region: options.region),
-                storage: DefaultStorage(),
-                options: options
-            )
+            let flagApplier =
+                flagApplier
+                ?? FlagApplierWithRetries(
+                    httpClient: NetworkClient(region: options.region),
+                    storage: DefaultStorage(),
+                    options: options
+                )
 
             let client = RemoteConfidenceClient(
                 options: options,

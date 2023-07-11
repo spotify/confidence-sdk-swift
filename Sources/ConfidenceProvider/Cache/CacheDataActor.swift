@@ -1,9 +1,8 @@
 import Foundation
 
-/**
-`CacheDataActor` protocol defines an actor responsible for interactions with `CacheData`.
-Implementation of CacheDataActor is thread-safe by default.
- **/
+/// `CacheDataActor` protocol defines an actor responsible for interactions with `CacheData`.
+/// Implementation of CacheDataActor is thread-safe by default.
+
 protocol CacheDataActor: Actor {
     var cache: CacheData { get }
 
