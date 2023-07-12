@@ -16,24 +16,17 @@ public class RemoteConfidenceClient: ConfidenceClient {
         flagApplier: FlagApplier
     ) {
         self.options = options
-        if let session = session {
-            self.httpClient = NetworkClient(session: session, region: options.region)
-        } else {
-            self.httpClient = NetworkClient(region: options.region)
-        }
+        self.httpClient = NetworkClient(session: session, region: options.region)
         self.flagApplier = flagApplier
         self.applyOnResolve = applyOnResolve
     }
 
     public func resolve(flags: [String], ctx: EvaluationContext) throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
-            flags: flags.map { flag in
-                "flags/\(flag)"
-            },
+            flags: flags.map { "flags/\($0)" },
             evaluationContext: try getEvaluationContextStruct(ctx: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve)
-
 
         do {
             let result = try self.httpClient.post(path: ":resolve", data: request, resultType: ResolveFlagsResponse.self)
