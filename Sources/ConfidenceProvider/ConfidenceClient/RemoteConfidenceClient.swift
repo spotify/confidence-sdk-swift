@@ -21,6 +21,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
         self.applyOnResolve = applyOnResolve
     }
 
+    // MARK: Resolver - async
+
     public func resolve(flags: [String], ctx: EvaluationContext) throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
@@ -29,8 +31,9 @@ public class RemoteConfidenceClient: ConfidenceClient {
             apply: applyOnResolve)
 
         do {
-            let result = try self.httpClient.post(
-                path: ":resolve", data: request, resultType: ResolveFlagsResponse.self)
+            let result: HttpClientResponse<ResolveFlagsResponse> = try self.httpClient.post(path: ":resolve",
+                                                                                            data: request)
+
             guard result.response.status == .ok else {
                 throw result.response.mapStatusToError(error: result.decodedError)
             }
@@ -59,6 +62,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
         }
         return ResolveResult(resolvedValue: resolvedValue, resolveToken: resolveResult.resolveToken)
     }
+
+    // MARK: Private
 
     private func convert(resolvedFlag: ResolvedFlag, ctx: EvaluationContext) throws -> ResolvedValue {
         guard let responseFlagSchema = resolvedFlag.flagSchema,

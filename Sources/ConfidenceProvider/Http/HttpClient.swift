@@ -1,7 +1,9 @@
 import Foundation
 
 protocol HttpClient {
-    func post<T: Decodable>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T>
+    func post<T: Decodable>(path: String, data: Codable, completion: @escaping (HttpClientResponse<T>) -> Void) throws
+    func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResponse<T>
+    func post<T: Decodable>(path: String, data: Codable) throws -> HttpClientResponse<T>
 }
 
 final class NetworkClient: HttpClient {
@@ -42,7 +44,32 @@ final class NetworkClient: HttpClient {
         self.region = region
     }
 
-    func post<T: Decodable>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T> {
+    /// An unsafe synchronous version of the async post function. It is not advised to use this unless absolutely necessary as it
+    /// will block whichever thread you are on.
+    func post<T>(path: String, data: Codable) throws -> HttpClientResponse<T> where T : Decodable {
+        let semaphore = DispatchSemaphore(value: 0)
+        let responseBox = Box<HttpClientResponse<T>>()
+        Task {
+            responseBox.value = try await post(path: path, data: data)
+            semaphore.signal()
+        }
+        semaphore.wait()
+
+        if let response = responseBox.value {
+            return response
+        }
+
+        throw ConfidenceError.internalError(message: "No response received")
+    }
+
+    func post<T: Decodable>(path: String, data: Codable, completion: @escaping (HttpClientResponse<T>) -> Void) {
+        Task {
+            let result: HttpClientResponse<T> = try await post(path: path, data: data)
+            completion(result)
+        }
+    }
+
+    func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResponse<T> {
         guard let url = constructURL(base: baseUrl, path: path) else {
             throw ConfidenceError.internalError(message: "Could not create service url")
         }
@@ -59,14 +86,14 @@ final class NetworkClient: HttpClient {
         let jsonData = try encoder.encode(data)
         request.httpBody = jsonData
 
-        let result = try perform(request: request, retry: self.retry)
+        let result = try await perform(request: request, retry: self.retry)
 
         var response: HttpClientResponse<T> = HttpClientResponse(response: result.response)
         if let responseData = result.data {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             if response.response.status == .ok {
-                response.decodedData = try decoder.decode(resultType, from: responseData)
+                response.decodedData = try decoder.decode(T.self, from: responseData)
             } else {
                 do {
                     response.decodedError = try decoder.decode(HttpError.self, from: responseData)
@@ -81,61 +108,41 @@ final class NetworkClient: HttpClient {
         return response
     }
 
-    private func perform(request: URLRequest, retry: Retry) throws -> (response: HTTPURLResponse, data: Data?) {
-        var retryWait: TimeInterval? = 0
+    private func perform(request: URLRequest, retry: Retry) async throws -> (response: HTTPURLResponse, data: Data?) {
         let retryHandler = retry.handler()
+        let retryWait: TimeInterval? = retryHandler.retryIn()
 
         var resultData: Data?
         var resultResponse: HTTPURLResponse?
-        var resultError: Error?
 
-        while true {
-            let completeSemaphore = DispatchSemaphore(value: 0)
-            // Would be nice to user the async API here instead, but then the whole chain would have
-            // to be async, and we don't want to force users to async APIs
-            var attemptRetry = false
-            let task = self.session.dataTask(with: request) { data, response, error in
-                defer { completeSemaphore.signal() }
+        do {
+            let result: (Data, URLResponse) = try await self.session.data(for: request)
 
-                resultData = data
-                resultError = error
-                if (error as? URLError)?.code == .timedOut {
-                    attemptRetry = true
-                    return
-                }
+            guard let httpResponse = result.1 as? HTTPURLResponse else {
+                throw HttpClientError.invalidResponse
+            }
 
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    resultError = HttpClientError.invalidResponse
-                    return
-                }
-
-                resultResponse = httpResponse
-
-                if httpResponse.status?.responseType == .serverError {
-                    attemptRetry = true
-                    return
+            if httpResponse.status?.responseType == .serverError {
+                if let retryWait {
+                    try await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
+                    return try await perform(request: request, retry: retry)
                 }
             }
 
-            task.resume()
-            _ = completeSemaphore.wait(timeout: .now() + .seconds(Int(self.timeout)))
-            if !attemptRetry {
-                break
+            resultData = result.0
+            resultResponse = httpResponse
+        } catch {
+            if (error as? URLError)?.code == .timedOut {
+                if let retryWait {
+                    try await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
+                    return try await perform(request: request, retry: retry)
+                }
             }
 
-            retryWait = retryHandler.retryIn()
-            guard let retryWait = retryWait else {
-                break
-            }
-
-            Thread.sleep(forTimeInterval: retryWait)
+            throw error
         }
 
-        if let resultError = resultError {
-            throw resultError
-        }
-
-        guard let resultResponse = resultResponse else {
+        guard let resultResponse else {
             throw HttpClientError.internalError
         }
 

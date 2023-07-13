@@ -108,7 +108,8 @@ final class FlagApplierWithRetries: FlagApplier {
 
     private func performRequest(request: ApplyFlagsRequest) throws {
         do {
-            let result = try self.httpClient.post(path: ":apply", data: request, resultType: ApplyFlagsResponse.self)
+            let result: HttpClientResponse<ApplyFlagsResponse> = try self.httpClient.post(path: ":apply",
+                                                                                          data: request)
             guard result.response.status == .ok else {
                 throw result.response.mapStatusToError(error: result.decodedError)
             }

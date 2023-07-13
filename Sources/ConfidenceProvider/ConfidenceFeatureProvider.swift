@@ -38,6 +38,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         guard let initialContext = initialContext else {
             return
         }
+
         processNewContext(context: initialContext)
     }
 
@@ -45,6 +46,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         guard oldContext?.hash() != newContext.hash() else {
             return
         }
+
         processNewContext(context: newContext)
     }
 
