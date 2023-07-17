@@ -68,10 +68,6 @@ public class PersistentProviderCache: ProviderCache {
         }
     }
 
-    public static func fromDefaultStorage() -> PersistentProviderCache {
-        return from(storage: DefaultStorage())
-    }
-
     public static func from(storage: Storage) -> PersistentProviderCache {
         do {
             let storedCache = try storage.load(
