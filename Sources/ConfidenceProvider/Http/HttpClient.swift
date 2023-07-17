@@ -19,40 +19,29 @@ final class NetworkClient: HttpClient {
         return "https://resolver.\(region).\(domain)\(resolveRoute)"
     }
 
-    convenience init(
-        region: ConfidenceRegion,
-        defaultHeaders: [String: String] = [:],
-        timeout: TimeInterval = 30.0,
-        retry: Retry = .none
-    ) {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = timeout
-        configuration.httpAdditionalHeaders = defaultHeaders
-
-        self.init(
-            session: URLSession(configuration: configuration),
-            region: region,
-            defaultHeaders: defaultHeaders,
-            timeout: timeout,
-            retry: retry)
-    }
-
     init(
-        session: URLSession,
+        session: URLSession? = nil,
         region: ConfidenceRegion,
         defaultHeaders: [String: String] = [:],
         timeout: TimeInterval = 30.0,
         retry: Retry = .none
     ) {
+        self.session = session ?? {
+            let configuration = URLSessionConfiguration.default
+            configuration.timeoutIntervalForRequest = timeout
+            configuration.httpAdditionalHeaders = defaultHeaders
+
+            return URLSession(configuration: configuration)
+        }()
+
         self.headers = defaultHeaders
         self.retry = retry
         self.timeout = timeout
-        self.session = session
         self.region = region
     }
 
     func post<T: Decodable>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T> {
-        guard let url = URL(string: baseUrl + path) else {
+        guard let url = constructURL(base: baseUrl, path: path) else {
             throw ConfidenceError.internalError(message: "Could not create service url")
         }
 
@@ -68,7 +57,7 @@ final class NetworkClient: HttpClient {
         let jsonData = try encoder.encode(data)
         request.httpBody = jsonData
 
-        let result = try requestWithRetry(request: request)
+        let result = try perform(request: request, retry: self.retry)
 
         var response: HttpClientResponse<T> = HttpClientResponse(response: result.response)
         if let responseData = result.data {
@@ -90,9 +79,9 @@ final class NetworkClient: HttpClient {
         return response
     }
 
-    private func requestWithRetry(request: URLRequest) throws -> (response: HTTPURLResponse, data: Data?) {
+    private func perform(request: URLRequest, retry: Retry) throws -> (response: HTTPURLResponse, data: Data?) {
         var retryWait: TimeInterval? = 0
-        let retryHandler = self.retry.handler()
+        let retryHandler = retry.handler()
 
         var resultData: Data?
         var resultResponse: HTTPURLResponse?
@@ -150,6 +139,14 @@ final class NetworkClient: HttpClient {
 
         return (resultResponse, resultData)
     }
+
+    // MARK: Private
+    private func constructURL(base: String, path: String) -> URL? {
+        let normalisedBase = base.hasSuffix("/") ? base : "\(base)/"
+        let normalisedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
+
+        return URL(string: "\(normalisedBase)\(normalisedPath)")
+    }
 }
 
 struct HttpClientResponse<T> {
@@ -162,52 +159,6 @@ struct HttpError: Codable {
     var code: Int
     var message: String
     var details: [String]
-}
-
-enum Retry {
-    case none
-    case exponential(maxBackoff: TimeInterval, maxAttempts: UInt)
-
-    func handler() -> RetryHandler {
-        switch self {
-        case .none:
-            return NoneRetryHandler()
-        case let .exponential(maxBackoff, maxAttempts):
-            return ExponentialBackoffRetryHandler(maxBackoff: maxBackoff, maxAttempts: maxAttempts)
-        }
-    }
-}
-
-protocol RetryHandler {
-    func retryIn() -> TimeInterval?
-}
-
-class ExponentialBackoffRetryHandler: RetryHandler {
-    private var currentAttempts: UInt = 0
-    private let maxBackoff: TimeInterval
-    private let maxAttempts: UInt
-
-    init(maxBackoff: TimeInterval, maxAttempts: UInt) {
-        self.maxBackoff = maxBackoff
-        self.maxAttempts = maxAttempts
-    }
-
-    func retryIn() -> TimeInterval? {
-        if currentAttempts >= maxAttempts {
-            return nil
-        }
-
-        let nextRetryTime = min(pow(2, Double(currentAttempts)) + Double.random(in: 0..<1), maxBackoff)
-
-        currentAttempts += 1
-        return nextRetryTime
-    }
-}
-
-class NoneRetryHandler: RetryHandler {
-    func retryIn() -> TimeInterval? {
-        return nil
-    }
 }
 
 enum HttpClientError: Error {
