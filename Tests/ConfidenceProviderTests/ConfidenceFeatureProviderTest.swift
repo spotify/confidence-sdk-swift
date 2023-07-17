@@ -4,15 +4,16 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-// swiftlint:disable type_body_length
 // swiftlint:disable file_length
+// swiftlint:disable type_body_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
     private var flagApplier = FlagApplierMock()
     private let builder =
         ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
-    private let cache = PersistentProviderCache.fromDefaultStorage()
+    private let cache = PersistentProviderCache.from(
+        storage: StorageMock())
 
     override func setUp() {
         try? cache.clear()

@@ -5,15 +5,11 @@ import XCTest
 @testable import ConfidenceProvider
 
 class PersistentProviderCacheTest: XCTestCase {
-    var cache: PersistentProviderCache? = PersistentProviderCache.fromDefaultStorage()
-    var formatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter
-    }
+    lazy var cache = PersistentProviderCache.from(storage: storage)
+    let storage = DefaultStorage(filePath: "resolver.flags.cache")
 
     override func setUp() {
-        try? cache?.clear()
+        try? cache.clear()
 
         super.setUp()
     }
@@ -26,10 +22,9 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
+        try cache.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
 
-        try cache?.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
-
-        let cachedValue = try cache?.getValue(flag: flag, ctx: ctx)
+        let cachedValue = try cache.getValue(flag: flag, ctx: ctx)
         XCTAssertEqual(cachedValue?.resolvedValue, value)
         XCTAssertFalse(cachedValue?.needsUpdate ?? true)
         XCTAssertFalse(cachedValue?.needsUpdate ?? true)
@@ -49,15 +44,15 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.string("test"),
             flag: "flag2",
             resolveReason: .match)
+        XCTAssertFalse(try FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path))
 
-        XCTAssertFalse(try FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path))
-
-        try cache?.clearAndSetValues(values: [value1, value2], ctx: ctx, resolveToken: resolveToken)
+        try cache.clearAndSetValues(values: [value1, value2], ctx: ctx, resolveToken: resolveToken)
 
         expectToEventually(
-            (try? FileManager.default.fileExists(atPath: DefaultStorage.getConfigUrl().backport.path)) ?? false)
+            (try? FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path)) ?? false)
 
-        let newCache = PersistentProviderCache.fromDefaultStorage()
+        let newCache = PersistentProviderCache.from(
+            storage: DefaultStorage(filePath: "resolver.flags.cache"))
         let cachedValue1 = try newCache.getValue(flag: flag1, ctx: ctx)
         let cachedValue2 = try newCache.getValue(flag: flag2, ctx: ctx)
         XCTAssertEqual(cachedValue1?.resolvedValue, value1)
@@ -71,9 +66,9 @@ class PersistentProviderCacheTest: XCTestCase {
     func testNoValueFound() throws {
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
 
-        try cache?.clear()
+        try cache.clear()
 
-        let cachedValue = try cache?.getValue(flag: "flag", ctx: ctx)
+        let cachedValue = try cache.getValue(flag: "flag", ctx: ctx)
         XCTAssertNil(cachedValue?.resolvedValue.value)
     }
 
@@ -87,10 +82,9 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
+        try cache.clearAndSetValues(values: [value], ctx: ctx1, resolveToken: resolveToken)
 
-        try cache?.clearAndSetValues(values: [value], ctx: ctx1, resolveToken: resolveToken)
-
-        let cachedValue = try cache?.getValue(flag: flag, ctx: ctx2)
+        let cachedValue = try cache.getValue(flag: flag, ctx: ctx2)
         XCTAssertEqual(cachedValue?.resolvedValue, value)
         XCTAssertTrue(cachedValue?.needsUpdate ?? false)
     }

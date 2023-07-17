@@ -24,7 +24,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         client: RemoteConfidenceClient,
         cache: ProviderCache,
         overrides: [String: LocalOverride] = [:],
-        flagApplier: FlagApplier
+        flagApplier: FlagApplier,
+        applyStorage: Storage
     ) {
         self.resolver = resolver
         self.client = client
@@ -312,8 +313,10 @@ extension ConfidenceFeatureProvider {
         var options: ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
-        var cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+        var cache: ProviderCache = PersistentProviderCache.from(
+            storage: DefaultStorage(filePath: "resolver.flags.cache"))
         var flagApplier: (any FlagApplier)?
+        var applyStorage: Storage = DefaultStorage(filePath: "resolver.apply.cache")
 
         /// Initializes the builder with the given credentails.
         ///
@@ -329,13 +332,15 @@ extension ConfidenceFeatureProvider {
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
             flagApplier: FlagApplier?,
-            cache: ProviderCache = PersistentProviderCache.fromDefaultStorage()
+            cache: ProviderCache,
+            applyStorage: Storage
         ) {
             self.options = options
             self.session = session
             self.localOverrides = localOverrides
             self.flagApplier = flagApplier
             self.cache = cache
+            self.applyStorage = applyStorage
         }
 
         /// Allows the `ConfidenceClient` to be configured with a custom URLSession, useful for
@@ -349,7 +354,9 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage
+            )
         }
 
         /// Inject custom queue for Apply request operations, useful for testing
@@ -362,7 +369,9 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage
+            )
         }
 
         /// Inject custom cache, useful for testing
@@ -375,7 +384,24 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage
+            )
+        }
+
+        /// Inject custom storage for apply events, useful for testing
+        ///
+        /// - Parameters:
+        ///      - storage: apply storage for the provider to use.
+        public func with(applyStorage: Storage) -> Builder {
+            return Builder(
+                options: options,
+                session: session,
+                localOverrides: localOverrides,
+                flagApplier: flagApplier,
+                cache: cache,
+                applyStorage: applyStorage
+            )
         }
 
         /// Locally overrides resolves for specific flags or even fields within a flag. Field-level overrides are
@@ -405,14 +431,16 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: self.localOverrides.merging(localOverrides) { _, new in new },
                 flagApplier: flagApplier,
-                cache: cache)
+                cache: cache,
+                applyStorage: applyStorage
+            )
         }
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
             let flagApplier = flagApplier ?? FlagApplierWithRetries(
                 httpClient: NetworkClient(region: options.region),
-                storage: DefaultStorage(),
+                storage: DefaultStorage(filePath: "applier.flags.cache"),
                 options: options
             )
 
@@ -428,7 +456,8 @@ extension ConfidenceFeatureProvider {
                 client: client,
                 cache: cache,
                 overrides: localOverrides,
-                flagApplier: flagApplier
+                flagApplier: flagApplier,
+                applyStorage: applyStorage
             )
         }
     }
