@@ -226,7 +226,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         await applier.apply(flagName: "flag2", resolveToken: "token1")
         await applier.apply(flagName: "flag3", resolveToken: "token1")
 
-
         // Then 1 resolve event record is written to disk
         let storedData = try XCTUnwrap(storage.load(defaultValue: CacheData.empty()))
         let data = try XCTUnwrap(storedData.resolveEvents.first { $0.resolveToken == "token1" })

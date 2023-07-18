@@ -26,13 +26,15 @@ final class NetworkClient: HttpClient {
         timeout: TimeInterval = 30.0,
         retry: Retry = .none
     ) {
-        self.session = session ?? {
-            let configuration = URLSessionConfiguration.default
-            configuration.timeoutIntervalForRequest = timeout
-            configuration.httpAdditionalHeaders = defaultHeaders
+        self.session =
+            session
+            ?? {
+                let configuration = URLSessionConfiguration.default
+                configuration.timeoutIntervalForRequest = timeout
+                configuration.httpAdditionalHeaders = defaultHeaders
 
-            return URLSession(configuration: configuration)
-        }()
+                return URLSession(configuration: configuration)
+            }()
 
         self.headers = defaultHeaders
         self.retry = retry
