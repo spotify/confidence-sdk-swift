@@ -35,16 +35,6 @@ struct CacheData: Codable {
         return resolveTokenIndex != nil
     }
 
-    mutating func setEventSent(resolveToken: String, name: String, sent: Bool = true) {
-        let flagEventIndexes = flagEventIndex(resolveToken: resolveToken, name: name)
-        guard let resolveIndex = flagEventIndexes.resolveEventIndex,
-              let flagIndex = flagEventIndexes.flagEventIndex else {
-            return
-        }
-
-        resolveEvents[resolveIndex].events[flagIndex].applyEvent.sent = sent
-    }
-
     mutating func add(resolveToken: String, flagName: String, applyTime: Date) {
         let resolveEventIndex = resolveEventIndex(resolveToken: resolveToken)
 

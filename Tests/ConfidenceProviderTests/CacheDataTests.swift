@@ -111,41 +111,6 @@ final class CacheDataTests: XCTestCase {
         XCTAssertEqual(cacheData.resolveEvents.isEmpty, true)
     }
 
-    func testCacheData_eventExist_isEventSent() throws {
-        // Given prefilled cached data
-        // and all apply events has sent property set to false
-        var cacheData = try CacheDataUtility.prefilledCacheData()
-        let resolve = try XCTUnwrap(cacheData.resolveEvents.first)
-        let sentEvents = resolve.events.filter { $0.applyEvent.sent == true }
-        XCTAssertEqual(sentEvents.count, 0)
-
-        // When set event sent is called for item that exists in cache
-        cacheData.setEventSent(resolveToken: "token0", name: "prefilled2")
-        let resolveAfterUpdate = try XCTUnwrap(cacheData.resolveEvents.first)
-
-        // Then apply event sent property has been set to true
-        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.sent == true }
-        XCTAssertEqual(sentEventsAfterUpdate.count, 1)
-        XCTAssertEqual(sentEventsAfterUpdate.first?.name, "prefilled2")
-    }
-
-    func testCacheData_eventDoesNotExist_isEventSent() throws {
-        // Given prefilled cached data
-        // and all apply events has sent property set to false
-        var cacheData = try CacheDataUtility.prefilledCacheData()
-        let resolve = try XCTUnwrap(cacheData.resolveEvents.first)
-        let sentEvents = resolve.events.filter { $0.applyEvent.sent == true }
-        XCTAssertEqual(sentEvents.count, 0)
-
-        // When set event sent is called for item that does not exists in cache
-        cacheData.setEventSent(resolveToken: "token0", name: "prefilled45")
-        let resolveAfterUpdate = try XCTUnwrap(cacheData.resolveEvents.first)
-
-        // Then apply event sent property has not been changed
-        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.sent == true }
-        XCTAssertEqual(sentEventsAfterUpdate.count, 0)
-    }
-
     func testCacheData_isEmpty() {
         // Given empty cached data
         let cacheData = CacheData.empty()

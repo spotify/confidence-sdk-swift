@@ -7,6 +7,5 @@ class FlagApplierMock: FlagApplier {
 
     func apply(flagName: String, resolveToken: String) async {
         applyCallCount += 1
-        print("increment apply call counter by 1")
     }
 }
