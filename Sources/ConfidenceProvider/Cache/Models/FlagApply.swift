@@ -2,10 +2,10 @@ import Foundation
 
 struct FlagApply: Codable {
     let name: String
-    var applyEvent: ApplyEvent
+    var applyTime: Date
 
     init(name: String, applyTime: Date) {
         self.name = name
-        self.applyEvent = ApplyEvent(applyTime: applyTime)
+        self.applyTime = applyTime
     }
 }

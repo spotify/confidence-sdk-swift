@@ -20,7 +20,7 @@ final class CacheDataTests: XCTestCase {
         let resolveEvent = try XCTUnwrap(cacheData.resolveEvents.first)
         XCTAssertEqual(resolveEvent.resolveToken, "token1")
         XCTAssertEqual(resolveEvent.events.count, 1)
-        XCTAssertEqual(resolveEvent.events.first?.applyEvent.applyTime, applyTime)
+        XCTAssertEqual(resolveEvent.events.first?.applyTime, applyTime)
     }
 
     func testCacheData_addEvent_emptyFlagEvents() throws {
@@ -38,7 +38,7 @@ final class CacheDataTests: XCTestCase {
         let resolveEvent = try XCTUnwrap(cacheData.resolveEvents.first)
         XCTAssertEqual(resolveEvent.resolveToken, "token1")
         XCTAssertEqual(resolveEvent.events.count, 1)
-        XCTAssertEqual(resolveEvent.events.first?.applyEvent.applyTime, applyTime)
+        XCTAssertEqual(resolveEvent.events.first?.applyTime, applyTime)
     }
 
     func testCacheData_addEvent_prefilled() throws {
@@ -66,7 +66,7 @@ final class CacheDataTests: XCTestCase {
 
         // Then apply record is not overriden
         let applyEvent = try XCTUnwrap(cacheData.resolveEvents.first?.events.first)
-        XCTAssertEqual(applyEvent.applyEvent.applyTime, applyTime)
+        XCTAssertEqual(applyEvent.applyTime, applyTime)
     }
 
     func testCacheData_addEvent_multipleTokens() throws {

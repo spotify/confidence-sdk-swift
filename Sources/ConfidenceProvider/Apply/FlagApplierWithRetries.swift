@@ -87,7 +87,7 @@ final class FlagApplierWithRetries: FlagApplier {
         let applyFlagRequestItems = items.map { applyEvent in
             AppliedFlagRequestItem(
                 flag: applyEvent.name,
-                applyTime: applyEvent.applyEvent.applyTime
+                applyTime: applyEvent.applyTime
             )
         }
         let request = ApplyFlagsRequest(

@@ -296,7 +296,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let newResolveEvent = try XCTUnwrap(storedData.resolveEvents.first { $0.resolveToken == "token0" })
         XCTAssertEqual(newResolveEvent.events.count, 1)
         XCTAssertEqual(newResolveEvent.events[0].name, "flag1")
-        XCTAssertEqual(newResolveEvent.events[0].applyEvent.applyTime, Date(timeIntervalSince1970: 1000))
+        XCTAssertEqual(newResolveEvent.events[0].applyTime, Date(timeIntervalSince1970: 1000))
     }
 
     func testApplyOffline_previoslyStoredData_100records() async throws {
