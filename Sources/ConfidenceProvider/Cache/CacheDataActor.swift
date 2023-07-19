@@ -1,9 +1,8 @@
 import Foundation
 
-/**
-`CacheDataActor` protocol defines an actor responsible for interactions with `CacheData`.
-Implementation of CacheDataActor is thread-safe by default.
- **/
+/// `CacheDataActor` protocol defines an actor responsible for interactions with `CacheData`.
+/// Implementation of CacheDataActor is thread-safe by default.
+
 protocol CacheDataActor: Actor {
     var cache: CacheData { get }
 
@@ -21,7 +20,4 @@ protocol CacheDataActor: Actor {
 
     /// Removes single apply event from the cache.
     func applyEventExists(resolveToken: String, name: String) -> Bool
-
-    /// Sets Flag Apply Event `sent` propery to `true`.
-    func setEventSent(resolveToken: String, name: String)
 }

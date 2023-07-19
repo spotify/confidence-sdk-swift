@@ -162,43 +162,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertEqual(request3.flags.first?.flag, "flags/flag1")
     }
 
-    func testApply_multipleApplyCalls_sentSet() async throws {
-        // Given flag applier with http client that is offline
-        let cacheDataInteractor = CacheDataInteractor(storage: storage)
-        let httpClient = HttpClientMock(testMode: .error)
-        let expectation = XCTestExpectation(description: "Waiting for batch trigger")
-        expectation.expectedFulfillmentCount = 3
-        httpClient.expectation = expectation
-
-        let applier = FlagApplierWithRetries(
-            httpClient: httpClient,
-            storage: storage,
-            options: options,
-            cacheDataInteractor: cacheDataInteractor,
-            triggerBatch: false
-        )
-
-        // When first apply call is issued
-        // And http client request fails with .invalidResponse
-        await applier.apply(flagName: "flag1", resolveToken: "token1")
-
-        // And second apply call is issued
-        // With test mode .success
-        httpClient.testMode = .success
-        await applier.apply(flagName: "flag2", resolveToken: "token1")
-        wait(for: [expectation], timeout: 1)
-
-        Task {
-            // Then both requests are marked as sent in cache data
-            let cacheData = await cacheDataInteractor.cache
-            let flagEvent1 = cacheData.flagEvent(resolveToken: "token1", name: "flag1")
-            let flagEvent2 = cacheData.flagEvent(resolveToken: "token1", name: "flag2")
-
-            XCTAssertEqual(flagEvent1?.applyEvent.sent, true)
-            XCTAssertEqual(flagEvent2?.applyEvent.sent, true)
-        }
-    }
-
     func testApply_previoslyStoredData_cleanAfterSending() async throws {
         // Given storage that has previously stored data (100 records, same token)
         let prefilledStorage = StorageMock()
@@ -262,7 +225,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         await applier.apply(flagName: "flag1", resolveToken: "token1")
         await applier.apply(flagName: "flag2", resolveToken: "token1")
         await applier.apply(flagName: "flag3", resolveToken: "token1")
-
 
         // Then 1 resolve event record is written to disk
         let storedData = try XCTUnwrap(storage.load(defaultValue: CacheData.empty()))
@@ -333,8 +295,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let newResolveEvent = try XCTUnwrap(storedData.resolveEvents.first { $0.resolveToken == "token0" })
         XCTAssertEqual(newResolveEvent.events.count, 1)
         XCTAssertEqual(newResolveEvent.events[0].name, "flag1")
-        XCTAssertEqual(newResolveEvent.events[0].applyEvent.applyTime, Date(timeIntervalSince1970: 1000))
-        XCTAssertEqual(newResolveEvent.events[0].applyEvent.sent, false)
+        XCTAssertEqual(newResolveEvent.events[0].applyTime, Date(timeIntervalSince1970: 1000))
     }
 
     func testApplyOffline_previoslyStoredData_100records() async throws {
