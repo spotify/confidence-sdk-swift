@@ -21,34 +21,35 @@ public class RemoteConfidenceClient: ConfidenceClient {
         self.applyOnResolve = applyOnResolve
     }
 
-    // MARK: Resolver - async
+    // MARK: Resolver
 
     public func resolve(flags: [String], ctx: EvaluationContext) throws -> ResolvesResult {
-        let request = ResolveFlagsRequest(
-            flags: flags.map { "flags/\($0)" },
-            evaluationContext: try getEvaluationContextStruct(ctx: ctx),
-            clientSecret: options.credentials.getSecret(),
-            apply: applyOnResolve)
-
-        do {
-            let result: HttpClientResponse<ResolveFlagsResponse> = try self.httpClient.post(path: ":resolve",
-                                                                                            data: request)
-
-            guard result.response.status == .ok else {
-                throw result.response.mapStatusToError(error: result.decodedError)
-            }
-
-            guard let response = result.decodedData else {
-                throw OpenFeatureError.parseError(message: "Unable to parse request response")
-            }
-
-            let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                try convert(resolvedFlag: resolvedFlag, ctx: ctx)
-            }
-            return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-        } catch let error {
-            throw handleError(error: error)
-        }
+        throw ConfidenceError.internalError(message: "Currently unsupported")
+//        let request = ResolveFlagsRequest(
+//            flags: flags.map { "flags/\($0)" },
+//            evaluationContext: try getEvaluationContextStruct(ctx: ctx),
+//            clientSecret: options.credentials.getSecret(),
+//            apply: applyOnResolve)
+//
+//        do {
+//            let result: HttpClientResponse<ResolveFlagsResponse> = try self.httpClient.post(path: ":resolve",
+//                                                                                            data: request)
+//
+//            guard result.response.status == .ok else {
+//                throw result.response.mapStatusToError(error: result.decodedError)
+//            }
+//
+//            guard let response = result.decodedData else {
+//                throw OpenFeatureError.parseError(message: "Unable to parse request response")
+//            }
+//
+//            let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+//                try convert(resolvedFlag: resolvedFlag, ctx: ctx)
+//            }
+//            return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+//        } catch let error {
+//            throw handleError(error: error)
+//        }
     }
 
     public func resolve(ctx: EvaluationContext) throws -> ResolvesResult {

@@ -2,6 +2,9 @@ import Foundation
 import OpenFeature
 import os
 
+typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>
+typealias ApplyFlagResult = Result<ApplyFlagHTTPResponse, Error>
+
 final class FlagApplierWithRetries: FlagApplier {
     private let storage: Storage
     private let httpClient: HttpClient
@@ -83,7 +86,11 @@ final class FlagApplierWithRetries: FlagApplier {
         try? storage.save(data: storedData)
     }
 
-    private func executeApply(resolveToken: String, items: [FlagApply], completion: @escaping (Bool) -> Void) {
+    private func executeApply(
+        resolveToken: String,
+        items: [FlagApply],
+        completion: @escaping (Bool) -> Void
+    ) {
         let applyFlagRequestItems = items.map { applyEvent in
             AppliedFlagRequestItem(
                 flag: applyEvent.name,
@@ -97,24 +104,25 @@ final class FlagApplierWithRetries: FlagApplier {
             resolveToken: resolveToken
         )
 
-        do {
-            try performRequest(request: request)
-            completion(true)
-        } catch {
-            self.logApplyError(error: error)
-            completion(false)
+        performRequest(request: request) { result in
+            switch(result) {
+            case .success(_):
+                completion(true)
+            case .failure(let error):
+                self.logApplyError(error: error)
+                completion(false)
+            }
         }
     }
 
-    private func performRequest(request: ApplyFlagsRequest) throws {
+    private func performRequest(
+        request: ApplyFlagsRequest,
+        completion: @escaping (ApplyFlagResult) -> Void
+    ) {
         do {
-            let result: HttpClientResponse<ApplyFlagsResponse> = try self.httpClient.post(path: ":apply",
-                                                                                          data: request)
-            guard result.response.status == .ok else {
-                throw result.response.mapStatusToError(error: result.decodedError)
-            }
-        } catch let error {
-            throw handleError(error: error)
+            try httpClient.post(path: ":apply", data: request, completion: completion)
+        } catch {
+            completion(.failure(handleError(error: error)))
         }
     }
 

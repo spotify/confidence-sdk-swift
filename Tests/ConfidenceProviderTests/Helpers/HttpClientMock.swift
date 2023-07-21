@@ -18,7 +18,34 @@ final class HttpClientMock: HttpClient {
         self.testMode = testMode
     }
 
-    func post<T>(path: String, data: Codable, resultType: T.Type) throws -> HttpClientResponse<T> where T: Decodable {
+    func post<T>(
+        path: String,
+        data: Codable,
+        completion: @escaping (ConfidenceProvider.HttpClientResult<T>) -> Void
+    ) throws where T : Decodable {
+        do {
+            let result: HttpClientResponse<T> = try handlePost(path: path, data: data)
+            completion(.success(result))
+        } catch {
+            completion(.failure(error))
+        }
+    }
+
+    func post<T>(
+        path: String, data: Codable
+    ) async throws -> ConfidenceProvider.HttpClientResponse<T> where T : Decodable {
+        try handlePost(path: path, data: data)
+    }
+
+    func post<T>(
+        path: String, data: Codable
+    ) throws -> ConfidenceProvider.HttpClientResponse<T> where T : Decodable {
+        try handlePost(path: path, data: data)
+    }
+
+    private func handlePost<T>(
+        path: String, data: Codable
+    ) throws -> ConfidenceProvider.HttpClientResponse<T> where T : Decodable {
         defer {
             expectation?.fulfill()
         }
