@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 
 public protocol ConfidenceClient: Resolver {
-    func resolve(ctx: EvaluationContext) throws -> ResolvesResult
+    func resolve(ctx: EvaluationContext) async throws -> ResolvesResult
 }
 
 public struct ResolvedValue: Codable, Equatable {

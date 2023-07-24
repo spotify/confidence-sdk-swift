@@ -23,41 +23,40 @@ public class RemoteConfidenceClient: ConfidenceClient {
 
     // MARK: Resolver
 
-    public func resolve(flags: [String], ctx: EvaluationContext) throws -> ResolvesResult {
-        throw ConfidenceError.internalError(message: "Currently unsupported")
-//        let request = ResolveFlagsRequest(
-//            flags: flags.map { "flags/\($0)" },
-//            evaluationContext: try getEvaluationContextStruct(ctx: ctx),
-//            clientSecret: options.credentials.getSecret(),
-//            apply: applyOnResolve)
-//
-//        do {
-//            let result: HttpClientResponse<ResolveFlagsResponse> = try self.httpClient.post(path: ":resolve",
-//                                                                                            data: request)
-//
-//            guard result.response.status == .ok else {
-//                throw result.response.mapStatusToError(error: result.decodedError)
-//            }
-//
-//            guard let response = result.decodedData else {
-//                throw OpenFeatureError.parseError(message: "Unable to parse request response")
-//            }
-//
-//            let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-//                try convert(resolvedFlag: resolvedFlag, ctx: ctx)
-//            }
-//            return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-//        } catch let error {
-//            throw handleError(error: error)
-//        }
+    public func resolve(flags: [String], ctx: EvaluationContext) async throws -> ResolvesResult {
+        let request = ResolveFlagsRequest(
+            flags: flags.map { "flags/\($0)" },
+            evaluationContext: try getEvaluationContextStruct(ctx: ctx),
+            clientSecret: options.credentials.getSecret(),
+            apply: applyOnResolve)
+
+        do {
+            let result: HttpClientResponse<ResolveFlagsResponse> = try await self.httpClient.post(path: ":resolve",
+                                                                                                  data: request)
+
+            guard result.response.status == .ok else {
+                throw result.response.mapStatusToError(error: result.decodedError)
+            }
+
+            guard let response = result.decodedData else {
+                throw OpenFeatureError.parseError(message: "Unable to parse request response")
+            }
+
+            let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+                try convert(resolvedFlag: resolvedFlag, ctx: ctx)
+            }
+            return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+        } catch let error {
+            throw handleError(error: error)
+        }
     }
 
-    public func resolve(ctx: EvaluationContext) throws -> ResolvesResult {
-        return try resolve(flags: [], ctx: ctx)
+    public func resolve(ctx: EvaluationContext) async throws -> ResolvesResult {
+        return try await resolve(flags: [], ctx: ctx)
     }
 
-    public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
-        let resolveResult = try resolve(flags: [flag], ctx: ctx)
+    public func resolve(flag: String, ctx: EvaluationContext) async throws -> ResolveResult {
+        let resolveResult = try await resolve(flags: [flag], ctx: ctx)
         guard let resolvedValue = resolveResult.resolvedValues.first else {
             throw OpenFeatureError.flagNotFoundError(key: flag)
         }
@@ -107,7 +106,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         case .noSegmentMatch, .noTreatmentMatch: return .noMatch
         case .match: return .match
         case .archived: return .disabled
-        case .targetngKeyError: return .targetingKeyError
+        case .targetingKeyError: return .targetingKeyError
         }
     }
 }
@@ -138,7 +137,7 @@ enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
     case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
     case archived = "RESOLVE_REASON_FLAG_ARCHIVED"
-    case targetngKeyError = "RESOLVE_REASON_TARGETING_KEY_ERROR"
+    case targetingKeyError = "RESOLVE_REASON_TARGETING_KEY_ERROR"
     case error = "RESOLVE_REASON_ERROR"
     case unknown
 }

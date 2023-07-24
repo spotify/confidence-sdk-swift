@@ -30,7 +30,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         XCTAssertThrowsError(
             try provider.getStringEvaluation(
@@ -52,7 +52,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        provider.onContextSet(
+        await provider.onContextSet(
             oldContext: MutableContext(targetingKey: "user1"), newContext: MutableContext(targetingKey: "user2"))
 
         let evaluationTask = Task {
@@ -88,7 +88,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -124,7 +124,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(cache: cache)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -163,7 +163,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
 
         let ctx = MutableContext(targetingKey: "user2")
-        provider.initialize(initialContext: ctx)
+        await provider.initialize(initialContext: ctx)
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -199,7 +199,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(cache: cache)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -240,7 +240,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(cache: cache)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -279,7 +279,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(cache: cache)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         // Simulating a cache with an old evaluation context
         try cache.clearAndSetValues(
@@ -319,7 +319,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getDoubleEvaluation(
@@ -354,7 +354,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getBooleanEvaluation(
@@ -390,7 +390,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(flagApplier: flagApplier)
             .build()
 
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getObjectEvaluation(
@@ -429,7 +429,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -457,7 +457,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(cache: cache)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             XCTAssertThrowsError(
@@ -532,7 +532,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(flagApplier: flagApplier)
             .build()
         // note "custom_targeting_key" is treated specially in the MockedSession
-        provider.initialize(
+        await provider.initialize(
             initialContext: MutableContext(
                 targetingKey: "user1",
                 structure: MutableStructure(attributes: ["custom_targeting_key": Value.integer(2)])))
@@ -571,7 +571,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             XCTAssertThrowsError(
@@ -604,7 +604,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(flagApplier: flagApplier)
             .overrides(.flag(name: "flag", variant: "control", value: ["size": .integer(4)]))
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -636,7 +636,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(flagApplier: flagApplier)
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let sizeEvaluation = try provider.getIntegerEvaluation(
@@ -688,7 +688,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(sizeEvaluation1.reason, Reason.staticReason.rawValue)
             XCTAssertEqual(sizeEvaluation1.value, 4)
 
-            provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+            await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
             let sizeEvaluation2 = try provider.getIntegerEvaluation(
                 key: "flag.size",
@@ -720,7 +720,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .overrides(.field(path: "flag.size", variant: "control", value: .integer(4)))
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(5)))
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         let evaluationTask = Task {
             let evaluation = try provider.getIntegerEvaluation(
@@ -753,7 +753,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .with(session: session)
             .with(flagApplier: flagApplier)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        await provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
 
         provider.overrides(.field(path: "flag.size", variant: "treatment", value: .integer(5)))
 

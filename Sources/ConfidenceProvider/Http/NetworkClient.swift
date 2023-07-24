@@ -38,35 +38,6 @@ final class NetworkClient: HttpClient {
         self.region = region
     }
 
-    /// An unsafe synchronous version of the async post function. It is not advised to use this unless absolutely necessary as it
-    /// will block whichever thread you are on.
-//    func post<T>(path: String, data: Codable) throws -> HttpClientResponse<T> where T : Decodable {
-//        let request = try buildRequest(path: path, data: data)
-//        let response = perform(request: request, retry: retry)
-//
-//        if let error = response.2 {
-//            throw error
-//        }
-//
-//        return try buildResponse(response: response.0, data: response.1)
-
-
-//        let responseBox = ResultBox<HttpClientResponse<T>>()
-//        let handler: (@escaping (HttpClientResult<T>) -> Void) throws -> Void = { completion in
-//            try self.post(path: path, data: data, completion: completion)
-//        }
-//        responseBox.populate(handler)
-//
-//        switch(responseBox.result) {
-//        case .success(let response):
-//            return response
-//        case .failure(let error):
-//            throw error
-//        case .none:
-//            throw ConfidenceError.internalError(message: "No response received")
-//        }
-//    }
-
     func post<T: Decodable>(
         path: String,
         data: Codable,
@@ -93,27 +64,6 @@ final class NetworkClient: HttpClient {
             }
         }
     }
-
-//    private func perform(
-//        request: URLRequest,
-//        retry: Retry
-//    ) -> (HTTPURLResponse?, Data?, Error?) {
-//        var httpURLResponse: HTTPURLResponse?
-//        var responseData: Data?
-//        var responseError: Error?
-//
-//        perform(request: request, retry: retry) { response, data, error in
-//            httpURLResponse = response
-//            responseData = data
-//            responseError = error
-//        }
-//
-//        while httpURLResponse == nil && responseData == nil && responseError == nil {
-//            Thread.sleep(forTimeInterval: 1)
-//        }
-//
-//        return (httpURLResponse, responseData, responseError)
-//    }
 
     private func perform(
         request: URLRequest,
@@ -155,11 +105,9 @@ final class NetworkClient: HttpClient {
             }
         }
     }
-}
 
-// MARK: Async
+    // MARK: Async
 
-extension NetworkClient: AsyncHttpClient {
     func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResponse<T> {
         let request = try buildRequest(path: path, data: data)
         let result = try await perform(request: request, retry: self.retry)
