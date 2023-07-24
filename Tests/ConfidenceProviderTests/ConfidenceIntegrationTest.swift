@@ -92,6 +92,50 @@ class Confidence: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testConfidenceFeatureApplies_dateSupport() async throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
+        let flagApplier = FlagApplierMock()
+
+        let confidenceFeatureProvider = ConfidenceFeatureProvider.Builder(
+            credentials: .clientSecret(secret: clientToken)
+        )
+        .with(flagApplier: flagApplier)
+        .with(cache: cache)
+        .build()
+
+        await OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        let date = try XCTUnwrap(convertStringToDate("2023-07-24T09:00:00Z"))
+
+        // Given mutable context with date
+        let ctx = MutableContext(
+            targetingKey: "user_foo",
+            structure: MutableStructure(attributes: [
+                "date": Value.date(date)
+            ])
+        )
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+
+        let client = OpenFeatureAPI.shared.getClient()
+        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+
+        // When evaluation of the flag happens using date context
+        let evaluationTask = Task {
+            let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+
+            // Then there is targeting match (non-default targeting)
+            XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
+            XCTAssertNotNil(result.variant)
+            XCTAssertNil(result.errorCode)
+            XCTAssertNil(result.errorMessage)
+        }
+
+        await evaluationTask.value
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
     func testConfidenceFeatureNoSegmentMatch() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
@@ -127,6 +171,15 @@ class Confidence: XCTestCase {
 
         await evaluationTask.value
         XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+
+    // MARK: Helper
+
+    private func convertStringToDate(_ dateString: String) -> Date? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        return dateFormatter.date(from: dateString)
     }
 }
 

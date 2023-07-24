@@ -9,6 +9,7 @@ enum StructValue: Equatable {
     case number(Double)
     case string(String)
     case bool(Bool)
+    case date(Date)
     case object(Struct)
     case list([StructValue])
 }
@@ -26,6 +27,8 @@ extension StructValue: Codable {
             try container.encode(string)
         case .bool(let bool):
             try container.encode(bool)
+        case .date(let date):
+            try container.encode(date)
         case .object(let object):
             try container.encode(object)
         case .list(let list):
@@ -43,6 +46,8 @@ extension StructValue: Codable {
             self = .string(string)
         } else if let bool = try? container.decode(Bool.self) {
             self = .bool(bool)
+        } else if let date = try? container.decode(Date.self) {
+            self = .date(date)
         } else if let object = try? container.decode(Struct.self) {
             self = .object(object)
         } else if let list = try? container.decode([StructValue].self) {
