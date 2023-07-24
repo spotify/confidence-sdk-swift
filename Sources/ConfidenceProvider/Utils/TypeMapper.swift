@@ -37,8 +37,8 @@ public enum TypeMapper {
             return StructValue.number(Double(value))
         case .double(let value):
             return StructValue.number(value)
-        case .date:
-            return nil
+        case .date(let value):
+            return StructValue.date(value)
         case .list(let values):
             return .list(values.compactMap(convertValueToStructValue))
         case .structure(let values):
@@ -72,6 +72,8 @@ public enum TypeMapper {
             return .string(value)
         case .bool(let value):
             return .boolean(value)
+        case .date(let value):
+            return .date(value)
         case .object(let mapValue):
             guard case .structSchema(let structSchema) = fieldType else {
                 throw OpenFeatureError.parseError(message: "Field is struct in schema but something else in value")
