@@ -13,7 +13,7 @@ public class LocalStorageResolver: Resolver {
         guard let getResult = getResult else {
             throw OpenFeatureError.flagNotFoundError(key: flag)
         }
-        guard !getResult.needsUpdate else {
+        guard getResult.needsUpdate == false else {
             throw ConfidenceError.cachedValueExpired
         }
         return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken)

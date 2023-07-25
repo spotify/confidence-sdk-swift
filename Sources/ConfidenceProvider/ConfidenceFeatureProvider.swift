@@ -10,7 +10,7 @@ import os
 // swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
-    public let metadata: Metadata = ConfidenceMetadata()
+    public let metadata: ProviderMetadata = ConfidenceMetadata()
     private let lock = UnfairLock()
     private let resolver: Resolver
     private let client: ConfidenceClient
@@ -162,20 +162,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         do {
-            guard let cachedValue = try cache.getValue(flag: path.flag, ctx: ctx) else {
-                throw OpenFeatureError.flagNotFoundError(key: path.flag)
-            }
+            let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
 
-            guard cachedValue.needsUpdate == false else {
-                throw ConfidenceError.cachedValueExpired
-            }
-
-            let resolverResult = ResolveResult(
-                resolvedValue: cachedValue.resolvedValue,
-                resolveToken: cachedValue.resolveToken
-            )
-
-            guard let value = cachedValue.resolvedValue.value else {
+            guard let value = resolverResult.resolvedValue.value else {
                 return resolveFlagNoValue(
                     defaultValue: defaultValue,
                     resolverResult: resolverResult,
@@ -190,7 +179,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
             let evaluationResult = ProviderEvaluation(
                 value: typedValue,
-                variant: cachedValue.resolvedValue.variant,
+                variant: resolverResult.resolvedValue.variant,
                 reason: Reason.targetingMatch.rawValue
             )
 

@@ -1,8 +1,9 @@
 import Foundation
 import OpenFeature
 
-public protocol ConfidenceClient: Resolver {
+public protocol ConfidenceClient {
     func resolve(ctx: EvaluationContext) async throws -> ResolvesResult
+    func resolve(flag: String, ctx: EvaluationContext) async throws -> ResolveResult
 }
 
 public struct ResolvedValue: Codable, Equatable {
