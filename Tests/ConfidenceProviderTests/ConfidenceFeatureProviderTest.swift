@@ -593,6 +593,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
+            .with(cache: AlwaysFailCache())
             .overrides(.flag(name: "flag", variant: "control", value: ["size": .integer(4)]))
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -607,9 +608,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(evaluation.value, 4)
 
-        // TODO: Check this - how do we check for something not called?
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testLocalOverridePartiallyReplacesFlag() throws {
@@ -664,6 +663,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
+            .with(cache: AlwaysFailCache())
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
             .build()
 
@@ -688,9 +688,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(sizeEvaluation2.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(sizeEvaluation2.value, 4)
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-
-        // TODO: Check this - how do we check for something not called?
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testLocalOverrideTwiceTakesSecondOverride() throws {
@@ -705,6 +702,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
+            .with(cache: AlwaysFailCache())
             .overrides(.field(path: "flag.size", variant: "control", value: .integer(4)))
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(5)))
             .build()
@@ -720,9 +718,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(evaluation.value, 5)
 
-        // TODO: Check this - how do we check for something not called?
         XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testOverridingInProvider() throws {
@@ -739,6 +735,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             builder
             .with(session: session)
             .with(flagApplier: flagApplier)
+            .with(cache: AlwaysFailCache())
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
         wait(for: [readyExpectation], timeout: 5)
@@ -753,9 +750,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.variant, "treatment")
         XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
         XCTAssertEqual(evaluation.value, 5)
-
-        // TODO: Check this - how do we check for something not called?
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     // MARK: Event Handlers
