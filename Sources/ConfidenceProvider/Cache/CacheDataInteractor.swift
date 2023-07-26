@@ -36,10 +36,13 @@ final actor CacheDataInteractor: CacheDataActor {
         cache.applyEventExists(resolveToken: resolveToken, name: name)
     }
 
+    func setEventSent(resolveToken: String, name: String) {
+        cache.setEventSent(resolveToken: resolveToken, name: name)
+    }
+
     private func loadCacheFromStorage() {
         guard let storedData = try? storage.load(defaultValue: cache),
-            storedData.isEmpty == false
-        else {
+              storedData.isEmpty == false else {
             return
         }
         self.cache = storedData

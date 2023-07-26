@@ -45,6 +45,7 @@ final class FlagApplierWithRetries: FlagApplier {
                 self.write(resolveToken: resolveToken, name: flagName, applyTime: applyTime)
                 return
             }
+            self.setEventSent(resolveToken: resolveToken, name: flagName)
             self.triggerBatch()
         }
     }
@@ -65,8 +66,18 @@ final class FlagApplierWithRetries: FlagApplier {
                     return
                 }
                 // Remove events from storage that were successfully sent
+                // Set 'sent' property of apply events to true
                 self.remove(resolveToken: resolveEvent.resolveToken)
+                resolveEvent.events.forEach { applyEvent in
+                    self.setEventSent(resolveToken: resolveEvent.resolveToken, name: applyEvent.name)
+                }
             }
+        }
+    }
+
+    private func setEventSent(resolveToken: String, name: String) {
+        Task {
+            await self.cacheDataInteractor.setEventSent(resolveToken: resolveToken, name: name)
         }
     }
 
@@ -94,7 +105,7 @@ final class FlagApplierWithRetries: FlagApplier {
         let applyFlagRequestItems = items.map { applyEvent in
             AppliedFlagRequestItem(
                 flag: applyEvent.name,
-                applyTime: applyEvent.applyTime
+                applyTime: applyEvent.applyEvent.applyTime
             )
         }
         let request = ApplyFlagsRequest(
