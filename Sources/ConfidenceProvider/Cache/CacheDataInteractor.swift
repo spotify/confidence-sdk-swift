@@ -12,7 +12,7 @@ final actor CacheDataInteractor: CacheDataActor {
         }
     }
 
-    func add(resolveToken: String, flagName: String, applyTime: Date) {
+    func add(resolveToken: String, flagName: String, applyTime: Date) -> CacheData {
         if cache.isEmpty == false {
             cache.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
         } else {
@@ -22,6 +22,7 @@ final actor CacheDataInteractor: CacheDataActor {
                 applyTime: applyTime
             )
         }
+        return cache
     }
 
     func remove(resolveToken: String, flagName: String) {
@@ -36,8 +37,14 @@ final actor CacheDataInteractor: CacheDataActor {
         cache.applyEventExists(resolveToken: resolveToken, name: name)
     }
 
-    func setEventSent(resolveToken: String, name: String) {
+    func setEventSent(resolveToken: String, name: String) -> CacheData {
         cache.setEventSent(resolveToken: resolveToken, name: name)
+        return cache
+    }
+
+    func setEventSent(resolveToken: String) -> CacheData {
+        // TODO implement
+        return cache
     }
 
     private func loadCacheFromStorage() {
