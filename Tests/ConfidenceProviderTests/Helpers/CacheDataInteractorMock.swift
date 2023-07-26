@@ -3,9 +3,15 @@ import Foundation
 @testable import ConfidenceProvider
 
 final actor CacheDataInteractorMock: CacheDataActor {
+    func setEventSent(resolveToken: String) -> ConfidenceProvider.CacheData {
+        return cache
+    }
+
     var cache = CacheData.empty()
 
-    func add(resolveToken: String, flagName: String, applyTime: Date) {}
+    func add(resolveToken: String, flagName: String, applyTime: Date) -> ConfidenceProvider.CacheData {
+        return cache
+    }
 
     func remove(resolveToken: String, flagName: String) {}
 
@@ -15,5 +21,7 @@ final actor CacheDataInteractorMock: CacheDataActor {
         return false
     }
 
-    func setEventSent(resolveToken: String, name: String) {}
+    func setEventSent(resolveToken: String, name: String) -> ConfidenceProvider.CacheData {
+        return cache
+    }
 }

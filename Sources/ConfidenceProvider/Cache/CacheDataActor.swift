@@ -6,7 +6,7 @@ protocol CacheDataActor: Actor {
     var cache: CacheData { get }
 
     /// Adds single data entry to the cache.
-    func add(resolveToken: String, flagName: String, applyTime: Date)
+    func add(resolveToken: String, flagName: String, applyTime: Date) -> CacheData
 
     /// Removes data from the cache.
     /// - Note: This method removes all flag apply entries from cache for given resolve token.
@@ -19,5 +19,7 @@ protocol CacheDataActor: Actor {
     func applyEventExists(resolveToken: String, name: String) -> Bool
 
     /// Sets Flag Apply Event `sent` propery to `true`.
-    func setEventSent(resolveToken: String, name: String)
+    func setEventSent(resolveToken: String, name: String) -> CacheData
+
+    func setEventSent(resolveToken: String) -> CacheData
 }
