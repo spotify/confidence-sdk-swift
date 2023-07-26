@@ -20,7 +20,7 @@ final class CacheDataTests: XCTestCase {
         let resolveEvent = try XCTUnwrap(cacheData.resolveEvents.first)
         XCTAssertEqual(resolveEvent.resolveToken, "token1")
         XCTAssertEqual(resolveEvent.events.count, 1)
-        XCTAssertEqual(resolveEvent.events.first?.applyTime, applyTime)
+        XCTAssertEqual(resolveEvent.events.first?.applyEvent.applyTime, applyTime)
     }
 
     func testCacheData_addEvent_emptyFlagEvents() throws {
@@ -38,7 +38,7 @@ final class CacheDataTests: XCTestCase {
         let resolveEvent = try XCTUnwrap(cacheData.resolveEvents.first)
         XCTAssertEqual(resolveEvent.resolveToken, "token1")
         XCTAssertEqual(resolveEvent.events.count, 1)
-        XCTAssertEqual(resolveEvent.events.first?.applyTime, applyTime)
+        XCTAssertEqual(resolveEvent.events.first?.applyEvent.applyTime, applyTime)
     }
 
     func testCacheData_addEvent_prefilled() throws {
@@ -66,7 +66,7 @@ final class CacheDataTests: XCTestCase {
 
         // Then apply record is not overriden
         let applyEvent = try XCTUnwrap(cacheData.resolveEvents.first?.events.first)
-        XCTAssertEqual(applyEvent.applyTime, applyTime)
+        XCTAssertEqual(applyEvent.applyEvent.applyTime, applyTime)
     }
 
     func testCacheData_addEvent_multipleTokens() throws {
@@ -109,6 +109,41 @@ final class CacheDataTests: XCTestCase {
 
         // Then resolveEvents isEmpty
         XCTAssertEqual(cacheData.resolveEvents.isEmpty, true)
+    }
+
+    func testCacheData_eventExist_isEventSent() throws {
+        // Given prefilled cached data
+        // and all apply events has sent property set to false
+        var cacheData = try CacheDataUtility.prefilledCacheData()
+        let resolve = try XCTUnwrap(cacheData.resolveEvents.first)
+        let sentEvents = resolve.events.filter { $0.applyEvent.sent == true }
+        XCTAssertEqual(sentEvents.count, 0)
+
+        // When set event sent is called for item that exists in cache
+        cacheData.setEventSent(resolveToken: "token0", name: "prefilled2")
+        let resolveAfterUpdate = try XCTUnwrap(cacheData.resolveEvents.first)
+
+        // Then apply event sent property has been set to true
+        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.sent == true }
+        XCTAssertEqual(sentEventsAfterUpdate.count, 1)
+        XCTAssertEqual(sentEventsAfterUpdate.first?.name, "prefilled2")
+    }
+
+    func testCacheData_eventDoesNotExist_isEventSent() throws {
+        // Given prefilled cached data
+        // and all apply events has sent property set to false
+        var cacheData = try CacheDataUtility.prefilledCacheData()
+        let resolve = try XCTUnwrap(cacheData.resolveEvents.first)
+        let sentEvents = resolve.events.filter { $0.applyEvent.sent == true }
+        XCTAssertEqual(sentEvents.count, 0)
+
+        // When set event sent is called for item that does not exists in cache
+        cacheData.setEventSent(resolveToken: "token0", name: "prefilled45")
+        let resolveAfterUpdate = try XCTUnwrap(cacheData.resolveEvents.first)
+
+        // Then apply event sent property has not been changed
+        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.sent == true }
+        XCTAssertEqual(sentEventsAfterUpdate.count, 0)
     }
 
     func testCacheData_isEmpty() {
