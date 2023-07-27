@@ -21,6 +21,9 @@ final class FlagApplierWithRetries: FlagApplier {
         self.storage = storage
         self.httpClient = httpClient
         self.options = options
+
+        // Read/Write operations to/from the file are not protected by the cacheDataActor
+        // It's important to not write the file before this operation is completed (reading from file)
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(storage: storage)
 
         if triggerBatch {

@@ -23,4 +23,7 @@ protocol CacheDataActor: Actor {
 
     /// Sets Resolve Apply Event `sent` property to `true`.
     func setEventSent(resolveToken: String) -> CacheData
+
+    /// Loads data from storage, might be an expensive operation
+    func loadCacheFromStorage()
 }
