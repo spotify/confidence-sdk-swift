@@ -32,15 +32,14 @@ final class FlagApplierWithRetries: FlagApplier {
 
     public func apply(flagName: String, resolveToken: String) async {
         let applyTime = Date.backport.now
-        let eventExists = await cacheDataInteractor.applyEventExists(resolveToken: resolveToken, name: flagName)
-        guard eventExists == false else {
+        let (data, added) = await cacheDataInteractor.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
+        guard added == true else {
             // If record is found in the cache, early return (de-duplication).
             // Triggerring batch apply in case if there are any unsent events stored
             await triggerBatch()
             return
         }
 
-        let data = await cacheDataInteractor.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
         self.writeToFile(data: data)
         let flagApply = FlagApply(name: flagName, applyTime: applyTime)
         executeApply(resolveToken: resolveToken, items: [flagApply]) { success in
