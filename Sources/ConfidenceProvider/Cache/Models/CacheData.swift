@@ -45,6 +45,16 @@ struct CacheData: Codable {
         resolveEvents[resolveIndex].events[flagIndex].applyEvent.sent = sent
     }
 
+    mutating func setEventSent(resolveToken: String, sent: Bool = true) {
+        guard let resolveIndex = resolveEventIndex(resolveToken: resolveToken) else {
+            return
+        }
+
+        for i in 0...resolveEvents[resolveIndex].events.count-1 {
+            resolveEvents[resolveIndex].events[i].applyEvent.sent = sent
+        }
+    }
+
     mutating func add(resolveToken: String, flagName: String, applyTime: Date) {
         let resolveEventIndex = resolveEventIndex(resolveToken: resolveToken)
 

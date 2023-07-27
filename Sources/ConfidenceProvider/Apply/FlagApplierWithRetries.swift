@@ -48,7 +48,7 @@ final class FlagApplierWithRetries: FlagApplier {
                 return
             }
             Task {
-                await self.setEventSent(resolveToken: resolveToken, name: flagName)
+                let _ = await self.cacheDataInteractor.setEventSent(resolveToken: resolveToken, name: flagName)
                 await self.triggerBatch()
             }
         }
@@ -70,20 +70,12 @@ final class FlagApplierWithRetries: FlagApplier {
                     return
                 }
                 // Set 'sent' property of apply events to true
-                resolveEvent.events.forEach { applyEvent in
-                    self.setEventSent(resolveToken: resolveEvent.resolveToken, name: applyEvent.name)
-                }
+
                 Task {
-                    let data = await self.cacheDataInteractor.cache
+                    let data = await self.cacheDataInteractor.setEventSent(resolveToken: resolveEvent.resolveToken)
                     self.writeToFile(data: data)
                 }
             }
-        }
-    }
-
-    private func setEventSent(resolveToken: String, name: String) {
-        Task {
-            await self.cacheDataInteractor.setEventSent(resolveToken: resolveToken, name: name)
         }
     }
 
