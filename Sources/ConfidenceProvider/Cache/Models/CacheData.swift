@@ -55,7 +55,7 @@ struct CacheData: Codable {
         }
     }
 
-    mutating func add(resolveToken: String, flagName: String, applyTime: Date) {
+    mutating func add(resolveToken: String, flagName: String, applyTime: Date) -> Bool {
         let resolveEventIndex = resolveEventIndex(resolveToken: resolveToken)
 
         if let resolveEventIndex {
@@ -68,12 +68,15 @@ struct CacheData: Codable {
                 // No flag apply event for given resolve token, adding new record
                 let flagEvent = FlagApply(name: flagName, applyTime: applyTime)
                 resolveEvents[resolveEventIndex].events.append(flagEvent)
+                return true
             }
         } else {
             // No resolve event for given resolve token, adding new record
             let event = ResolveApply(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
             resolveEvents.append(event)
+            return true
         }
+        return false
     }
 
     mutating func remove(resolveToken: String) {

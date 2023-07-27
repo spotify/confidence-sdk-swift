@@ -12,17 +12,19 @@ final actor CacheDataInteractor: CacheDataActor {
         }
     }
 
-    func add(resolveToken: String, flagName: String, applyTime: Date) -> CacheData {
+    func add(resolveToken: String, flagName: String, applyTime: Date) -> (CacheData, Bool) {
         if cache.isEmpty == false {
-            cache.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
+            let added = cache.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
+            return (cache, added)
         } else {
             cache = CacheData(
                 resolveToken: resolveToken,
                 flagName: flagName,
                 applyTime: applyTime
             )
+            return (cache, true)
         }
-        return cache
+
     }
 
     func remove(resolveToken: String, flagName: String) {
