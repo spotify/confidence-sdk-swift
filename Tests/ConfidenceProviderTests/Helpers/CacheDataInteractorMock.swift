@@ -9,8 +9,8 @@ final actor CacheDataInteractorMock: CacheDataActor {
 
     var cache = CacheData.empty()
 
-    func add(resolveToken: String, flagName: String, applyTime: Date) -> ConfidenceProvider.CacheData {
-        return cache
+    func add(resolveToken: String, flagName: String, applyTime: Date) -> (ConfidenceProvider.CacheData, Bool) {
+        return (cache, true)
     }
 
     func remove(resolveToken: String, flagName: String) {}
@@ -23,5 +23,9 @@ final actor CacheDataInteractorMock: CacheDataActor {
 
     func setEventSent(resolveToken: String, name: String) -> ConfidenceProvider.CacheData {
         return cache
+    }
+
+    func loadCacheFromStorage() {
+        return
     }
 }

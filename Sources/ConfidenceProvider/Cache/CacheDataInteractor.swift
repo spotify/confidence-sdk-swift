@@ -49,7 +49,7 @@ final actor CacheDataInteractor: CacheDataActor {
         return cache
     }
 
-    private func loadCacheFromStorage() {
+    func loadCacheFromStorage() {
         guard let storedData = try? storage.load(defaultValue: cache),
               storedData.isEmpty == false else {
             return
