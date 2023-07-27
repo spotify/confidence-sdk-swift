@@ -43,7 +43,7 @@ final actor CacheDataInteractor: CacheDataActor {
     }
 
     func setEventSent(resolveToken: String) -> CacheData {
-        // TODO implement
+        cache.setEventSent(resolveToken: resolveToken)
         return cache
     }
 

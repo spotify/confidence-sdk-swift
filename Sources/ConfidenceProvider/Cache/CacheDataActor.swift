@@ -18,8 +18,9 @@ protocol CacheDataActor: Actor {
     /// Removes single apply event from the cache.
     func applyEventExists(resolveToken: String, name: String) -> Bool
 
-    /// Sets Flag Apply Event `sent` propery to `true`.
+    /// Sets Flag Apply Event `sent` property to `true`.
     func setEventSent(resolveToken: String, name: String) -> CacheData
 
+    /// Sets Resolve Apply Event `sent` property to `true`.
     func setEventSent(resolveToken: String) -> CacheData
 }
