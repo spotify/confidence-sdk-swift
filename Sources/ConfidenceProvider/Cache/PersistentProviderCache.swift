@@ -23,7 +23,8 @@ public class PersistentProviderCache: ProviderCache {
 
         persistPublisher
             .throttle(for: 30.0, scheduler: persistQueue, latest: true)
-            .sink { _ in
+            .sink { [weak self] _ in
+                guard let self else { return }
                 do {
                     try self.persist()
                 } catch {
