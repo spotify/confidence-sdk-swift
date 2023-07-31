@@ -1,0 +1,22 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Release Spotify Confidence Provider
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Release ✅
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_PUBLISH }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: true
+          prerelease: false
