@@ -55,14 +55,6 @@ public class RemoteConfidenceClient: ConfidenceClient {
         return try await resolve(flags: [], ctx: ctx)
     }
 
-    public func resolve(flag: String, ctx: EvaluationContext) async throws -> ResolveResult {
-        let resolveResult = try await resolve(flags: [flag], ctx: ctx)
-        guard let resolvedValue = resolveResult.resolvedValues.first else {
-            throw OpenFeatureError.flagNotFoundError(key: flag)
-        }
-        return ResolveResult(resolvedValue: resolvedValue, resolveToken: resolveResult.resolveToken)
-    }
-
     // MARK: Private
 
     private func convert(resolvedFlag: ResolvedFlag, ctx: EvaluationContext) throws -> ResolvedValue {
