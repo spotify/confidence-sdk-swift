@@ -2,8 +2,8 @@ import SwiftUI
 import OpenFeature
 
 struct ContentView: View {
-    @StateObject var text: DisplayText = DisplayText()
-    @StateObject var color: FlagColor = FlagColor()
+    @StateObject var text = DisplayText()
+    @StateObject var color = FlagColor()
 
     var body: some View {
         VStack {
