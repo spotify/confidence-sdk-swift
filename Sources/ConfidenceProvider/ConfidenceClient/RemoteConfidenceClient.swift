@@ -31,8 +31,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
             apply: applyOnResolve)
 
         do {
-            let result: HttpClientResponse<ResolveFlagsResponse> = try await self.httpClient.post(path: ":resolve",
-                                                                                                  data: request)
+            let result: HttpClientResponse<ResolveFlagsResponse> =
+                try await self.httpClient.post(path: ":resolve", data: request)
 
             guard result.response.status == .ok else {
                 throw result.response.mapStatusToError(error: result.decodedError)
