@@ -35,6 +35,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		14584AF22A793468002CC8BB /* openfeature-swift-sdk */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "openfeature-swift-sdk"; path = "../../openfeature-swift-sdk"; sourceTree = "<group>"; };
 		C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConfidenceDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9782A739FA100C2AC8C /* ConfidenceDemoAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9822A739FA100C2AC8C /* ConfidenceDemoAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -138,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				C770C9A92A73A04B00C2AC8C /* confidence-openfeature-provider-swift */,
+				14584AF22A793468002CC8BB /* openfeature-swift-sdk */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
