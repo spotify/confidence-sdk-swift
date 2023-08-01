@@ -34,18 +34,23 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.flagApplier = flagApplier
     }
 
-    public func initialize(initialContext: OpenFeature.EvaluationContext?) {
+    public func initialize(initialContext: OpenFeature.EvaluationContext?) async {
         guard let initialContext = initialContext else {
             return
         }
-        processNewContext(context: initialContext)
+
+        await processNewContext(context: initialContext)
     }
 
-    public func onContextSet(oldContext: OpenFeature.EvaluationContext?, newContext: OpenFeature.EvaluationContext) {
+    public func onContextSet(
+        oldContext: OpenFeature.EvaluationContext?,
+        newContext: OpenFeature.EvaluationContext
+    ) async {
         guard oldContext?.hash() != newContext.hash() else {
             return
         }
-        processNewContext(context: newContext)
+
+        await processNewContext(context: newContext)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -112,10 +117,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func processNewContext(context: OpenFeature.EvaluationContext) {
+    private func processNewContext(context: OpenFeature.EvaluationContext) async {
         // Racy: eval ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
         do {
-            let resolveResult = try client.resolve(ctx: context)
+            let resolveResult = try await client.resolve(ctx: context)
             guard let resolveToken = resolveResult.resolveToken else {
                 throw ConfidenceError.noResolveTokenFromServer
             }
@@ -157,9 +162,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         do {
-            let resolverResult = try self.resolver.resolve(flag: path.flag, ctx: ctx)
+            let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
+
             guard let value = resolverResult.resolvedValue.value else {
-                return resolveFlagNoValue(defaultValue: defaultValue, resolverResult: resolverResult, ctx: ctx)
+                return resolveFlagNoValue(
+                    defaultValue: defaultValue,
+                    resolverResult: resolverResult,
+                    ctx: ctx
+                )
             }
 
             let pathValue: Value = try getValue(path: path.path, value: value)
@@ -170,11 +180,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             let evaluationResult = ProviderEvaluation(
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
-                reason: Reason.targetingMatch.rawValue)
+                reason: Reason.targetingMatch.rawValue
+            )
+
             processResultForApply(
                 resolverResult: resolverResult,
                 ctx: ctx,
-                applyTime: Date.backport.now)
+                applyTime: Date.backport.now
+            )
             return evaluationResult
         } catch ConfidenceError.cachedValueExpired {
             return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
@@ -295,6 +308,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             await flagApplier.apply(flagName: flag, resolveToken: resolveToken)
         }
     }
+
     private func logApplyError(error: Error) {
         switch error {
         case ConfidenceError.applyStatusTransitionError, ConfidenceError.cachedValueExpired,

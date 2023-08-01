@@ -104,7 +104,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                 if request.evaluationContext.fields["custom_targeting_key"] != nil {
                     guard case .string = request.evaluationContext.fields["custom_targeting_key"] else {
                         return ResolvedFlag(
-                            flag: flagName, reason: .targetngKeyError)
+                            flag: flagName, reason: .targetingKeyError)
                     }
                 }
                 return ResolvedFlag(

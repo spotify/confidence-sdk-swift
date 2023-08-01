@@ -22,7 +22,7 @@ class RemoteConfidenceClientTest: XCTestCase {
         super.setUp()
     }
 
-    func testResolveSingleFlagSucceeds() throws {
+    func testResolveMultipleFlagsSucceeds() async throws {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let flagApplier = FlagApplierMock()
 
@@ -33,23 +33,7 @@ class RemoteConfidenceClientTest: XCTestCase {
             flagApplier: flagApplier
         )
 
-        let value = try client.resolve(flag: "flag1", ctx: MutableContext(targetingKey: "user1"))
-        XCTAssertEqual(resolvedFlag1.value, value.resolvedValue.value)
-        XCTAssertEqual(resolvedFlag1.variant, value.resolvedValue.variant)
-    }
-
-    func testResolveMultipleFlagsSucceeds() throws {
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
-        let flagApplier = FlagApplierMock()
-
-        let client = RemoteConfidenceClient(
-            options: .init(credentials: .clientSecret(secret: "test")),
-            session: session,
-            applyOnResolve: true,
-            flagApplier: flagApplier
-        )
-
-        let result = try client.resolve(ctx: MutableContext(targetingKey: "user1"))
+        let result = try await client.resolve(ctx: MutableContext(targetingKey: "user1"))
         XCTAssertEqual(result.resolvedValues.count, 2)
         let sortedResultValues = result.resolvedValues.sorted { resolvedValue1, resolvedValue2 in
             resolvedValue1.flag < resolvedValue2.flag

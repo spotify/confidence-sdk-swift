@@ -8,8 +8,18 @@ public class PersistentProviderCache: ProviderCache {
     private var persistQueue = DispatchQueue(label: "com.confidence.cache.persist")
     private static let currentVersion = "0.0.1"
 
+    private var _cache: [String: ResolvedValue]
+    private var cache: [String: ResolvedValue] {
+        get {
+            return rwCacheQueue.sync { _cache }
+        }
+
+        set(newCache) {
+            rwCacheQueue.async(flags: .barrier) { self._cache = newCache }
+        }
+    }
+
     private var storage: Storage
-    private var cache: [String: ResolvedValue]
     private var curResolveToken: String?
     private var curEvalContextHash: String?
     private var persistPublisher = PassthroughSubject<CacheEvent, Never>()
@@ -17,7 +27,7 @@ public class PersistentProviderCache: ProviderCache {
 
     init(storage: Storage, cache: [String: ResolvedValue], curResolveToken: String?, curEvalContextHash: String?) {
         self.storage = storage
-        self.cache = cache
+        self._cache = cache
         self.curResolveToken = curResolveToken
         self.curEvalContextHash = curEvalContextHash
 
@@ -36,37 +46,31 @@ public class PersistentProviderCache: ProviderCache {
     }
 
     public func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult? {
-        return try rwCacheQueue.sync {
-            if let value = self.cache[flag] {
-                guard let curResolveToken = curResolveToken else {
-                    throw ConfidenceError.noResolveTokenFromCache
-                }
-                return .init(
-                    resolvedValue: value, needsUpdate: curEvalContextHash != ctx.hash(), resolveToken: curResolveToken)
-            } else {
-                return nil
+        if let value = self.cache[flag] {
+            guard let curResolveToken = curResolveToken else {
+                throw ConfidenceError.noResolveTokenFromCache
             }
+            return .init(
+                resolvedValue: value, needsUpdate: curEvalContextHash != ctx.hash(), resolveToken: curResolveToken)
+        } else {
+            return nil
         }
     }
 
     public func clearAndSetValues(values: [ResolvedValue], ctx: EvaluationContext, resolveToken: String) throws {
-        rwCacheQueue.sync(flags: .barrier) {
-            self.cache = [:]
-            self.curResolveToken = resolveToken
-            self.curEvalContextHash = ctx.hash()
-            values.forEach { value in
-                self.cache[value.flag] = value
-            }
+        self.cache = [:]
+        self.curResolveToken = resolveToken
+        self.curEvalContextHash = ctx.hash()
+        values.forEach { value in
+            self.cache[value.flag] = value
         }
         self.persistPublisher.send(.persist)
     }
 
     public func clear() throws {
-        try rwCacheQueue.sync(flags: .barrier) {
-            try self.storage.clear()
-            self.cache = [:]
-            self.curResolveToken = nil
-        }
+        try self.storage.clear()
+        self.cache = [:]
+        self.curResolveToken = nil
     }
 
     public static func from(storage: Storage) -> PersistentProviderCache {
@@ -105,14 +109,12 @@ extension PersistentProviderCache {
     }
 
     func persist() throws {
-        try rwCacheQueue.sync {
-            try self.storage.save(
-                data: StoredCacheData(
-                    version: PersistentProviderCache.currentVersion,
-                    cache: self.cache,
-                    curResolveToken: self.curResolveToken,
-                    curEvalContextHash: self.curEvalContextHash))
-        }
+        try self.storage.save(
+            data: StoredCacheData(
+                version: PersistentProviderCache.currentVersion,
+                cache: self.cache,
+                curResolveToken: self.curResolveToken,
+                curEvalContextHash: self.curEvalContextHash))
     }
 
     public struct ResolvedKey: Hashable, Codable {

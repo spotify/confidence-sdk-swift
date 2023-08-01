@@ -21,7 +21,9 @@ public class RemoteConfidenceClient: ConfidenceClient {
         self.applyOnResolve = applyOnResolve
     }
 
-    public func resolve(flags: [String], ctx: EvaluationContext) throws -> ResolvesResult {
+    // MARK: Resolver
+
+    public func resolve(flags: [String], ctx: EvaluationContext) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
             evaluationContext: try getEvaluationContextStruct(ctx: ctx),
@@ -29,8 +31,9 @@ public class RemoteConfidenceClient: ConfidenceClient {
             apply: applyOnResolve)
 
         do {
-            let result = try self.httpClient.post(
-                path: ":resolve", data: request, resultType: ResolveFlagsResponse.self)
+            let result: HttpClientResponse<ResolveFlagsResponse> = try await self.httpClient.post(path: ":resolve",
+                                                                                                  data: request)
+
             guard result.response.status == .ok else {
                 throw result.response.mapStatusToError(error: result.decodedError)
             }
@@ -48,17 +51,11 @@ public class RemoteConfidenceClient: ConfidenceClient {
         }
     }
 
-    public func resolve(ctx: EvaluationContext) throws -> ResolvesResult {
-        return try resolve(flags: [], ctx: ctx)
+    public func resolve(ctx: EvaluationContext) async throws -> ResolvesResult {
+        return try await resolve(flags: [], ctx: ctx)
     }
 
-    public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
-        let resolveResult = try resolve(flags: [flag], ctx: ctx)
-        guard let resolvedValue = resolveResult.resolvedValues.first else {
-            throw OpenFeatureError.flagNotFoundError(key: flag)
-        }
-        return ResolveResult(resolvedValue: resolvedValue, resolveToken: resolveResult.resolveToken)
-    }
+    // MARK: Private
 
     private func convert(resolvedFlag: ResolvedFlag, ctx: EvaluationContext) throws -> ResolvedValue {
         guard let responseFlagSchema = resolvedFlag.flagSchema,
@@ -101,7 +98,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         case .noSegmentMatch, .noTreatmentMatch: return .noMatch
         case .match: return .match
         case .archived: return .disabled
-        case .targetngKeyError: return .targetingKeyError
+        case .targetingKeyError: return .targetingKeyError
         }
     }
 }
@@ -132,7 +129,7 @@ enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
     case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
     case archived = "RESOLVE_REASON_FLAG_ARCHIVED"
-    case targetngKeyError = "RESOLVE_REASON_TARGETING_KEY_ERROR"
+    case targetingKeyError = "RESOLVE_REASON_TARGETING_KEY_ERROR"
     case error = "RESOLVE_REASON_ERROR"
     case unknown
 }
