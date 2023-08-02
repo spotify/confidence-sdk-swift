@@ -24,9 +24,6 @@ class ConfidenceIntegrationTests: XCTestCase {
         OpenFeatureAPI.shared.addHandler(
             observer: self, selector: #selector(readyEventEmitted(notification:)), event: .ready
         )
-        OpenFeatureAPI.shared.addHandler(
-            observer: self, selector: #selector(configUpdateEmitted(notification:)), event: .configurationChanged
-        )
 
         try await super.setUp()
     }
@@ -43,11 +40,12 @@ class ConfidenceIntegrationTests: XCTestCase {
         let client = OpenFeatureAPI.shared.getClient()
         wait(for: [readyExpectation], timeout: 5)
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
         OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
-        wait(for: [configUpdatedExpectation], timeout: 5)
+        wait(for: [readyExpectation], timeout: 5)
 
         let intResult = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
         let boolResult = client.getBooleanDetails(key: "\(resolveFlag).my-boolean", defaultValue: false)
@@ -81,11 +79,12 @@ class ConfidenceIntegrationTests: XCTestCase {
         OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
         wait(for: [readyExpectation], timeout: 5)
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
         OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
-        wait(for: [configUpdatedExpectation], timeout: 5)
+        wait(for: [readyExpectation], timeout: 5)
 
         let client = OpenFeatureAPI.shared.getClient()
         OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
@@ -126,8 +125,10 @@ class ConfidenceIntegrationTests: XCTestCase {
                 "date": Value.date(date)
             ])
         )
+
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
-        wait(for: [configUpdatedExpectation], timeout: 5)
+        wait(for: [readyExpectation], timeout: 5)
 
         let client = OpenFeatureAPI.shared.getClient()
 
@@ -161,11 +162,12 @@ class ConfidenceIntegrationTests: XCTestCase {
         OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
         wait(for: [readyExpectation], timeout: 5)
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("IT")])]))
         OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
-        wait(for: [configUpdatedExpectation], timeout: 5)
+        wait(for: [readyExpectation], timeout: 5)
 
         let client = OpenFeatureAPI.shared.getClient()
 
@@ -190,16 +192,10 @@ class ConfidenceIntegrationTests: XCTestCase {
     }
 
     // MARK: Event Handlers
-    private let readyExpectation = XCTestExpectation(description: "Ready")
+    private var readyExpectation = XCTestExpectation(description: "Ready")
 
     func readyEventEmitted(notification: NSNotification) {
         readyExpectation.fulfill()
-    }
-
-    private let configUpdatedExpectation = XCTestExpectation(description: "Configuration Updated")
-
-    func configUpdateEmitted(notification: NSNotification) {
-        configUpdatedExpectation.fulfill()
     }
 }
 

@@ -23,9 +23,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         OpenFeatureAPI.shared.addHandler(
             observer: self, selector: #selector(readyEventEmitted(notification:)), event: .ready
         )
-        OpenFeatureAPI.shared.addHandler(
-            observer: self, selector: #selector(configUpdateEmitted(notification:)), event: .configurationChanged
-        )
 
         super.setUp()
     }
@@ -59,10 +56,11 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             "flags/flag": .init(resolve: resolve)
         ]
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         provider.onContextSet(
             oldContext: MutableContext(targetingKey: "user1"), newContext: MutableContext(targetingKey: "user2"))
-        wait(for: [configUpdatedExpectation], timeout: 5)
+        wait(for: [readyExpectation], timeout: 5)
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
@@ -753,16 +751,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     }
 
     // MARK: Event Handlers
-    let readyExpectation = XCTestExpectation(description: "Ready")
+    var readyExpectation = XCTestExpectation(description: "Ready")
 
     func readyEventEmitted(notification: NSNotification) {
         readyExpectation.fulfill()
-    }
-
-    let configUpdatedExpectation = XCTestExpectation(description: "Configuration Updated")
-
-    func configUpdateEmitted(notification: NSNotification) {
-        configUpdatedExpectation.fulfill()
     }
 }
 
