@@ -44,7 +44,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 try await processNewContext(context: initialContext)
                 OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
             } catch {
-                OpenFeatureAPI.shared.emitEvent(.error, provider: self, error: error)
+                // We emit a ready event as the provider is ready, but is using default / cache values.
+                // TODO: Confirm this is the correct way to handle this.
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
             }
         }
     }
@@ -60,9 +62,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         Task {
             do {
                 try await processNewContext(context: newContext)
-                OpenFeatureAPI.shared.emitEvent(.configurationChanged, provider: self)
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
             } catch {
-                OpenFeatureAPI.shared.emitEvent(.error, provider: self, error: error)
+                // We emit a ready event as the provider is ready, but is using default / cache values.
+                // TODO: Confirm this is the correct way to handle this.
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
             }
         }
     }
