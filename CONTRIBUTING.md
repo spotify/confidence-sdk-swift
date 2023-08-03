@@ -31,3 +31,15 @@ To run the tests:
 ```shell
 ./scripts/run_tests.sh <CLIENT_TOKEN>
 ```
+
+Alternatively, you can store the client token in your local keychain, allowing you to run the shell script without any parameters.
+
+To store the token, run the following (replacing `CLIENT_TOKEN`):
+```shell
+security add-generic-password -s 'Swift Provider - E2E Tests'  -a 'konfidens-e2e' -w 'CLIENT_TOKEN'
+```
+
+You can then run the script as follows (note: you may need to allow access to the keychain on the first run):
+```shell
+./scripts/run_tests.sh
+```
