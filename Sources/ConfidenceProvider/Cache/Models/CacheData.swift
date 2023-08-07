@@ -35,23 +35,23 @@ struct CacheData: Codable {
         return resolveTokenIndex != nil
     }
 
-    mutating func setEventSent(resolveToken: String, name: String, sent: Bool = true) {
+    mutating func setEventStatus(resolveToken: String, name: String, status: ApplyEventStatus = .sent) {
         let flagEventIndexes = flagEventIndex(resolveToken: resolveToken, name: name)
         guard let resolveIndex = flagEventIndexes.resolveEventIndex,
               let flagIndex = flagEventIndexes.flagEventIndex else {
             return
         }
 
-        resolveEvents[resolveIndex].events[flagIndex].applyEvent.sent = sent
+        resolveEvents[resolveIndex].events[flagIndex].applyEvent.status = status
     }
 
-    mutating func setEventSent(resolveToken: String, sent: Bool = true) {
+    mutating func setEventStatus(resolveToken: String, status: ApplyEventStatus = .sent) {
         guard let resolveIndex = resolveEventIndex(resolveToken: resolveToken) else {
             return
         }
 
         for i in 0...resolveEvents[resolveIndex].events.count-1 {
-            resolveEvents[resolveIndex].events[i].applyEvent.sent = sent
+            resolveEvents[resolveIndex].events[i].applyEvent.status = status
         }
     }
 

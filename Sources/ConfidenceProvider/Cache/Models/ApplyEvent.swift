@@ -2,10 +2,10 @@ import Foundation
 
 struct ApplyEvent: Codable {
     let applyTime: Date
-    var sent: Bool
+    var status: ApplyEventStatus
 
-    init(applyTime: Date, sent: Bool = false) {
+    init(applyTime: Date, status: ApplyEventStatus = .created) {
         self.applyTime = applyTime
-        self.sent = sent
+        self.status = status
     }
 }

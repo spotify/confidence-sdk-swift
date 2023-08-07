@@ -8,6 +8,10 @@ struct ResolveApply: Codable {
         resolveToken.isEmpty || events.isEmpty
     }
 
+    var isSent: Bool {
+        events.allSatisfy { $0.applyEvent.status == .sent }
+    }
+
     init(resolveToken: String, flagName: String, applyTime: Date) {
         self.resolveToken = resolveToken
         self.events = [FlagApply(name: flagName, applyTime: applyTime)]
