@@ -26,7 +26,8 @@ final class FlagApplierWithRetries: FlagApplier {
 
         // Read/Write operations to/from the file are not protected by the cacheDataActor
         // It's important to not write the file before this operation is completed (reading from file)
-        self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(storage: storage)
+        let storedData = try? storage.load(defaultValue: CacheData.empty())
+        self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(cacheData: storedData ?? .empty())
 
         if triggerBatch {
             Task(priority: .utility) {

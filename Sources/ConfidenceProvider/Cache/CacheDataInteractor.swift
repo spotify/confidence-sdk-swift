@@ -1,15 +1,10 @@
 import Foundation
 
 final actor CacheDataInteractor: CacheDataActor {
-    private let storage: Storage
     var cache = CacheData.empty()
 
-    init(storage: Storage) {
-        self.storage = storage
-
-        Task(priority: .high) {
-            await loadCacheFromStorage()
-        }
+    init(cacheData: CacheData) {
+        cache = cacheData
     }
 
     func add(resolveToken: String, flagName: String, applyTime: Date) -> (CacheData, Bool) {
@@ -46,24 +41,5 @@ final actor CacheDataInteractor: CacheDataActor {
     func setEventStatus(resolveToken: String, status: ApplyEventStatus) -> CacheData {
         cache.setEventStatus(resolveToken: resolveToken, status: status)
         return cache
-    }
-
-    private func loadCacheFromStorage() {
-        guard let storedData = try? storage.load(defaultValue: cache), storedData.isEmpty == false else {
-            return
-        }
-        if self.cache.isEmpty {
-            self.cache = storedData
-        } else {
-            storedData.resolveEvents.forEach { resolveEvent in
-                resolveEvent.events.forEach { flagApplyEvent in
-                    _ = self.cache.add(
-                        resolveToken: resolveEvent.resolveToken,
-                        flagName: flagApplyEvent.name,
-                        applyTime: flagApplyEvent.applyEvent.applyTime
-                    )
-                }
-            }
-        }
     }
 }

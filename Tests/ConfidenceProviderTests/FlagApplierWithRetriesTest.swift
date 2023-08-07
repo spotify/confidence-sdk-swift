@@ -49,7 +49,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_differentFlags() async {
         // Given flag applier
-        let cacheDataInteractor = CacheDataInteractor(storage: storage)
+        let cacheDataInteractor = CacheDataInteractor(cacheData: .empty())
         let applier = FlagApplierWithRetries(
             httpClient: httpClient,
             storage: storage,
@@ -73,7 +73,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_doesNotStoreOnDisk() async throws {
         // Given flag applier
-        let cacheDataInteractor = CacheDataInteractor(storage: storage)
+        let cacheDataInteractor = CacheDataInteractor(cacheData: .empty())
         let applier = FlagApplierWithRetries(
             httpClient: httpClient,
             storage: storage,
@@ -191,7 +191,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_multipleApplyCalls_sentSet() async throws {
         // Given flag applier with http client that is offline
-        let cacheDataInteractor = CacheDataInteractor(storage: storage)
+        let cacheDataInteractor = CacheDataInteractor(cacheData: .empty())
         let offlineClient = HttpClientMock(testMode: .error)
         let networkExpectation = self.expectation(description: "Waiting for network call to complete")
         networkExpectation.expectedFulfillmentCount = 2
@@ -231,7 +231,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_previoslyStoredData_cleanAfterSending() async throws {
         // Given storage that has previously stored data (100 records, same token)
         let prefilledStorage = StorageMock()
-        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 10)
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
 
         let storageExpectation = self.expectation(description: "Waiting for storage expectation to be completed")
@@ -371,6 +371,30 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertEqual(newResolveEvent.events[0].name, "flag1")
         XCTAssertEqual(newResolveEvent.events[0].applyEvent.applyTime, Date(timeIntervalSince1970: 1000))
         XCTAssertEqual(newResolveEvent.events[0].applyEvent.status, .created)
+    }
+
+
+    func testApplyOffline_previoslyStoredData_100records() async throws {
+        // Given flag applier set up with offline http client
+        // And storage that has previously stored 100 records with different tokens
+        let offlineClient = HttpClientMock(testMode: .error)
+        let prefilledStorage = StorageMock()
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(resolveEventCount: 100)
+        try prefilledStorage.save(data: prefilledCache)
+        let applier = FlagApplierWithRetries(
+            httpClient: offlineClient,
+            storage: prefilledStorage,
+            options: options,
+            triggerBatch: false
+        )
+
+        // When apply call is issued with another token
+        // And http client request fails with .invalidResponse
+        await applier.apply(flagName: "flag1", resolveToken: "token1")
+
+        // Then 100 resolve event records are stored on disk
+        let storedData: CacheData = try XCTUnwrap(prefilledStorage.load(defaultValue: CacheData.empty()))
+        XCTAssertEqual(storedData.resolveEvents.count, 100)
     }
 
     func testApplyOffline_100applyCalls_sameToken() async throws {

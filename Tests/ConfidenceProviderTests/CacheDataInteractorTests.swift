@@ -11,10 +11,9 @@ final class CacheDataInteractorTests: XCTestCase {
             resolveEventCount: 10,
             applyEventCount: 20
         )
-        let prefilledStorage = try StorageMock(data: prefilledCache)
 
         // When cache data interactor is initialised
-        let cacheDataInteractor = CacheDataInteractor(storage: prefilledStorage)
+        let cacheDataInteractor = CacheDataInteractor(cacheData: prefilledCache)
 
         // Then cache data is loaded from storage
         Task {
@@ -27,8 +26,7 @@ final class CacheDataInteractorTests: XCTestCase {
 
     func testCacheDataInteractor_addEventToEmptyCache() async throws {
         // Given cache data interactor with no previously stored data
-        let storage = StorageMock()
-        let cacheDataInteractor = CacheDataInteractor(storage: storage)
+        let cacheDataInteractor = CacheDataInteractor(cacheData: .empty())
         Task {
             let cache = await cacheDataInteractor.cache
             XCTAssertEqual(cache.resolveEvents.count, 0)
@@ -47,8 +45,7 @@ final class CacheDataInteractorTests: XCTestCase {
     func testCacheDataInteractor_addEventToPreFilledCache() async throws {
         // Given cache data interactor with previously stored data (1 resolve token and 2 apply event)
         let prefilledCacheData = try CacheDataUtility.prefilledCacheData(applyEventCount: 2)
-        let prefilledStorage = try StorageMock(data: prefilledCacheData)
-        let cacheDataInteractor = CacheDataInteractor(storage: prefilledStorage)
+        let cacheDataInteractor = CacheDataInteractor(cacheData: prefilledCacheData)
 
         Task {
             // When cache data add method is called
