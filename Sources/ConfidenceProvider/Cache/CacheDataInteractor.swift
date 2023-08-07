@@ -7,7 +7,7 @@ final actor CacheDataInteractor: CacheDataActor {
     init(storage: Storage) {
         self.storage = storage
 
-        Task {
+        Task(priority: .high) {
             await loadCacheFromStorage()
         }
     }
@@ -24,7 +24,6 @@ final actor CacheDataInteractor: CacheDataActor {
             )
             return (cache, true)
         }
-
     }
 
     func remove(resolveToken: String, flagName: String) {
@@ -39,21 +38,32 @@ final actor CacheDataInteractor: CacheDataActor {
         cache.applyEventExists(resolveToken: resolveToken, name: name)
     }
 
-    func setEventSent(resolveToken: String, name: String) -> CacheData {
-        cache.setEventSent(resolveToken: resolveToken, name: name)
+    func setEventStatus(resolveToken: String, name: String, status: ApplyEventStatus) -> CacheData {
+        cache.setEventStatus(resolveToken: resolveToken, name: name, status: status)
         return cache
     }
 
-    func setEventSent(resolveToken: String) -> CacheData {
-        cache.setEventSent(resolveToken: resolveToken)
+    func setEventStatus(resolveToken: String, status: ApplyEventStatus) -> CacheData {
+        cache.setEventStatus(resolveToken: resolveToken, status: status)
         return cache
     }
 
-    func loadCacheFromStorage() {
-        guard let storedData = try? storage.load(defaultValue: cache),
-              storedData.isEmpty == false else {
+    private func loadCacheFromStorage() {
+        guard let storedData = try? storage.load(defaultValue: cache), storedData.isEmpty == false else {
             return
         }
-        self.cache = storedData
+        if self.cache.isEmpty {
+            self.cache = storedData
+        } else {
+            storedData.resolveEvents.forEach { resolveEvent in
+                resolveEvent.events.forEach { flagApplyEvent in
+                    _ = self.cache.add(
+                        resolveToken: resolveEvent.resolveToken,
+                        flagName: flagApplyEvent.name,
+                        applyTime: flagApplyEvent.applyEvent.applyTime
+                    )
+                }
+            }
+        }
     }
 }

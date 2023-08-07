@@ -116,15 +116,15 @@ final class CacheDataTests: XCTestCase {
         // and all apply events has sent property set to false
         var cacheData = try CacheDataUtility.prefilledCacheData()
         let resolve = try XCTUnwrap(cacheData.resolveEvents.first)
-        let sentEvents = resolve.events.filter { $0.applyEvent.sent == true }
+        let sentEvents = resolve.events.filter { $0.applyEvent.status == .sent }
         XCTAssertEqual(sentEvents.count, 0)
 
         // When set event sent is called for item that exists in cache
-        cacheData.setEventSent(resolveToken: "token0", name: "prefilled2")
+        cacheData.setEventStatus(resolveToken: "token0", name: "prefilled2")
         let resolveAfterUpdate = try XCTUnwrap(cacheData.resolveEvents.first)
 
         // Then apply event sent property has been set to true
-        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.sent == true }
+        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.status == .sent }
         XCTAssertEqual(sentEventsAfterUpdate.count, 1)
         XCTAssertEqual(sentEventsAfterUpdate.first?.name, "prefilled2")
     }
@@ -134,15 +134,15 @@ final class CacheDataTests: XCTestCase {
         // and all apply events has sent property set to false
         var cacheData = try CacheDataUtility.prefilledCacheData()
         let resolve = try XCTUnwrap(cacheData.resolveEvents.first)
-        let sentEvents = resolve.events.filter { $0.applyEvent.sent == true }
+        let sentEvents = resolve.events.filter { $0.applyEvent.status == .sent }
         XCTAssertEqual(sentEvents.count, 0)
 
         // When set event sent is called for item that does not exists in cache
-        cacheData.setEventSent(resolveToken: "token0", name: "prefilled45")
+        cacheData.setEventStatus(resolveToken: "token0", name: "prefilled45")
         let resolveAfterUpdate = try XCTUnwrap(cacheData.resolveEvents.first)
 
         // Then apply event sent property has not been changed
-        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.sent == true }
+        let sentEventsAfterUpdate = resolveAfterUpdate.events.filter { $0.applyEvent.status == .sent }
         XCTAssertEqual(sentEventsAfterUpdate.count, 0)
     }
 

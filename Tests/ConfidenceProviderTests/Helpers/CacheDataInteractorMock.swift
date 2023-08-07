@@ -3,10 +3,6 @@ import Foundation
 @testable import ConfidenceProvider
 
 final actor CacheDataInteractorMock: CacheDataActor {
-    func setEventSent(resolveToken: String) -> ConfidenceProvider.CacheData {
-        return cache
-    }
-
     var cache = CacheData.empty()
 
     func add(resolveToken: String, flagName: String, applyTime: Date) -> (ConfidenceProvider.CacheData, Bool) {
@@ -21,8 +17,12 @@ final actor CacheDataInteractorMock: CacheDataActor {
         return false
     }
 
-    func setEventSent(resolveToken: String, name: String) -> ConfidenceProvider.CacheData {
-        return cache
+    func setEventStatus(resolveToken: String, name: String, status: ApplyEventStatus) -> CacheData {
+        cache
+    }
+
+    func setEventStatus(resolveToken: String, status: ApplyEventStatus) -> CacheData {
+        cache
     }
 
     func loadCacheFromStorage() {

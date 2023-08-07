@@ -5,6 +5,8 @@ import os
 typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>
 typealias ApplyFlagResult = Result<ApplyFlagHTTPResponse, Error>
 
+// swiftlint:disable type_body_length
+// swiftlint:disable file_length
 final class FlagApplierWithRetries: FlagApplier {
     private let storage: Storage
     private let httpClient: HttpClient
@@ -27,7 +29,7 @@ final class FlagApplierWithRetries: FlagApplier {
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(storage: storage)
 
         if triggerBatch {
-            Task {
+            Task(priority: .utility) {
                 await self.triggerBatch()
             }
         }
@@ -35,7 +37,11 @@ final class FlagApplierWithRetries: FlagApplier {
 
     public func apply(flagName: String, resolveToken: String) async {
         let applyTime = Date.backport.now
-        let (data, added) = await cacheDataInteractor.add(resolveToken: resolveToken, flagName: flagName, applyTime: applyTime)
+        let (data, added) = await cacheDataInteractor.add(
+            resolveToken: resolveToken,
+            flagName: flagName,
+            applyTime: applyTime
+        )
         guard added == true else {
             // If record is found in the cache, early return (de-duplication).
             // Triggerring batch apply in case if there are any unsent events stored
@@ -44,38 +50,51 @@ final class FlagApplierWithRetries: FlagApplier {
         }
 
         self.writeToFile(data: data)
-        let flagApply = FlagApply(name: flagName, applyTime: applyTime)
-        executeApply(resolveToken: resolveToken, items: [flagApply]) { success in
-            guard success else {
-                return
-            }
-            Task {
-                let _ = await self.cacheDataInteractor.setEventSent(resolveToken: resolveToken, name: flagName)
-                await self.triggerBatch()
-            }
-        }
+        await triggerBatch()
     }
 
     // MARK: private
 
     private func triggerBatch() async {
-        let cacheData = await cacheDataInteractor.cache
-        cacheData.resolveEvents.forEach { resolveEvent in
+        async let cacheData = await cacheDataInteractor.cache
+        await cacheData.resolveEvents.forEach { resolveEvent in
             let appliesToSend = resolveEvent.events.filter { entry in
-               return entry.applyEvent.sent == false
+                return entry.applyEvent.status == .created
             }
+            guard appliesToSend.isEmpty == false else {
+                return
+            }
+            self.writeStatus(resolveToken: resolveEvent.resolveToken, events: appliesToSend, status: .sending)
             executeApply(
                 resolveToken: resolveEvent.resolveToken,
                 items: appliesToSend
             ) { success in
                 guard success else {
+                    self.writeStatus(resolveToken: resolveEvent.resolveToken, events: appliesToSend, status: .created)
                     return
                 }
                 // Set 'sent' property of apply events to true
+                self.writeStatus(resolveToken: resolveEvent.resolveToken, events: appliesToSend, status: .sent)
+            }
+        }
+    }
 
-                Task {
-                    let data = await self.cacheDataInteractor.setEventSent(resolveToken: resolveEvent.resolveToken)
-                    self.writeToFile(data: data)
+    private func writeStatus(resolveToken: String, events: [FlagApply], status: ApplyEventStatus) {
+        let lastIndex = events.count - 1
+        events.enumerated().forEach { (index, event) in
+            Task(priority: .medium) {
+                var data = await self.cacheDataInteractor.setEventStatus(
+                    resolveToken: resolveToken,
+                    name: event.name,
+                    status: status
+                )
+
+                if index == lastIndex {
+                    let unsentFlagApplies = data.resolveEvents.filter {
+                        $0.isSent == false
+                    }
+                    data.resolveEvents = unsentFlagApplies
+                    try? self.storage.save(data: data)
                 }
             }
         }
