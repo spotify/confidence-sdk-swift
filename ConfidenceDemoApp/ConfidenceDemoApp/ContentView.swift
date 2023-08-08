@@ -70,7 +70,6 @@ class Status: ObservableObject {
         DispatchQueue.main.async {
             self.state = .ready
         }
-
     }
 
     @objc func confidenceError(notification: Notification) {

@@ -3,16 +3,13 @@ import Foundation
 @testable import ConfidenceProvider
 
 enum CacheDataUtility {
-    /**
-     Helper method for unit testing code that involves cache data.
-     - Parameters:
-        - date: The reference date for apply events. Defaults to a date representing 1000 seconds since January 1, 1970.
-        - resolveEventCount: The number of resolve events to include in the prefilled data. Defaults to 1.
-        - applyEventCount: The number of apply events to include in the prefilled data. Defaults to 3.
-     - Throws: An error if any issues occur during the creation of the prefilled data.
-     - Returns: The prefilled data as an instance of `Data`.
-     - Note:`applyEventCount` takes an effect on all every resolve events.
-    */
+    /// Helper method for unit testing code that involves cache data.
+    /// - Parameter date: The reference date for apply events. Defaults to a date representing 1000 seconds since January 1, 1970.
+    /// - Parameter resolveEventCount: The number of resolve events to include in the prefilled data. Defaults to 1.
+    /// - Parameter applyEventCount: The number of apply events to include in the prefilled data. Defaults to 3.
+    /// - Throws: An error if any issues occur during the creation of the prefilled data.
+    /// - Returns: The prefilled data as an instance of `Data`.
+    /// - Note:`applyEventCount` takes an effect on all every resolve events.
     static func prefilledCacheData(
         date: Date = Date(timeIntervalSince1970: 1000),
         resolveEventCount: Int = 1,
