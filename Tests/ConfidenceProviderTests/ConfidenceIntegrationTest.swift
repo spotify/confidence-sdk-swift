@@ -4,7 +4,7 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-class Confidence: XCTestCase {
+class ConfidenceIntegrationTests: XCTestCase {
     let clientToken: String? = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
     let resolveFlag = setResolveFlag()
     let cache = PersistentProviderCache.from(storage: StorageMock())
@@ -19,26 +19,33 @@ class Confidence: XCTestCase {
     override func setUp() async throws {
         try cache.clear()
         OpenFeatureAPI.shared.clearProvider()
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: MutableContext())
+        OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: MutableContext())
+
+        OpenFeatureAPI.shared.addHandler(
+            observer: self, selector: #selector(readyEventEmitted(notification:)), event: .ready
+        )
 
         try await super.setUp()
     }
 
-    func testConfidenceFeatureIntegration() async throws {
+    func testConfidenceFeatureIntegration() throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
 
-        await OpenFeatureAPI.shared.setProvider(
+        OpenFeatureAPI.shared.setProvider(
             provider:
                 ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: clientToken))
                 .build())
         let client = OpenFeatureAPI.shared.getClient()
+        wait(for: [readyExpectation], timeout: 5)
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        wait(for: [readyExpectation], timeout: 5)
 
         let intResult = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
         let boolResult = client.getBooleanDetails(key: "\(resolveFlag).my-boolean", defaultValue: false)
@@ -55,7 +62,7 @@ class Confidence: XCTestCase {
         XCTAssertNil(boolResult.errorMessage)
     }
 
-    func testConfidenceFeatureApplies() async throws {
+    func testConfidenceFeatureApplies() throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
@@ -69,30 +76,31 @@ class Confidence: XCTestCase {
         .with(cache: cache)
         .build()
 
-        await OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        wait(for: [readyExpectation], timeout: 5)
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("SE")])]))
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        wait(for: [readyExpectation], timeout: 5)
 
         let client = OpenFeatureAPI.shared.getClient()
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
-        let evaluationTask = Task {
-            let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
-            XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
-            XCTAssertNotNil(result.variant)
-            XCTAssertNil(result.errorCode)
-            XCTAssertNil(result.errorMessage)
-        }
+        XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
+        XCTAssertNotNil(result.variant)
+        XCTAssertNil(result.errorCode)
+        XCTAssertNil(result.errorMessage)
 
-        await evaluationTask.value
+        wait(for: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testConfidenceFeatureApplies_dateSupport() async throws {
+    func testConfidenceFeatureApplies_dateSupport() throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
@@ -106,7 +114,8 @@ class Confidence: XCTestCase {
         .with(cache: cache)
         .build()
 
-        await OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        wait(for: [readyExpectation], timeout: 5)
         let date = try XCTUnwrap(convertStringToDate("2023-07-24T09:00:00Z"))
 
         // Given mutable context with date
@@ -116,27 +125,27 @@ class Confidence: XCTestCase {
                 "date": Value.date(date)
             ])
         )
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
+        OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        wait(for: [readyExpectation], timeout: 5)
 
         let client = OpenFeatureAPI.shared.getClient()
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
         // When evaluation of the flag happens using date context
-        let evaluationTask = Task {
-            let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
-            // Then there is targeting match (non-default targeting)
-            XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
-            XCTAssertNotNil(result.variant)
-            XCTAssertNil(result.errorCode)
-            XCTAssertNil(result.errorMessage)
-        }
+        // Then there is targeting match (non-default targeting)
+        XCTAssertEqual(result.reason, Reason.targetingMatch.rawValue)
+        XCTAssertNotNil(result.variant)
+        XCTAssertNil(result.errorCode)
+        XCTAssertNil(result.errorMessage)
 
-        await evaluationTask.value
+        wait(for: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testConfidenceFeatureNoSegmentMatch() async throws {
+    func testConfidenceFeatureNoSegmentMatch() throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
         }
@@ -150,29 +159,29 @@ class Confidence: XCTestCase {
         .with(cache: cache)
         .build()
 
-        await OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
+        wait(for: [readyExpectation], timeout: 5)
 
+        readyExpectation = XCTestExpectation(description: "Ready (2)")
         let ctx = MutableContext(
             targetingKey: "user_foo",
             structure: MutableStructure(attributes: ["user": Value.structure(["country": Value.string("IT")])]))
-        await OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
+        wait(for: [readyExpectation], timeout: 5)
 
         let client = OpenFeatureAPI.shared.getClient()
 
-        let evaluationTask = Task {
-            let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = client.getIntegerDetails(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
-            XCTAssertEqual(result.value, 1)
-            XCTAssertNil(result.variant)
-            XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
-            XCTAssertNil(result.errorCode)
-            XCTAssertNil(result.errorMessage)
-        }
+        XCTAssertEqual(result.value, 1)
+        XCTAssertNil(result.variant)
+        XCTAssertEqual(result.reason, Reason.defaultReason.rawValue)
+        XCTAssertNil(result.errorCode)
+        XCTAssertNil(result.errorMessage)
 
-        await evaluationTask.value
+        wait(for: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
-
 
     // MARK: Helper
 
@@ -180,6 +189,13 @@ class Confidence: XCTestCase {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         return dateFormatter.date(from: dateString)
+    }
+
+    // MARK: Event Handlers
+    private var readyExpectation = XCTestExpectation(description: "Ready")
+
+    func readyEventEmitted(notification: NSNotification) {
+        readyExpectation.fulfill()
     }
 }
 

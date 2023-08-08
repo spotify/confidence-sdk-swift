@@ -8,16 +8,14 @@ struct ConfidenceDemoApp: App {
         WindowGroup {
             ContentView()
                 .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                    Task {
-                        await self.setup()
-                    }
+                    self.setup()
                 }
         }
     }
 }
 
 extension ConfidenceDemoApp {
-    func setup() async {
+    func setup() {
         guard let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] else {
             return
         }
@@ -25,6 +23,6 @@ extension ConfidenceDemoApp {
             .Builder(credentials: .clientSecret(secret: secret))
             .build()
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
-        await OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
+        OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
     }
 }

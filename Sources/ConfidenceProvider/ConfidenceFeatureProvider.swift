@@ -10,7 +10,7 @@ import os
 // swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
-    public let metadata: Metadata = ConfidenceMetadata()
+    public let metadata: ProviderMetadata = ConfidenceMetadata()
     private let lock = UnfairLock()
     private let resolver: Resolver
     private let client: ConfidenceClient
@@ -34,23 +34,41 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.flagApplier = flagApplier
     }
 
-    public func initialize(initialContext: OpenFeature.EvaluationContext?) async {
+    public func initialize(initialContext: OpenFeature.EvaluationContext?) {
         guard let initialContext = initialContext else {
             return
         }
 
-        await processNewContext(context: initialContext)
+        Task {
+            do {
+                try await processNewContext(context: initialContext)
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+            } catch {
+                // We emit a ready event as the provider is ready, but is using default / cache values.
+                // TODO: Confirm this is the correct way to handle this.
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+            }
+        }
     }
 
     public func onContextSet(
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
-    ) async {
+    ) {
         guard oldContext?.hash() != newContext.hash() else {
             return
         }
 
-        await processNewContext(context: newContext)
+        Task {
+            do {
+                try await processNewContext(context: newContext)
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+            } catch {
+                // We emit a ready event as the provider is ready, but is using default / cache values.
+                // TODO: Confirm this is the correct way to handle this.
+                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+            }
+        }
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -117,7 +135,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func processNewContext(context: OpenFeature.EvaluationContext) async {
+    private func processNewContext(context: OpenFeature.EvaluationContext) async throws {
         // Racy: eval ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
         do {
             let resolveResult = try await client.resolve(ctx: context)
@@ -126,9 +144,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             }
             try cache.clearAndSetValues(
                 values: resolveResult.resolvedValues, ctx: context, resolveToken: resolveToken)
-        } catch let error {
+        } catch {
             Logger(subsystem: "com.confidence.provider", category: "initialize").error(
                 "Error while executing \"initialize\": \(error)")
+            throw error
         }
     }
 

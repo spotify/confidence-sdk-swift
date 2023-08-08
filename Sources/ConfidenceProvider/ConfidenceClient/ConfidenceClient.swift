@@ -2,6 +2,7 @@ import Foundation
 import OpenFeature
 
 public protocol ConfidenceClient {
+    // Async
     func resolve(ctx: EvaluationContext) async throws -> ResolvesResult
 }
 
