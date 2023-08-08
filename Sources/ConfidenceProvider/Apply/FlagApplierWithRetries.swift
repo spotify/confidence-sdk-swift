@@ -105,8 +105,8 @@ final class FlagApplierWithRetries: FlagApplier {
         )
 
         performRequest(request: request) { result in
-            switch(result) {
-            case .success(_):
+            switch result {
+            case .success:
                 completion(true)
             case .failure(let error):
                 self.logApplyError(error: error)
