@@ -129,10 +129,11 @@ class FlagApplierWithRetriesTest: XCTestCase {
         try prefilledStorage.save(data: prefilledCache)
 
         let expectation = self.expectation(description: "Waiting for network call to complete")
+        expectation.expectedFulfillmentCount = 5
         httpClient.expectation = expectation
 
         let storageExpectation = self.expectation(description: "Waiting for storage expectation to be completed")
-        storageExpectation.expectedFulfillmentCount = 2
+        storageExpectation.expectedFulfillmentCount = 10
         prefilledStorage.saveExpectation = storageExpectation
 
 
@@ -145,10 +146,48 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
         await waitForExpectations(timeout: 5.0)
 
-        // Then http client sends apply flags batch request, containing 100 records
+        // Then http client sends 5 apply flag batch request, containing 20 records each
         let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
-        XCTAssertEqual(httpClient.postCallCounter, 1)
-        XCTAssertEqual(request.flags.count, 100)
+        XCTAssertEqual(httpClient.postCallCounter, 5)
+        XCTAssertEqual(request.flags.count, 20)
+    }
+
+    func testApply_previoslyStoredData_partialFailure() async throws {
+        // Given storage that has previously stored data (100 records, same token)
+        let partiallyFailingHttpClient = HttpClientMock(testMode: .failFirstChunk)
+        let prefilledStorage = StorageMock()
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
+        try prefilledStorage.save(data: prefilledCache)
+
+        let expectation = self.expectation(description: "Waiting for network call to complete")
+        expectation.expectedFulfillmentCount = 5
+        partiallyFailingHttpClient.expectation = expectation
+
+        let storageExpectation = self.expectation(description: "Waiting for storage expectation to be completed")
+        storageExpectation.expectedFulfillmentCount = 10
+        prefilledStorage.saveExpectation = storageExpectation
+
+
+        // When flag applier is initialised
+        _ = FlagApplierWithRetries(
+            httpClient: partiallyFailingHttpClient,
+            storage: prefilledStorage,
+            options: options
+        )
+
+        await waitForExpectations(timeout: 5.0)
+
+        // Then http client sends 5 apply flags batch request, containing 20 records each
+        let request = try XCTUnwrap(partiallyFailingHttpClient.data?.first as? ApplyFlagsRequest)
+        XCTAssertEqual(partiallyFailingHttpClient.postCallCounter, 5)
+        XCTAssertEqual(request.flags.count, 20)
+
+        // And storage has 20 failed events saved
+        let storedData = try prefilledStorage.load(defaultValue: CacheData.empty())
+        XCTAssertEqual(storedData.resolveEvents.count, 1)
+
+        let unsent = try XCTUnwrap(storedData.resolveEvents.first?.events.filter { $0.applyEvent.status == .created })
+        XCTAssertEqual(unsent.count, 20)
     }
 
     func testApply_multipleApplyCalls_batchTriggered() async throws {
@@ -235,10 +274,11 @@ class FlagApplierWithRetriesTest: XCTestCase {
         try prefilledStorage.save(data: prefilledCache)
 
         let storageExpectation = self.expectation(description: "Waiting for storage expectation to be completed")
-        storageExpectation.expectedFulfillmentCount = 2
+        storageExpectation.expectedFulfillmentCount = 10
         prefilledStorage.saveExpectation = storageExpectation
 
         let networkExpectation = self.expectation(description: "Waiting for networkRequest to be completed")
+        networkExpectation.expectedFulfillmentCount = 5
         httpClient.expectation = networkExpectation
 
         // When flag applier is initialised
@@ -253,7 +293,34 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
         // Then storage has been cleaned
         let storedData = try prefilledStorage.load(defaultValue: CacheData.empty())
-        XCTAssertEqual(httpClient.postCallCounter, 1)
+        XCTAssertEqual(httpClient.postCallCounter, 5)
+        XCTAssertEqual(storedData.resolveEvents.count, 0)
+    }
+
+    func testApply_100applyCalls_sameToken() async throws {
+        // Given flag applier set up with offline http client
+        // And storage that has previously stored 100 records with same token
+        let networkExpectation = self.expectation(description: "Waiting for networkRequest to be completed")
+        networkExpectation.expectedFulfillmentCount = 105
+        httpClient.expectation = networkExpectation
+
+        let prefilledStorage = StorageMock()
+        let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
+        try prefilledStorage.save(data: prefilledCache)
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient,
+            storage: prefilledStorage,
+            options: options,
+            triggerBatch: false
+        )
+
+        // When 100 apply calls are issued
+        // And all http client requests fails with .invalidResponse
+        await hundredApplyCalls(applier: applier, sameToken: true)
+        await waitForExpectations(timeout: 1.0)
+
+        // Then strored data is empty
+        let storedData: CacheData = try XCTUnwrap(prefilledStorage.load(defaultValue: CacheData.empty()))
         XCTAssertEqual(storedData.resolveEvents.count, 0)
     }
 
@@ -402,7 +469,11 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // And storage that has previously stored 100 records with same token
         let offlineClient = HttpClientMock(testMode: .error)
         let networkExpectation = self.expectation(description: "Waiting for networkRequest to be completed")
-        networkExpectation.expectedFulfillmentCount = 100
+
+        // Since we don't fail other requests when one request is failing
+        // This setup gives us 800 network calls
+        // Every request is split in 6 to 10 batches (from 101 - 200 apply events)
+        networkExpectation.expectedFulfillmentCount = 800
         offlineClient.expectation = networkExpectation
 
         let prefilledStorage = StorageMock()

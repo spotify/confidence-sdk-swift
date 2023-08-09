@@ -24,8 +24,6 @@ final class FlagApplierWithRetries: FlagApplier {
         self.httpClient = httpClient
         self.options = options
 
-        // Read/Write operations to/from the file are not protected by the cacheDataActor
-        // It's important to not write the file before this operation is completed (reading from file)
         let storedData = try? storage.load(defaultValue: CacheData.empty())
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(cacheData: storedData ?? .empty())
 
@@ -61,21 +59,25 @@ final class FlagApplierWithRetries: FlagApplier {
         await cacheData.resolveEvents.forEach { resolveEvent in
             let appliesToSend = resolveEvent.events.filter { entry in
                 return entry.applyEvent.status == .created
-            }
+            }.chunk(size: 20)
+
             guard appliesToSend.isEmpty == false else {
                 return
             }
-            self.writeStatus(resolveToken: resolveEvent.resolveToken, events: appliesToSend, status: .sending)
-            executeApply(
-                resolveToken: resolveEvent.resolveToken,
-                items: appliesToSend
-            ) { success in
-                guard success else {
-                    self.writeStatus(resolveToken: resolveEvent.resolveToken, events: appliesToSend, status: .created)
-                    return
+
+            appliesToSend.forEach { chunk in
+                self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sending)
+                executeApply(
+                    resolveToken: resolveEvent.resolveToken,
+                    items: chunk
+                ) { success in
+                    guard success else {
+                        self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .created)
+                        return
+                    }
+                    // Set 'sent' property of apply events to true
+                    self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent)
                 }
-                // Set 'sent' property of apply events to true
-                self.writeStatus(resolveToken: resolveEvent.resolveToken, events: appliesToSend, status: .sent)
             }
         }
     }

@@ -11,6 +11,7 @@ final class HttpClientMock: HttpClient {
 
     enum TestMode {
         case success
+        case failFirstChunk
         case error
     }
 
@@ -56,6 +57,12 @@ final class HttpClientMock: HttpClient {
         switch testMode {
         case .success:
             return HttpClientResponse(response: HTTPURLResponse())
+        case .failFirstChunk:
+            if postCallCounter == 1 {
+                throw HttpClientError.invalidResponse
+            } else {
+                return HttpClientResponse(response: HTTPURLResponse())
+            }
         case .error:
             throw HttpClientError.invalidResponse
         }
