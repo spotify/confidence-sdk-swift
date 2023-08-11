@@ -9,7 +9,7 @@ struct ResolveApply: Codable {
     }
 
     var isSent: Bool {
-        events.allSatisfy { $0.applyEvent.status == .sent }
+        events.allSatisfy { $0.status == .sent }
     }
 
     init(resolveToken: String, flagName: String, applyTime: Date) {

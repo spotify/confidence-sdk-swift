@@ -99,7 +99,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let cacheData = await cacheDataInteractor.cache
         XCTAssertEqual(cacheData.resolveEvents.count, 1)
         XCTAssertEqual(cacheData.resolveEvents[0].events.count, 3)
-        XCTAssertTrue(cacheData.resolveEvents[0].events.allSatisfy { $0.applyEvent.status == .sent })
+        XCTAssertTrue(cacheData.resolveEvents[0].events.allSatisfy { $0.status == .sent })
 
         let storedData = try XCTUnwrap(storage.load(defaultValue: CacheData.empty()))
         XCTAssertEqual(storedData.resolveEvents.count, 0)
@@ -186,7 +186,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let storedData = try prefilledStorage.load(defaultValue: CacheData.empty())
         XCTAssertEqual(storedData.resolveEvents.count, 1)
 
-        let unsent = try XCTUnwrap(storedData.resolveEvents.first?.events.filter { $0.applyEvent.status == .created })
+        let unsent = try XCTUnwrap(storedData.resolveEvents.first?.events.filter { $0.status == .created })
         XCTAssertEqual(unsent.count, 20)
     }
 
@@ -263,8 +263,8 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let flagEvent1 = cacheData.flagEvent(resolveToken: "token1", name: "flag1")
         let flagEvent2 = cacheData.flagEvent(resolveToken: "token1", name: "flag2")
 
-        XCTAssertEqual(flagEvent1?.applyEvent.status, .sent)
-        XCTAssertEqual(flagEvent2?.applyEvent.status, .sent)
+        XCTAssertEqual(flagEvent1?.status, .sent)
+        XCTAssertEqual(flagEvent2?.status, .sent)
     }
 
     func testApply_previoslyStoredData_cleanAfterSending() async throws {
@@ -436,8 +436,8 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let newResolveEvent = try XCTUnwrap(storedData.resolveEvents.first { $0.resolveToken == "token0" })
         XCTAssertEqual(newResolveEvent.events.count, 1)
         XCTAssertEqual(newResolveEvent.events[0].name, "flag1")
-        XCTAssertEqual(newResolveEvent.events[0].applyEvent.applyTime, Date(timeIntervalSince1970: 1000))
-        XCTAssertEqual(newResolveEvent.events[0].applyEvent.status, .created)
+        XCTAssertEqual(newResolveEvent.events[0].applyTime, Date(timeIntervalSince1970: 1000))
+        XCTAssertEqual(newResolveEvent.events[0].status, .created)
     }
 
 

@@ -1,10 +1,8 @@
 import Foundation
 
-/**
- `CacheData` represents object that encapsulates exposure events for evaluated flags.
-It holds information related to apply event i.e. resolve token, flag name, timestamp .
- This object is used for tracking exposure events, i.e. by storing them on disk.
- */
+/// `CacheData` represents object that encapsulates exposure events for evaluated flags.
+/// It holds information related to apply event i.e. resolve token, flag name, timestamp .
+/// This object is used for tracking exposure events, i.e. by storing them on disk.
 struct CacheData: Codable {
     var resolveEvents: [ResolveApply]
 
@@ -42,7 +40,7 @@ struct CacheData: Codable {
             return
         }
 
-        resolveEvents[resolveIndex].events[flagIndex].applyEvent.status = status
+        resolveEvents[resolveIndex].events[flagIndex].status = status
     }
 
     mutating func setEventStatus(resolveToken: String, status: ApplyEventStatus = .sent) {
@@ -50,8 +48,8 @@ struct CacheData: Codable {
             return
         }
 
-        for i in 0...resolveEvents[resolveIndex].events.count-1 {
-            resolveEvents[resolveIndex].events[i].applyEvent.status = status
+        for i in 0..<resolveEvents[resolveIndex].events.count {
+            resolveEvents[resolveIndex].events[i].status = status
         }
     }
 

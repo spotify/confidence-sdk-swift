@@ -5,8 +5,6 @@ import os
 typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>
 typealias ApplyFlagResult = Result<ApplyFlagHTTPResponse, Error>
 
-// swiftlint:disable type_body_length
-// swiftlint:disable file_length
 final class FlagApplierWithRetries: FlagApplier {
     private let storage: Storage
     private let httpClient: HttpClient
@@ -58,7 +56,7 @@ final class FlagApplierWithRetries: FlagApplier {
         async let cacheData = await cacheDataInteractor.cache
         await cacheData.resolveEvents.forEach { resolveEvent in
             let appliesToSend = resolveEvent.events.filter { entry in
-                return entry.applyEvent.status == .created
+                return entry.status == .created
             }.chunk(size: 20)
 
             guard appliesToSend.isEmpty == false else {
@@ -84,7 +82,7 @@ final class FlagApplierWithRetries: FlagApplier {
 
     private func writeStatus(resolveToken: String, events: [FlagApply], status: ApplyEventStatus) {
         let lastIndex = events.count - 1
-        events.enumerated().forEach { (index, event) in
+        events.enumerated().forEach { index, event in
             Task(priority: .medium) {
                 var data = await self.cacheDataInteractor.setEventStatus(
                     resolveToken: resolveToken,
@@ -115,7 +113,7 @@ final class FlagApplierWithRetries: FlagApplier {
         let applyFlagRequestItems = items.map { applyEvent in
             AppliedFlagRequestItem(
                 flag: applyEvent.name,
-                applyTime: applyEvent.applyEvent.applyTime
+                applyTime: applyEvent.applyTime
             )
         }
         let request = ApplyFlagsRequest(
