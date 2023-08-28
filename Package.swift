@@ -15,13 +15,13 @@ let package = Package(
             targets: ["ConfidenceProvider"])
     ],
     dependencies: [
-        .package(url: "git@github.com:spotify/openfeature-swift-sdk.git", from: "0.2.5"),
+        .package(url: "git@github.com:open-feature/swift-sdk.git", from: "0.0.2"),
     ],
     targets: [
         .target(
             name: "ConfidenceProvider",
             dependencies: [
-                .product(name: "OpenFeature", package: "openfeature-swift-sdk"),
+                .product(name: "OpenFeature", package: "swift-sdk"),
             ],
             plugins: []
         ),
