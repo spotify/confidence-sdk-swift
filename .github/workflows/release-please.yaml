@@ -15,7 +15,6 @@ jobs:
         with:
           release-type: simple
           command: manifest
-          token: ${{secrets.TOKEN_PUBLISH}}
           default-branch: main
 
       - name: Dump Release Please Output
