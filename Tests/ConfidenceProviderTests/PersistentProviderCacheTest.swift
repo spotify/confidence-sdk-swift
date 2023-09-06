@@ -5,11 +5,11 @@ import XCTest
 @testable import ConfidenceProvider
 
 class PersistentProviderCacheTest: XCTestCase {
-    lazy var cache = PersistentProviderCache.from(storage: storage)
+    lazy var cache = InMemoryProviderCache.from(storage: storage)
     let storage = DefaultStorage(filePath: "resolver.flags.cache")
 
     override func setUp() {
-        try? cache.clear()
+        try? storage.clear()
 
         super.setUp()
     }
@@ -22,7 +22,9 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
-        try cache.clearAndSetValues(values: [value], ctx: ctx, resolveToken: resolveToken)
+
+        try storage.save(data: [value].toCacheData(context: ctx, resolveToken: resolveToken))
+        cache = InMemoryProviderCache.from(storage: storage)
 
         let cachedValue = try cache.getValue(flag: flag, ctx: ctx)
         XCTAssertEqual(cachedValue?.resolvedValue, value)
@@ -46,12 +48,13 @@ class PersistentProviderCacheTest: XCTestCase {
             resolveReason: .match)
         XCTAssertFalse(try FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path))
 
-        try cache.clearAndSetValues(values: [value1, value2], ctx: ctx, resolveToken: resolveToken)
+        try storage.save(data: [value1, value2].toCacheData(context: ctx, resolveToken: resolveToken))
+        cache = InMemoryProviderCache.from(storage: storage)
 
         expectToEventually(
             (try? FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path)) ?? false)
 
-        let newCache = PersistentProviderCache.from(
+        let newCache = InMemoryProviderCache.from(
             storage: DefaultStorage(filePath: "resolver.flags.cache"))
         let cachedValue1 = try newCache.getValue(flag: flag1, ctx: ctx)
         let cachedValue2 = try newCache.getValue(flag: flag2, ctx: ctx)
@@ -66,7 +69,7 @@ class PersistentProviderCacheTest: XCTestCase {
     func testNoValueFound() throws {
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
 
-        try cache.clear()
+        try storage.clear()
 
         let cachedValue = try cache.getValue(flag: "flag", ctx: ctx)
         XCTAssertNil(cachedValue?.resolvedValue.value)
@@ -82,7 +85,8 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
-        try cache.clearAndSetValues(values: [value], ctx: ctx1, resolveToken: resolveToken)
+        try storage.save(data: [value].toCacheData(context: ctx1, resolveToken: resolveToken))
+        cache = InMemoryProviderCache.from(storage: storage)
 
         let cachedValue = try cache.getValue(flag: flag, ctx: ctx2)
         XCTAssertEqual(cachedValue?.resolvedValue, value)

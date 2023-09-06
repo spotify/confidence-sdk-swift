@@ -7,7 +7,7 @@ import XCTest
 class ConfidenceIntegrationTests: XCTestCase {
     let clientToken: String? = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
     let resolveFlag = setResolveFlag()
-    let cache = PersistentProviderCache.from(storage: StorageMock())
+    let storage: Storage = StorageMock()
 
     private static func setResolveFlag() -> String {
         if let flag = ProcessInfo.processInfo.environment["TEST_FLAG_NAME"], !flag.isEmpty {
@@ -17,7 +17,6 @@ class ConfidenceIntegrationTests: XCTestCase {
     }
 
     override func setUp() async throws {
-        try cache.clear()
         OpenFeatureAPI.shared.clearProvider()
         OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: MutableContext())
 
@@ -73,7 +72,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             credentials: .clientSecret(secret: clientToken)
         )
         .with(flagApplier: flagApplier)
-        .with(cache: cache)
+        .with(storage: storage)
         .build()
 
         OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
@@ -111,7 +110,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             credentials: .clientSecret(secret: clientToken)
         )
         .with(flagApplier: flagApplier)
-        .with(cache: cache)
+        .with(storage: storage)
         .build()
 
         OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
@@ -156,7 +155,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             credentials: .clientSecret(secret: clientToken)
         )
         .with(flagApplier: flagApplier)
-        .with(cache: cache)
+        .with(storage: storage)
         .build()
 
         OpenFeatureAPI.shared.setProvider(provider: confidenceFeatureProvider)
