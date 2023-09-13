@@ -36,7 +36,8 @@ struct CacheData: Codable {
     mutating func setEventStatus(resolveToken: String, name: String, status: ApplyEventStatus = .sent) {
         let flagEventIndexes = flagEventIndex(resolveToken: resolveToken, name: name)
         guard let resolveIndex = flagEventIndexes.resolveEventIndex,
-              let flagIndex = flagEventIndexes.flagEventIndex else {
+            let flagIndex = flagEventIndexes.flagEventIndex
+        else {
             return
         }
 
@@ -116,7 +117,8 @@ struct CacheData: Codable {
 
     func flagEvent(resolveToken: String, name: String) -> FlagApply? {
         guard let resolveTokenIndex = resolveEventIndex(resolveToken: resolveToken),
-              let flagEventIndex = applyEventIndex(resolveToken: resolveToken, name: name) else {
+            let flagEventIndex = applyEventIndex(resolveToken: resolveToken, name: name)
+        else {
             return nil
         }
 

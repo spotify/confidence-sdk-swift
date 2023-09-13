@@ -23,5 +23,4 @@ protocol CacheDataActor: Actor {
 
     /// Sets Resolve Apply Event `status` property.
     func setEventStatus(resolveToken: String, status: ApplyEventStatus) -> CacheData
-
 }

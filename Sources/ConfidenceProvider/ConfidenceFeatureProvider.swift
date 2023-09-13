@@ -471,11 +471,13 @@ extension ConfidenceFeatureProvider {
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
-            let flagApplier = flagApplier ?? FlagApplierWithRetries(
-                httpClient: NetworkClient(region: options.region),
-                storage: DefaultStorage(filePath: "applier.flags.cache"),
-                options: options
-            )
+            let flagApplier =
+                flagApplier
+                ?? FlagApplierWithRetries(
+                    httpClient: NetworkClient(region: options.region),
+                    storage: DefaultStorage(filePath: "applier.flags.cache"),
+                    options: options
+                )
 
             let client = RemoteConfidenceClient(
                 options: options,
@@ -506,3 +508,6 @@ extension DispatchQueue: DispatchQueueType {
         async(group: nil, qos: .unspecified, flags: [], execute: work)
     }
 }
+
+// swiftlint:enable type_body_length
+// swiftlint:enable file_length

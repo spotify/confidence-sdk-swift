@@ -1,3 +1,5 @@
+// swiftlint:disable type_body_length
+// swiftlint:disable file_length
 import Foundation
 import OpenFeature
 import XCTest
@@ -64,7 +66,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         await applier.apply(flagName: "flag3", resolveToken: "token1")
 
         let cacheData = await cacheDataInteractor.cache
-        
+
         // Then http client sends 3 post requests
         XCTAssertEqual(httpClient.postCallCounter, 3)
         XCTAssertEqual(cacheData.resolveEvents.count, 1)
@@ -85,7 +87,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let networkExpectation = self.expectation(description: "Waiting for network call to complete")
         networkExpectation.expectedFulfillmentCount = 3
         httpClient.expectation = networkExpectation
-
 
         // When 3 apply calls are issued with different flag names
         await applier.apply(flagName: "flag1", resolveToken: "token1")
@@ -136,7 +137,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         storageExpectation.expectedFulfillmentCount = 10
         prefilledStorage.saveExpectation = storageExpectation
 
-
         // When flag applier is initialised
         _ = FlagApplierWithRetries(
             httpClient: httpClient,
@@ -166,7 +166,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         let storageExpectation = self.expectation(description: "Waiting for storage expectation to be completed")
         storageExpectation.expectedFulfillmentCount = 10
         prefilledStorage.saveExpectation = storageExpectation
-
 
         // When flag applier is initialised
         _ = FlagApplierWithRetries(
@@ -360,7 +359,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         await applier.apply(flagName: "flag2", resolveToken: "token1")
         await applier.apply(flagName: "flag3", resolveToken: "token1")
 
-
         // Then 1 resolve event record is written to disk
         let storedData = try XCTUnwrap(storage.load(defaultValue: CacheData.empty()))
         let data = try XCTUnwrap(storedData.resolveEvents.first { $0.resolveToken == "token1" })
@@ -439,7 +437,6 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertEqual(newResolveEvent.events[0].applyTime, Date(timeIntervalSince1970: 1000))
         XCTAssertEqual(newResolveEvent.events[0].status, .created)
     }
-
 
     func testApplyOffline_previoslyStoredData_100records() async throws {
         // Given flag applier set up with offline http client
