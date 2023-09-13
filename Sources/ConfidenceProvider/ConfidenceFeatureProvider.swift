@@ -6,8 +6,8 @@ import os
 ///
 ///
 ///
-// swiftlint:disable type_body_length
-// swiftlint:disable file_length
+// swiftlint:disable:next type_body_length
+// swiftlint:disable:next file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     public let metadata: ProviderMetadata = ConfidenceMetadata()
@@ -471,11 +471,13 @@ extension ConfidenceFeatureProvider {
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
-            let flagApplier = flagApplier ?? FlagApplierWithRetries(
-                httpClient: NetworkClient(region: options.region),
-                storage: DefaultStorage(filePath: "applier.flags.cache"),
-                options: options
-            )
+            let flagApplier =
+                flagApplier
+                ?? FlagApplierWithRetries(
+                    httpClient: NetworkClient(region: options.region),
+                    storage: DefaultStorage(filePath: "applier.flags.cache"),
+                    options: options
+                )
 
             let client = RemoteConfidenceClient(
                 options: options,
