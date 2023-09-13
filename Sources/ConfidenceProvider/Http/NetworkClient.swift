@@ -23,14 +23,14 @@ final class NetworkClient: HttpClient {
         retry: Retry = .none
     ) {
         self.session =
-        session
-        ?? {
-            let configuration = URLSessionConfiguration.default
-            configuration.timeoutIntervalForRequest = timeout
-            configuration.httpAdditionalHeaders = defaultHeaders
+            session
+            ?? {
+                let configuration = URLSessionConfiguration.default
+                configuration.timeoutIntervalForRequest = timeout
+                configuration.httpAdditionalHeaders = defaultHeaders
 
-            return URLSession(configuration: configuration)
-        }()
+                return URLSession(configuration: configuration)
+            }()
 
         self.headers = defaultHeaders
         self.retry = retry
@@ -57,7 +57,7 @@ final class NetworkClient: HttpClient {
 
             do {
                 let httpClientResult: HttpClientResponse<T> =
-                try self.buildResponse(response: response, data: data)
+                    try self.buildResponse(response: response, data: data)
                 completion(.success(httpClientResult))
             } catch {
                 completion(.failure(error))

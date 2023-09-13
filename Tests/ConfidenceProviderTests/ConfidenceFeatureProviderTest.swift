@@ -4,8 +4,8 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-// swiftlint:disable file_length
-// swiftlint:disable type_body_length
+// swiftlint:disable:next file_length
+// swiftlint:disable:next type_body_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
     private var flagApplier = FlagApplierMock()
