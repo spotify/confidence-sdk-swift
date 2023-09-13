@@ -4,7 +4,6 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-// swiftlint:disable file_length
 // swiftlint:disable type_body_length
 @available(macOS 13.0, iOS 16.0, *)
 class FlagApplierWithRetriesTest: XCTestCase {
@@ -504,5 +503,5 @@ class FlagApplierWithRetriesTest: XCTestCase {
     }
 }
 
-// swiftlint:enable file_length
 // swiftlint:enable type_body_length
+// swiftlint:disable:next file_length
