@@ -1,10 +1,11 @@
+// swiftlint:disable type_body_length
+// swiftlint:disable file_length
 import Foundation
 import OpenFeature
 import XCTest
 
 @testable import ConfidenceProvider
 
-// swiftlint:disable type_body_length
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceFeatureProviderTest: XCTestCase {
     private var flagApplier = FlagApplierMock()
@@ -779,6 +780,3 @@ final class DispatchQueueFakeSlow: DispatchQueueType {
         }
     }
 }
-
-// swiftlint:enable type_body_length
-// swiftlint:disable:next file_length
