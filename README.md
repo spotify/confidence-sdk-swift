@@ -32,7 +32,7 @@ In the dependencies section of Package.swift add:
 ```swift
 .package(url: "git@github.com:spotify/confidence-openfeature-provider-swift.git", from: "0.1.0")
 ```
-<!---x-release-please-end-version-->
+<!---x-release-please-end-->
 
 and in the target dependencies section add:
 ```swift
