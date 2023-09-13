@@ -6,8 +6,8 @@ import os
 ///
 ///
 ///
-// swiftlint:disable:next type_body_length
-// swiftlint:disable:next file_length
+// swiftlint:disable type_body_length
+// swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     public let metadata: ProviderMetadata = ConfidenceMetadata()
@@ -508,3 +508,6 @@ extension DispatchQueue: DispatchQueueType {
         async(group: nil, qos: .unspecified, flags: [], execute: work)
     }
 }
+
+// swiftlint:enable type_body_length
+// swiftlint:enable file_length

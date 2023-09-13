@@ -55,9 +55,8 @@ final class FlagApplierWithRetries: FlagApplier {
     private func triggerBatch() async {
         async let cacheData = await cacheDataInteractor.cache
         await cacheData.resolveEvents.forEach { resolveEvent in
-            let appliesToSend = resolveEvent.events.filter { entry in
-                return entry.status == .created
-            }.chunk(size: 20)
+            let appliesToSend = resolveEvent.events.filter { $0.status == .created }
+                .chunk(size: 20)
 
             guard appliesToSend.isEmpty == false else {
                 return
