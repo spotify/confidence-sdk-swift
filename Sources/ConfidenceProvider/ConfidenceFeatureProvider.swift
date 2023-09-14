@@ -12,26 +12,32 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     public let metadata: ProviderMetadata = ConfidenceMetadata()
     private let lock = UnfairLock()
-    private let resolver: Resolver
+    private var resolver: Resolver
     private let client: ConfidenceClient
-    private let cache: ProviderCache
+    private var cache: ProviderCache
     private var overrides: [String: LocalOverride]
     private let flagApplier: FlagApplier
+    private let initializationStrategy: InitializationStrategy
+    private let storage: Storage
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
-        resolver: Resolver,
         client: RemoteConfidenceClient,
         cache: ProviderCache,
+        storage: Storage,
         overrides: [String: LocalOverride] = [:],
         flagApplier: FlagApplier,
-        applyStorage: Storage
+        applyStorage: Storage,
+        initializationStrategy: InitializationStrategy
     ) {
-        self.resolver = resolver
         self.client = client
         self.cache = cache
         self.overrides = overrides
         self.flagApplier = flagApplier
+        self.initializationStrategy = initializationStrategy
+        self.storage = storage
+
+        resolver = LocalStorageResolver(cache: cache)
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
@@ -39,15 +45,47 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
 
+        // signal the provider is ready right away
+        if self.initializationStrategy == .activateAndFetchAsync {
+            OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+        }
+
         Task {
             do {
-                try await processNewContext(context: initialContext)
-                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                let resolveResult = try await resolve(context: initialContext)
+
+                // update cache with stored values
+                try await store(
+                    with: initialContext,
+                    resolveResult: resolveResult,
+                    refreshCache: self.initializationStrategy == .fetchAndActivate
+                )
+
+                // signal the provider is ready after the network request is done
+                if self.initializationStrategy == .fetchAndActivate {
+                    OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                }
             } catch {
                 // We emit a ready event as the provider is ready, but is using default / cache values.
-                // TODO: Confirm this is the correct way to handle this.
                 OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
             }
+        }
+    }
+
+    private func store(
+        with context: OpenFeature.EvaluationContext,
+        resolveResult result: ResolvesResult,
+        refreshCache: Bool
+    ) async throws {
+        guard let resolveToken = result.resolveToken else {
+            throw ConfidenceError.noResolveTokenFromServer
+        }
+
+        try self.storage.save(data: result.resolvedValues.toCacheData(context: context, resolveToken: resolveToken))
+
+        if refreshCache {
+            self.cache = InMemoryProviderCache.from(storage: self.storage)
+            resolver = LocalStorageResolver(cache: cache)
         }
     }
 
@@ -61,12 +99,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
         Task {
             do {
-                try await processNewContext(context: newContext)
+                let resolveResult = try await resolve(context: newContext)
+
+                // update the storage
+                try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
                 OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
             } catch {
-                // We emit a ready event as the provider is ready, but is using default / cache values.
-                // TODO: Confirm this is the correct way to handle this.
                 OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                // do nothing
             }
         }
     }
@@ -135,15 +175,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func processNewContext(context: OpenFeature.EvaluationContext) async throws {
+    private func resolve(context: OpenFeature.EvaluationContext) async throws -> ResolvesResult {
         // Racy: eval ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
+        OpenFeatureAPI.shared.emitEvent(.stale, provider: self)
         do {
             let resolveResult = try await client.resolve(ctx: context)
-            guard let resolveToken = resolveResult.resolveToken else {
-                throw ConfidenceError.noResolveTokenFromServer
-            }
-            try cache.clearAndSetValues(
-                values: resolveResult.resolvedValues, ctx: context, resolveToken: resolveToken)
+            return resolveResult
         } catch {
             Logger(subsystem: "com.confidence.provider", category: "initialize").error(
                 "Error while executing \"initialize\": \(error)")
@@ -346,9 +383,10 @@ extension ConfidenceFeatureProvider {
         var options: ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
-        var cache: ProviderCache = PersistentProviderCache.from(
-            storage: DefaultStorage(filePath: "resolver.flags.cache"))
+        var storage: Storage = DefaultStorage(filePath: "resolver.flags.cache")
+        var cache: ProviderCache?
         var flagApplier: (any FlagApplier)?
+        var initializationStrategy: InitializationStrategy = .fetchAndActivate
         var applyStorage: Storage = DefaultStorage(filePath: "resolver.apply.cache")
 
         /// Initializes the builder with the given credentails.
@@ -365,14 +403,18 @@ extension ConfidenceFeatureProvider {
             session: URLSession? = nil,
             localOverrides: [String: LocalOverride] = [:],
             flagApplier: FlagApplier?,
-            cache: ProviderCache,
+            storage: Storage,
+            cache: ProviderCache?,
+            initializationStrategy: InitializationStrategy,
             applyStorage: Storage
         ) {
             self.options = options
             self.session = session
             self.localOverrides = localOverrides
             self.flagApplier = flagApplier
+            self.storage = storage
             self.cache = cache
+            self.initializationStrategy = initializationStrategy
             self.applyStorage = applyStorage
         }
 
@@ -387,7 +429,9 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
+                storage: storage,
                 cache: cache,
+                initializationStrategy: initializationStrategy,
                 applyStorage: applyStorage
             )
         }
@@ -402,7 +446,26 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
+                storage: storage,
                 cache: cache,
+                initializationStrategy: initializationStrategy,
+                applyStorage: applyStorage
+            )
+        }
+
+        /// Inject custom storage, useful for testing
+        ///
+        /// - Parameters:
+        ///      - cache: cache for the provider to use.
+        public func with(storage: Storage) -> Builder {
+            return Builder(
+                options: options,
+                session: session,
+                localOverrides: localOverrides,
+                flagApplier: flagApplier,
+                storage: storage,
+                cache: cache,
+                initializationStrategy: initializationStrategy,
                 applyStorage: applyStorage
             )
         }
@@ -417,7 +480,9 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
+                storage: storage,
                 cache: cache,
+                initializationStrategy: initializationStrategy,
                 applyStorage: applyStorage
             )
         }
@@ -432,7 +497,26 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: localOverrides,
                 flagApplier: flagApplier,
+                storage: storage,
                 cache: cache,
+                initializationStrategy: initializationStrategy,
+                applyStorage: applyStorage
+            )
+        }
+
+        /// Inject custom initialization strategy
+        ///
+        /// - Parameters:
+        ///      - storage: apply storage for the provider to use.
+        public func with(initializationStrategy: InitializationStrategy) -> Builder {
+            return Builder(
+                options: options,
+                session: session,
+                localOverrides: localOverrides,
+                flagApplier: flagApplier,
+                storage: storage,
+                cache: cache,
+                initializationStrategy: initializationStrategy,
                 applyStorage: applyStorage
             )
         }
@@ -464,7 +548,9 @@ extension ConfidenceFeatureProvider {
                 session: session,
                 localOverrides: self.localOverrides.merging(localOverrides) { _, new in new },
                 flagApplier: flagApplier,
+                storage: storage,
                 cache: cache,
+                initializationStrategy: initializationStrategy,
                 applyStorage: applyStorage
             )
         }
@@ -479,35 +565,26 @@ extension ConfidenceFeatureProvider {
                     options: options
                 )
 
+            let cache = cache ?? InMemoryProviderCache.from(storage: storage)
+
             let client = RemoteConfidenceClient(
                 options: options,
                 session: self.session,
                 applyOnResolve: false,
                 flagApplier: flagApplier
             )
-            let resolver = LocalStorageResolver(cache: cache)
+
             return ConfidenceFeatureProvider(
-                resolver: resolver,
                 client: client,
                 cache: cache,
+                storage: storage,
                 overrides: localOverrides,
                 flagApplier: flagApplier,
-                applyStorage: applyStorage
+                applyStorage: applyStorage,
+                initializationStrategy: initializationStrategy
             )
         }
     }
 }
-
-/// Used for testing
-public protocol DispatchQueueType {
-    func async(execute work: @escaping @convention(block) () -> Void)
-}
-
-extension DispatchQueue: DispatchQueueType {
-    public func async(execute work: @escaping @convention(block) () -> Void) {
-        async(group: nil, qos: .unspecified, flags: [], execute: work)
-    }
-}
-
 // swiftlint:enable type_body_length
 // swiftlint:enable file_length

@@ -21,6 +21,7 @@ extension ConfidenceDemoApp {
         }
         let provider = ConfidenceFeatureProvider
             .Builder(credentials: .clientSecret(secret: secret))
+            .with(initializationStrategy: .activateAndFetchAsync)
             .build()
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
         OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)

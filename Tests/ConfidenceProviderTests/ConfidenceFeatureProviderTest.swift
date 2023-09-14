@@ -12,11 +12,11 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     private let builder =
         ConfidenceFeatureProvider
         .Builder(credentials: .clientSecret(secret: "test"))
-    private let cache = PersistentProviderCache.from(
-        storage: StorageMock())
+    private let storage = StorageMock()
 
     override func setUp() {
-        try? cache.clear()
+        try? storage.clear()
+
         MockedConfidenceClientURLProtocol.reset()
         flagApplier = FlagApplierMock()
 
@@ -32,6 +32,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -91,6 +92,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -125,7 +127,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
-            .with(cache: cache)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -160,7 +162,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
-            .with(cache: cache)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
 
@@ -197,7 +199,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
-            .with(cache: cache)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -237,7 +239,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
-            .with(cache: cache)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
@@ -273,19 +275,20 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        // Simulating a cache with an old evaluation context
+
+        let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
+            .toCacheData(context: MutableContext(targetingKey: "user0"), resolveToken: "token0")
+
+        let storage = try StorageMock(data: data)
+
         let provider =
             builder
             .with(session: session)
-            .with(cache: cache)
+            .with(storage: storage)
             .build()
-        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        provider.initialize(initialContext: MutableContext(targetingKey: "user0"))
         wait(for: [readyExpectation], timeout: 5)
-
-        // Simulating a cache with an old evaluation context
-        try cache.clearAndSetValues(
-            values: [ResolvedValue(flag: "flag", resolveReason: .match)],
-            ctx: MutableContext(targetingKey: "user0"),
-            resolveToken: "token0")
 
         let evaluation = try provider.getIntegerEvaluation(
             key: "flag.size",
@@ -448,7 +451,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let provider =
             builder
             .with(session: session)
-            .with(cache: cache)
+            .with(storage: storage)
             .with(flagApplier: flagApplier)
             .build()
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
