@@ -6,8 +6,8 @@ import XCTest
 
 class StorageMock: Storage {
     var data = ""
-
     var saveExpectation: XCTestExpectation?
+    private let storageQueue = DispatchQueue(label: "com.confidence.storagemock")
 
     convenience init(data: Encodable) throws {
         self.init()
@@ -15,20 +15,32 @@ class StorageMock: Storage {
     }
 
     func save(data: Encodable) throws {
-        let dataB = try JSONEncoder().encode(data)
-        self.data = String(data: dataB, encoding: .utf8) ?? ""
+        try storageQueue.sync {
+            let dataB = try JSONEncoder().encode(data)
+            self.data = String(data: dataB, encoding: .utf8) ?? ""
 
-        saveExpectation?.fulfill()
+            saveExpectation?.fulfill()
+        }
     }
 
     func load<T>(defaultValue: T) throws -> T where T: Decodable {
-        if data.isEmpty {
-            return defaultValue
+        try storageQueue.sync {
+            if data.isEmpty {
+                return defaultValue
+            }
+            return try JSONDecoder().decode(T.self, from: data.data)
         }
-        return try JSONDecoder().decode(T.self, from: data.data)
     }
 
     func clear() throws {
-        data = ""
+        storageQueue.sync {
+            data = ""
+        }
+    }
+
+    func isEmpty() -> Bool {
+        storageQueue.sync {
+            return data.isEmpty
+        }
     }
 }

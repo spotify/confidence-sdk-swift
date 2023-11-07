@@ -11,7 +11,7 @@ final class CacheDataTests: XCTestCase {
 
         // When add event is called
         let applyTime = Date()
-        cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTime)
+        _ = cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTime)
 
         // Then cache data has one resolve event
         XCTAssertEqual(cacheData.resolveEvents.count, 1)
@@ -29,7 +29,7 @@ final class CacheDataTests: XCTestCase {
         var cacheData = CacheData(resolveToken: "token1", events: [])
 
         // When add event is called with token that already exist in cache data
-        cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTime)
+        _ = cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTime)
 
         // Then cache data has one resolve event
         XCTAssertEqual(cacheData.resolveEvents.count, 1)
@@ -46,9 +46,9 @@ final class CacheDataTests: XCTestCase {
         var cacheData = try CacheDataUtility.prefilledCacheData()
 
         // When add event is called 3 times with token that already exist in cache data
-        cacheData.add(resolveToken: "token0", flagName: "flagName", applyTime: Date())
-        cacheData.add(resolveToken: "token0", flagName: "flagName2", applyTime: Date())
-        cacheData.add(resolveToken: "token0", flagName: "flagName3", applyTime: Date())
+        _ = cacheData.add(resolveToken: "token0", flagName: "flagName", applyTime: Date())
+        _ = cacheData.add(resolveToken: "token0", flagName: "flagName2", applyTime: Date())
+        _ = cacheData.add(resolveToken: "token0", flagName: "flagName3", applyTime: Date())
 
         // Then cache data has 6 apply events
         XCTAssertEqual(cacheData.resolveEvents.first?.events.count, 6)
@@ -58,11 +58,11 @@ final class CacheDataTests: XCTestCase {
         // Given pre filled cache data
         let applyTime = Date(timeIntervalSince1970: 1000)
         var cacheData = CacheData(resolveToken: "token1", events: [])
-        cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTime)
+        _ = cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTime)
 
         // When add event is called with token and flagName that already exist in cache
         let applyTimeOther = Date(timeIntervalSince1970: 3000)
-        cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTimeOther)
+        _ = cacheData.add(resolveToken: "token1", flagName: "flagName", applyTime: applyTimeOther)
 
         // Then apply record is not overriden
         let applyEvent = try XCTUnwrap(cacheData.resolveEvents.first?.events.first)
@@ -75,9 +75,9 @@ final class CacheDataTests: XCTestCase {
         let date = Date(timeIntervalSince1970: 2000)
 
         // When add event is called 3 times with different tokens
-        cacheData.add(resolveToken: "token1", flagName: "prefilled", applyTime: date)
-        cacheData.add(resolveToken: "token2", flagName: "prefilled", applyTime: date)
-        cacheData.add(resolveToken: "token3", flagName: "prefilled", applyTime: date)
+        _ = cacheData.add(resolveToken: "token1", flagName: "prefilled", applyTime: date)
+        _ = cacheData.add(resolveToken: "token2", flagName: "prefilled", applyTime: date)
+        _ = cacheData.add(resolveToken: "token3", flagName: "prefilled", applyTime: date)
 
         // Then cache data has 4 resolve event
         XCTAssertEqual(cacheData.resolveEvents.count, 4)

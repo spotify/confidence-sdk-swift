@@ -34,7 +34,7 @@ final class CacheDataInteractorTests: XCTestCase {
 
         Task {
             // When cache data add method is called
-            await cacheDataInteractor.add(resolveToken: "token", flagName: "name", applyTime: Date())
+            _ = await cacheDataInteractor.add(resolveToken: "token", flagName: "name", applyTime: Date())
 
             // Then event is added with
             let cache = await cacheDataInteractor.cache
@@ -49,7 +49,7 @@ final class CacheDataInteractorTests: XCTestCase {
 
         Task {
             // When cache data add method is called
-            await cacheDataInteractor.add(resolveToken: "token", flagName: "name", applyTime: Date())
+            _ = await cacheDataInteractor.add(resolveToken: "token", flagName: "name", applyTime: Date())
 
             // Then event is added with
             let cache = await cacheDataInteractor.cache
