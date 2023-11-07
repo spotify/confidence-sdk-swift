@@ -28,25 +28,14 @@ public class DefaultStorage: Storage {
     }
 
     public func load<T>(defaultValue: T) throws -> T where T: Decodable {
-        try storageQueue.sync {
-            let configUrl = try getConfigUrl()
-            guard FileManager.default.fileExists(atPath: configUrl.backport.path) else {
-                return defaultValue
-            }
+        guard let data = try read() else {
+            return defaultValue
+        }
 
-            let data = try {
-                do {
-                    return try Data(contentsOf: configUrl)
-                } catch {
-                    throw ConfidenceError.cacheError(message: "Unable to load cache file: \(error)")
-                }
-            }()
-
-            do {
-                return try JSONDecoder().decode(T.self, from: data)
-            } catch {
-                throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
-            }
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
         }
     }
 
@@ -62,6 +51,33 @@ public class DefaultStorage: Storage {
             } catch {
                 throw ConfidenceError.cacheError(message: "Unable to clear cache: \(error)")
             }
+        }
+    }
+
+    public func isEmpty() -> Bool {
+        guard let data = try? read() else {
+            return false
+        }
+
+        return data.isEmpty
+    }
+
+    func read() throws -> Data? {
+        try storageQueue.sync {
+            let configUrl = try getConfigUrl()
+            guard FileManager.default.fileExists(atPath: configUrl.backport.path) else {
+                return nil
+            }
+
+            let data = try {
+                do {
+                    return try Data(contentsOf: configUrl)
+                } catch {
+                    throw ConfidenceError.cacheError(message: "Unable to load cache file: \(error)")
+                }
+            }()
+
+            return data
         }
     }
 

@@ -89,6 +89,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
+    public func isStorageEmpty() -> Bool {
+        storage.isEmpty()
+    }
+
     public func onContextSet(
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
