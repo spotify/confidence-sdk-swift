@@ -56,7 +56,7 @@ public class DefaultStorage: Storage {
 
     public func isEmpty() -> Bool {
         guard let data = try? read() else {
-            return false
+            return true
         }
 
         return data.isEmpty
@@ -95,5 +95,19 @@ public class DefaultStorage: Storage {
 
         return applicationSupportUrl.backport.appending(
             components: resolverCacheBundleId, "\(bundleIdentifier)", filePath)
+    }
+}
+
+extension DefaultStorage {
+    public static func resolverFlagsCache() -> DefaultStorage {
+        DefaultStorage(filePath: "resolver.flags.cache")
+    }
+
+    public static func resolverApplyCache() -> DefaultStorage {
+        DefaultStorage(filePath: "resolver.apply.cache")
+    }
+
+    public static func applierFlagsCache() -> DefaultStorage {
+        DefaultStorage(filePath: "applier.flags.cache")
     }
 }

@@ -64,6 +64,15 @@ The evaluation context is the way for the client to specify contextual data that
 
 The `setProvider()` function is synchronous and returns immediately, however this does not mean that the provider is ready to be used. An asynchronous network request to the Confidence backend to fetch all the flags configured for your application must be completed by the provider first. The provider will then emit a _READY_ event indicating you can start resolving flags.
 
+A ultity function is available on the provider to check if the current storage has any values stored - this can be used to determine the best initialization strategy.
+```swift
+// If we have no cache, then do a fetch first.
+var initializationStratgey: InitializationStrategy = .activateAndFetchAsync
+if ConfidenceFeatureProvider.isStorageEmpty() {
+    initializationStratgey = .fetchAndActivate
+}
+```
+
 To listen for the _READY_ event, you can add an event handler via the `OpenFeatureAPI` shared instance:
 ```swift
 func providerReady(notification: Notification) {

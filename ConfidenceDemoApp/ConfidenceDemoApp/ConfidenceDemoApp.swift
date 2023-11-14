@@ -19,10 +19,18 @@ extension ConfidenceDemoApp {
         guard let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] else {
             return
         }
+
+        // If we have no cache, then do a fetch first.
+        var initializationStratgey: InitializationStrategy = .activateAndFetchAsync
+        if ConfidenceFeatureProvider.isStorageEmpty() {
+            initializationStratgey = .fetchAndActivate
+        }
+
         let provider = ConfidenceFeatureProvider
             .Builder(credentials: .clientSecret(secret: secret))
-            .with(initializationStrategy: .activateAndFetchAsync)
+            .with(initializationStrategy: initializationStratgey)
             .build()
+        // NOTE: Using a random UUID for each app start is not advised and can result in getting stale values.
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
         OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
     }
