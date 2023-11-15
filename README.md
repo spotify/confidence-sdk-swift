@@ -30,7 +30,7 @@ the relevant OpenFeature SDK dependency manually.
 <!---x-release-please-start-version-->
 In the dependencies section of Package.swift add:
 ```swift
-.package(url: "git@github.com:spotify/confidence-openfeature-provider-swift.git", from: "0.1.0")
+.package(url: "git@github.com:spotify/confidence-openfeature-provider-swift.git", from: "0.1.1")
 ```
 <!---x-release-please-end-->
 
