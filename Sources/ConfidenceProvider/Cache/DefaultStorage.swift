@@ -28,25 +28,14 @@ public class DefaultStorage: Storage {
     }
 
     public func load<T>(defaultValue: T) throws -> T where T: Decodable {
-        try storageQueue.sync {
-            let configUrl = try getConfigUrl()
-            guard FileManager.default.fileExists(atPath: configUrl.backport.path) else {
-                return defaultValue
-            }
+        guard let data = try read() else {
+            return defaultValue
+        }
 
-            let data = try {
-                do {
-                    return try Data(contentsOf: configUrl)
-                } catch {
-                    throw ConfidenceError.cacheError(message: "Unable to load cache file: \(error)")
-                }
-            }()
-
-            do {
-                return try JSONDecoder().decode(T.self, from: data)
-            } catch {
-                throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
-            }
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
         }
     }
 
@@ -65,6 +54,33 @@ public class DefaultStorage: Storage {
         }
     }
 
+    public func isEmpty() -> Bool {
+        guard let data = try? read() else {
+            return true
+        }
+
+        return data.isEmpty
+    }
+
+    func read() throws -> Data? {
+        try storageQueue.sync {
+            let configUrl = try getConfigUrl()
+            guard FileManager.default.fileExists(atPath: configUrl.backport.path) else {
+                return nil
+            }
+
+            let data = try {
+                do {
+                    return try Data(contentsOf: configUrl)
+                } catch {
+                    throw ConfidenceError.cacheError(message: "Unable to load cache file: \(error)")
+                }
+            }()
+
+            return data
+        }
+    }
+
     func getConfigUrl() throws -> URL {
         guard
             let applicationSupportUrl = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
@@ -79,5 +95,19 @@ public class DefaultStorage: Storage {
 
         return applicationSupportUrl.backport.appending(
             components: resolverCacheBundleId, "\(bundleIdentifier)", filePath)
+    }
+}
+
+extension DefaultStorage {
+    public static func resolverFlagsCache() -> DefaultStorage {
+        DefaultStorage(filePath: "resolver.flags.cache")
+    }
+
+    public static func resolverApplyCache() -> DefaultStorage {
+        DefaultStorage(filePath: "resolver.apply.cache")
+    }
+
+    public static func applierFlagsCache() -> DefaultStorage {
+        DefaultStorage(filePath: "applier.flags.cache")
     }
 }

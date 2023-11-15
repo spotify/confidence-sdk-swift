@@ -378,16 +378,28 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 }
 
+// MARK: Storage
+
+extension ConfidenceFeatureProvider {
+    public static func isStorageEmpty(
+        storage: Storage = DefaultStorage.resolverFlagsCache()
+    ) -> Bool {
+        storage.isEmpty()
+    }
+}
+
+// MARK: Builder
+
 extension ConfidenceFeatureProvider {
     public struct Builder {
         var options: ConfidenceClientOptions
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
-        var storage: Storage = DefaultStorage(filePath: "resolver.flags.cache")
+        var storage: Storage = DefaultStorage.resolverFlagsCache()
         var cache: ProviderCache?
         var flagApplier: (any FlagApplier)?
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
-        var applyStorage: Storage = DefaultStorage(filePath: "resolver.apply.cache")
+        var applyStorage: Storage = DefaultStorage.resolverApplyCache()
 
         /// Initializes the builder with the given credentails.
         ///
@@ -561,7 +573,7 @@ extension ConfidenceFeatureProvider {
                 flagApplier
                 ?? FlagApplierWithRetries(
                     httpClient: NetworkClient(region: options.region),
-                    storage: DefaultStorage(filePath: "applier.flags.cache"),
+                    storage: DefaultStorage.applierFlagsCache(),
                     options: options
                 )
 

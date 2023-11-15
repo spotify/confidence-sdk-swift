@@ -26,7 +26,7 @@ enum CacheDataUtility {
                     let applyEvent = FlagApply(name: flagName, applyTime: date)
                     applyEvents.append(applyEvent)
                 } else {
-                    cacheData.add(resolveToken: resolveToken, flagName: flagName, applyTime: date)
+                    _ = cacheData.add(resolveToken: resolveToken, flagName: flagName, applyTime: date)
                 }
             }
 

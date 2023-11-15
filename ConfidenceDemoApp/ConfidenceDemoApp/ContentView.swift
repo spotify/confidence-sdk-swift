@@ -18,7 +18,7 @@ struct ContentView: View {
                     text.text = OpenFeatureAPI
                         .shared
                         .getClient()
-                        .getStringValue(key: "hawkflag.color", defaultValue: "ERROR")
+                        .getStringValue(key: "swift-demoapp.color", defaultValue: "ERROR")
                     if text.text == "Green" {
                         color.color = .green
                     } else if text.text == "Yellow" {

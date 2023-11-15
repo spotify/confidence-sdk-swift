@@ -6,4 +6,6 @@ public protocol Storage {
     func load<T>(defaultValue: T) throws -> T where T: Decodable
 
     func clear() throws
+
+    func isEmpty() -> Bool
 }
