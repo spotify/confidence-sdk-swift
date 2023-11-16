@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/spotify/confidence-openfeature-provider-swift/compare/0.1.1...0.1.2) (2023-11-16)
+
+
+### ✨ New Features
+
+* Add SDK id and version to requests ([#62](https://github.com/spotify/confidence-openfeature-provider-swift/issues/62)) ([e1cb474](https://github.com/spotify/confidence-openfeature-provider-swift/commit/e1cb4747b31989b43ac5a33f4022e162f93942c0))
+
 ## [0.1.1](https://github.com/spotify/confidence-openfeature-provider-swift/compare/v0.1.0...0.1.1) (2023-11-15)
 
 
