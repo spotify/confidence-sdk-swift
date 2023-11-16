@@ -5,6 +5,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
     private let targetingKey = "targeting_key"
     private let flagApplier: FlagApplier
     private var options: ConfidenceClientOptions
+    private let metadata: ConfidenceMetadata
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
@@ -13,12 +14,14 @@ public class RemoteConfidenceClient: ConfidenceClient {
         options: ConfidenceClientOptions,
         session: URLSession? = nil,
         applyOnResolve: Bool,
-        flagApplier: FlagApplier
+        flagApplier: FlagApplier,
+        metadata: ConfidenceMetadata
     ) {
         self.options = options
         self.httpClient = NetworkClient(session: session, region: options.region)
         self.flagApplier = flagApplier
         self.applyOnResolve = applyOnResolve
+        self.metadata = metadata
     }
 
     // MARK: Resolver
@@ -28,7 +31,9 @@ public class RemoteConfidenceClient: ConfidenceClient {
             flags: flags.map { "flags/\($0)" },
             evaluationContext: try getEvaluationContextStruct(ctx: ctx),
             clientSecret: options.credentials.getSecret(),
-            apply: applyOnResolve)
+            apply: applyOnResolve,
+            sdk: Sdk(id: metadata.name, version: metadata.version)
+        )
 
         do {
             let result: HttpClientResponse<ResolveFlagsResponse> =
@@ -108,6 +113,7 @@ struct ResolveFlagsRequest: Codable {
     var evaluationContext: Struct
     var clientSecret: String
     var apply: Bool
+    var sdk: Sdk
 }
 
 struct ResolveFlagsResponse: Codable {
@@ -149,6 +155,7 @@ struct ApplyFlagsRequest: Codable {
     var sendTime: String
     var clientSecret: String
     var resolveToken: String
+    var sdk: Sdk
 }
 
 struct ApplyFlagsResponse: Codable {
@@ -182,6 +189,16 @@ public enum ConfidenceClientCredentials {
 public enum ConfidenceRegion: String {
     case europe = "eu"
     case usa = "us"
+}
+
+struct Sdk: Codable {
+    init(id: String?, version: String?) {
+        self.id = id ?? "SDK_ID_SWIFT_PROVIDER"
+        self.version = version ?? "unknown"
+    }
+
+    var id: String
+    var version: String
 }
 
 private func displayName(resolvedFlag: ResolvedFlag) throws -> String {

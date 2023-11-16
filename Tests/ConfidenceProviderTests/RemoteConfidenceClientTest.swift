@@ -30,7 +30,8 @@ class RemoteConfidenceClientTest: XCTestCase {
             options: .init(credentials: .clientSecret(secret: "test")),
             session: session,
             applyOnResolve: true,
-            flagApplier: flagApplier
+            flagApplier: flagApplier,
+            metadata: ConfidenceMetadata()
         )
 
         let result = try await client.resolve(ctx: MutableContext(targetingKey: "user1"))

@@ -11,6 +11,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     private let options = ConfidenceClientOptions(credentials: .clientSecret(secret: "test"))
     private var storage = StorageMock()
     private var httpClient = HttpClientMock()
+    private let metadata = ConfidenceMetadata(name: "test-provider-name", version: "0.0.0.")
 
     override func setUp() {
         storage = StorageMock()
@@ -22,7 +23,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_differentTokens() async {
         // Given flag applier
         let applier = FlagApplierWithRetries(
-            httpClient: httpClient, storage: storage, options: options, triggerBatch: false
+            httpClient: httpClient, storage: storage, options: options, metadata: metadata, triggerBatch: false
         )
 
         // When 3 apply calls are issued with different tokens
@@ -37,7 +38,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_duplicateEventsAreNotSent() async {
         // Given flag applier
         let applier = FlagApplierWithRetries(
-            httpClient: httpClient, storage: storage, options: options, triggerBatch: false
+            httpClient: httpClient, storage: storage, options: options, metadata: metadata, triggerBatch: false
         )
 
         // When 3 identical apply calls are issued
@@ -56,6 +57,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: httpClient,
             storage: storage,
             options: options,
+            metadata: metadata,
             cacheDataInteractor: cacheDataInteractor,
             triggerBatch: false
         )
@@ -80,6 +82,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: httpClient,
             storage: storage,
             options: options,
+            metadata: metadata,
             cacheDataInteractor: cacheDataInteractor,
             triggerBatch: false
         )
@@ -114,6 +117,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
                 httpClient: httpClient,
                 storage: storage,
                 options: options,
+                metadata: metadata,
                 triggerBatch: false
             )
         }
@@ -141,7 +145,8 @@ class FlagApplierWithRetriesTest: XCTestCase {
         _ = FlagApplierWithRetries(
             httpClient: httpClient,
             storage: prefilledStorage,
-            options: options
+            options: options,
+            metadata: metadata
         )
 
         await waitForExpectations(timeout: 5.0)
@@ -171,7 +176,8 @@ class FlagApplierWithRetriesTest: XCTestCase {
         _ = FlagApplierWithRetries(
             httpClient: partiallyFailingHttpClient,
             storage: prefilledStorage,
-            options: options
+            options: options,
+            metadata: metadata
         )
 
         await waitForExpectations(timeout: 5.0)
@@ -200,6 +206,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: httpClient,
             storage: storage,
             options: options,
+            metadata: metadata,
             triggerBatch: false
         )
 
@@ -243,6 +250,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: offlineClient,
             storage: storage,
             options: options,
+            metadata: metadata,
             cacheDataInteractor: cacheDataInteractor,
             triggerBatch: false
         )
@@ -285,7 +293,8 @@ class FlagApplierWithRetriesTest: XCTestCase {
         _ = FlagApplierWithRetries(
             httpClient: httpClient,
             storage: prefilledStorage,
-            options: options
+            options: options,
+            metadata: metadata
         )
 
         await waitForExpectations(timeout: 1.0)
@@ -310,6 +319,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: httpClient,
             storage: prefilledStorage,
             options: options,
+            metadata: metadata,
             triggerBatch: false
         )
 
@@ -337,6 +347,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: offlineClient,
             storage: prefilledStorage,
             options: options,
+            metadata: metadata,
             triggerBatch: false
         )
 
@@ -350,7 +361,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // Given offline http client and flag applier
         let offlineClient = HttpClientMock(testMode: .error)
         let applier = FlagApplierWithRetries(
-            httpClient: offlineClient, storage: storage, options: options, triggerBatch: false
+            httpClient: offlineClient, storage: storage, options: options, metadata: metadata, triggerBatch: false
         )
 
         // When 3 apply calls are issued with different flag names
@@ -379,7 +390,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // Given offline http client and flag applier
         let offlineClient = HttpClientMock(testMode: .error)
         let applier = FlagApplierWithRetries(
-            httpClient: offlineClient, storage: storage, options: options, triggerBatch: false
+            httpClient: offlineClient, storage: storage, options: options, metadata: metadata, triggerBatch: false
         )
 
         // When 3 apply calls are issued with different tokens
@@ -417,6 +428,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: offlineClient,
             storage: prefilledStorage,
             options: options,
+            metadata: metadata,
             triggerBatch: false
         )
 
@@ -449,6 +461,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: offlineClient,
             storage: prefilledStorage,
             options: options,
+            metadata: metadata,
             triggerBatch: false
         )
 
@@ -480,6 +493,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             httpClient: offlineClient,
             storage: prefilledStorage,
             options: options,
+            metadata: metadata,
             triggerBatch: false
         )
 

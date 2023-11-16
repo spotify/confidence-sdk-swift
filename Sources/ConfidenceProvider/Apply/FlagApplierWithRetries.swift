@@ -10,17 +10,20 @@ final class FlagApplierWithRetries: FlagApplier {
     private let httpClient: HttpClient
     private let options: ConfidenceClientOptions
     private let cacheDataInteractor: CacheDataActor
+    private let metadata: ConfidenceMetadata
 
     init(
         httpClient: HttpClient,
         storage: Storage,
         options: ConfidenceClientOptions,
+        metadata: ConfidenceMetadata,
         cacheDataInteractor: CacheDataActor? = nil,
         triggerBatch: Bool = true
     ) {
         self.storage = storage
         self.httpClient = httpClient
         self.options = options
+        self.metadata = metadata
 
         let storedData = try? storage.load(defaultValue: CacheData.empty())
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(cacheData: storedData ?? .empty())
@@ -119,7 +122,8 @@ final class FlagApplierWithRetries: FlagApplier {
             flags: applyFlagRequestItems,
             sendTime: Date.backport.nowISOString,
             clientSecret: options.credentials.getSecret(),
-            resolveToken: resolveToken
+            resolveToken: resolveToken,
+            sdk: Sdk(id: metadata.name, version: metadata.version)
         )
 
         performRequest(request: request) { result in
