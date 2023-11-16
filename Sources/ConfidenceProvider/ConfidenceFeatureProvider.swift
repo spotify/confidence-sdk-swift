@@ -9,8 +9,8 @@ import os
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
+    public var metadata: ProviderMetadata
     public var hooks: [any Hook] = []
-    public let metadata: ProviderMetadata = ConfidenceMetadata()
     private let lock = UnfairLock()
     private var resolver: Resolver
     private let client: ConfidenceClient
@@ -22,6 +22,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
+        metadata: ProviderMetadata,
         client: RemoteConfidenceClient,
         cache: ProviderCache,
         storage: Storage,
@@ -31,6 +32,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         initializationStrategy: InitializationStrategy
     ) {
         self.client = client
+        self.metadata = metadata
         self.cache = cache
         self.overrides = overrides
         self.flagApplier = flagApplier
@@ -393,6 +395,7 @@ extension ConfidenceFeatureProvider {
 extension ConfidenceFeatureProvider {
     public struct Builder {
         var options: ConfidenceClientOptions
+        let metadata = ConfidenceMetadata(version: "0.1.1") // x-release-please-version
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
         var storage: Storage = DefaultStorage.resolverFlagsCache()
@@ -574,7 +577,8 @@ extension ConfidenceFeatureProvider {
                 ?? FlagApplierWithRetries(
                     httpClient: NetworkClient(region: options.region),
                     storage: DefaultStorage.applierFlagsCache(),
-                    options: options
+                    options: options,
+                    metadata: metadata
                 )
 
             let cache = cache ?? InMemoryProviderCache.from(storage: storage)
@@ -583,10 +587,12 @@ extension ConfidenceFeatureProvider {
                 options: options,
                 session: self.session,
                 applyOnResolve: false,
-                flagApplier: flagApplier
+                flagApplier: flagApplier,
+                metadata: metadata
             )
 
             return ConfidenceFeatureProvider(
+                metadata: metadata,
                 client: client,
                 cache: cache,
                 storage: storage,
