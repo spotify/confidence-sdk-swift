@@ -1,6 +1,6 @@
 # OpenFeature Swift Confidence Provider
 
-A Swift implementation of the Confidence Provider, to be used in conjunction with the [OpenFeature SDK](https://openfeature.dev/docs/reference/concepts/provider).
+A Swift implementation of the [Confidence](https://confidence.spotify.com/) Provider, to be used in conjunction with the [OpenFeature SDK](https://openfeature.dev/docs/reference/concepts/provider).
 For documentation related to flags management in Confidence, refer to the [Confidence documentation portal](https://confidence.spotify.com/platform/flags).
 
 Functionalities:
