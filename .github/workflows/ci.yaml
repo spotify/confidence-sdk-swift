@@ -19,7 +19,7 @@ jobs:
         ssh-private-key: ${{ secrets.SDK_REPO_PRIVATE_KEY }}
     - name: Build and Test
       env:
-        CLIENT_TOKEN: ${{ secrets.KONFIDENS_CLIENT_TOKEN }}
+        CLIENT_TOKEN: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
       run: scripts/run_tests.sh $CLIENT_TOKEN
 
   SwiftLint:
