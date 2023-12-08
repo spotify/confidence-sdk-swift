@@ -13,7 +13,7 @@ class ConfidenceIntegrationTests: XCTestCase {
         if let flag = ProcessInfo.processInfo.environment["TEST_FLAG_NAME"], !flag.isEmpty {
             return flag
         }
-        return "test-flag-1"
+        return "swift-test-flag"
     }
 
     override func setUp() async throws {
