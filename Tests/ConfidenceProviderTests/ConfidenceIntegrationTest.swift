@@ -5,7 +5,7 @@ import XCTest
 @testable import ConfidenceProvider
 
 class ConfidenceIntegrationTests: XCTestCase {
-    let clientToken: String? = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]
+    let clientToken: String? = "5GdaBq79NMVrMGXRVhN9g1pBKtG9cNK8"
     let resolveFlag = setResolveFlag()
     let storage: Storage = StorageMock()
 
