@@ -186,10 +186,10 @@ public enum ConfidenceClientCredentials {
     }
 }
 
-public enum ConfidenceRegion: String {
-    case global = "global"
-    case europe = "eu"
-    case usa = "us"
+public enum ConfidenceRegion {
+    case global
+    case europe
+    case usa
 }
 
 struct Sdk: Codable {

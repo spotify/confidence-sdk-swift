@@ -197,7 +197,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApply_multipleApplyCalls_batchTriggered() async throws {
         // Given flag applier with http client that is offline
-        let httpClient = HttpClientMock(testMode: .error)
+        let httpClient = HttpClientMock(testMode: .offline)
         let networkExpectation = self.expectation(description: "Waiting for batch trigger")
         networkExpectation.expectedFulfillmentCount = 2
         httpClient.expectation = networkExpectation
@@ -237,7 +237,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_multipleApplyCalls_sentSet() async throws {
         // Given flag applier with http client that is offline
         let cacheDataInteractor = CacheDataInteractor(cacheData: .empty())
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let networkExpectation = self.expectation(description: "Waiting for network call to complete")
         networkExpectation.expectedFulfillmentCount = 2
         offlineClient.expectation = networkExpectation
@@ -336,7 +336,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_previoslyStoredData_doesNotCleanAfterSendingFailure() throws {
         // Given offline http client
         // And storage that has previosly stored data (100 records, same token)
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let prefilledStorage = StorageMock()
         let prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
@@ -359,7 +359,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApplyOffline_storesOnDisk() async throws {
         // Given offline http client and flag applier
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let applier = FlagApplierWithRetries(
             httpClient: offlineClient, storage: storage, options: options, metadata: metadata, triggerBatch: false
         )
@@ -388,7 +388,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     func testApplyOffline_storesOnDisk_multipleTokens() async throws {
         // Given offline http client and flag applier
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let applier = FlagApplierWithRetries(
             httpClient: offlineClient, storage: storage, options: options, metadata: metadata, triggerBatch: false
         )
@@ -416,7 +416,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApplyOffline_previoslyStoredData_storesOnDisk() async throws {
         // Given flag applier set up with offline http client
         // And storage that has previously stored 1 record
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let data = CacheData(resolveToken: "token0", flagName: "flag1", applyTime: Date(timeIntervalSince1970: 1000))
         let prefilledStorage = try StorageMock(data: data)
 
@@ -453,7 +453,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApplyOffline_previoslyStoredData_100records() async throws {
         // Given flag applier set up with offline http client
         // And storage that has previously stored 100 records with different tokens
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let prefilledStorage = StorageMock()
         let prefilledCache = try CacheDataUtility.prefilledCacheData(resolveEventCount: 100)
         try prefilledStorage.save(data: prefilledCache)
@@ -477,7 +477,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApplyOffline_100applyCalls_sameToken() async throws {
         // Given flag applier set up with offline http client
         // And storage that has previously stored 100 records with same token
-        let offlineClient = HttpClientMock(testMode: .error)
+        let offlineClient = HttpClientMock(testMode: .offline)
         let networkExpectation = self.expectation(description: "Waiting for networkRequest to be completed")
 
         // Since we don't fail other requests when one request is failing

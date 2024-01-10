@@ -12,7 +12,7 @@ final class HttpClientMock: HttpClient {
     enum TestMode {
         case success
         case failFirstChunk
-        case error
+        case offline
     }
 
     init(testMode: TestMode = .success) {
@@ -63,7 +63,7 @@ final class HttpClientMock: HttpClient {
             } else {
                 return HttpClientResponse(response: HTTPURLResponse())
             }
-        case .error:
+        case .offline:
             throw HttpClientError.invalidResponse
         }
     }
