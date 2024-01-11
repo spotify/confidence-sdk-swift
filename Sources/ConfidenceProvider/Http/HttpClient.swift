@@ -6,8 +6,8 @@ protocol HttpClient {
     func post<T: Decodable>(
         path: String,
         data: Codable,
-        completion: @escaping (HttpClientResult<T>) -> Void
-    ) throws
+        completion: @escaping (HttpClientResult<T>) async -> Void
+    ) async throws
 
     func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResponse<T>
 }
