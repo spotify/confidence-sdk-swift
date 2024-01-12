@@ -36,7 +36,7 @@ In the dependencies section of Package.swift add:
 
 and in the target dependencies section add:
 ```swift
-.product(name: "ConfidenceProvider", package: "openfeature-swift-provider"),
+.product(name: "ConfidenceProvider", package: "confidence-openfeature-provider-swift"),
 ```
 
 ## Usage
