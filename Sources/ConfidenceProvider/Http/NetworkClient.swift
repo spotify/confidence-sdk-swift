@@ -8,11 +8,14 @@ final class NetworkClient: HttpClient {
     private let region: ConfidenceRegion
 
     private var baseUrl: String {
-        let region = region.rawValue
-        let domain = "confidence.dev"
-        let resolveRoute = "/v1/flags"
-
-        return "https://resolver.\(region).\(domain)\(resolveRoute)"
+        switch region {
+        case .global:
+            return "https://resolver.confidence.dev/v1/flags"
+        case .europe:
+            return "https://resolver.eu.confidence.dev/v1/flags"
+        case .usa:
+            return "https://resolver.us.confidence.dev/v1/flags"
+        }
     }
 
     init(

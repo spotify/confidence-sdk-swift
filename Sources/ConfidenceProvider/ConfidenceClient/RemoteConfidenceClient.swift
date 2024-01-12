@@ -171,7 +171,7 @@ public struct ConfidenceClientOptions {
     ) {
         self.credentials = credentials
         self.timeout = timeout ?? 10.0
-        self.region = region ?? .europe
+        self.region = region ?? .global
     }
 }
 
@@ -186,9 +186,10 @@ public enum ConfidenceClientCredentials {
     }
 }
 
-public enum ConfidenceRegion: String {
-    case europe = "eu"
-    case usa = "us"
+public enum ConfidenceRegion {
+    case global
+    case europe
+    case usa
 }
 
 struct Sdk: Codable {
