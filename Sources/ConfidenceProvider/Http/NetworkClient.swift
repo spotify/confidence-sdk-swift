@@ -77,19 +77,14 @@ final class NetworkClient: HttpClient {
         let retryWait: TimeInterval? = retryHandler.retryIn()
 
         do {
-            async let (data, response) = await self.session.data(for: request)
-            guard let httpResponse = try? await response as? HTTPURLResponse else {
+            let (data, response) = try await self.session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
                 await completion(nil, nil, HttpClientError.invalidResponse)
                 return
             }
             if self.shouldRetry(httpResponse: httpResponse), let retryWait {
                 try? await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
                 await self.perform(request: request, retry: retry, completion: completion)
-                return
-            }
-            guard let data = try? await data else {
-                let error = ConfidenceError.internalError(message: "Unable to complete request")
-                await completion(httpResponse, nil, error)
                 return
             }
             await completion(httpResponse, data, nil)
