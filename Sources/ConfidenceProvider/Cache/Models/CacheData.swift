@@ -24,6 +24,17 @@ struct CacheData: Codable {
         self.resolveEvents = resolveEvents
     }
 
+    static func convertInTransit(cache: CacheData) -> CacheData {
+        var mutatedCache = cache
+        for resolveIndex in 0..<mutatedCache.resolveEvents.count {
+            for eventIndex in 0..<mutatedCache.resolveEvents[resolveIndex].events.count
+            where mutatedCache.resolveEvents[resolveIndex].events[eventIndex].status == .sending {
+                mutatedCache.resolveEvents[resolveIndex].events[eventIndex].status = .created
+            }
+        }
+        return mutatedCache
+    }
+
     static func empty() -> CacheData {
         CacheData(resolveEvents: [])
     }
