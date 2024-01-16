@@ -4,7 +4,7 @@ final actor CacheDataInteractor: CacheDataActor {
     var cache = CacheData.empty()
 
     init(cacheData: CacheData) {
-        cache = cacheData
+        cache = CacheData.convertInTransit(cache: cacheData)
     }
 
     func add(resolveToken: String, flagName: String, applyTime: Date) -> (CacheData, Bool) {

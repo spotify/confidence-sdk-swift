@@ -157,6 +157,38 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertEqual(request.flags.count, 20)
     }
 
+    func test_previoslyStoredInTransitData_batchTriggered() async throws {
+        // Given storage that has previously stored data (100 records, same token)
+        let prefilledStorage = StorageMock()
+        var prefilledCache = try CacheDataUtility.prefilledCacheData(applyEventCount: 100)
+        // Set all the events in the cache/storage as in-transit, i.e. `sending`
+        prefilledCache.setEventStatus(resolveToken: "token0", status: .sending)
+        try prefilledStorage.save(data: prefilledCache)
+
+        let expectation = self.expectation(description: "Waiting for network call to complete")
+        expectation.expectedFulfillmentCount = 5
+        httpClient.expectation = expectation
+
+        let storageExpectation = self.expectation(description: "Waiting for storage expectation to be completed")
+        storageExpectation.expectedFulfillmentCount = 10
+        prefilledStorage.saveExpectation = storageExpectation
+
+        // When flag applier is initialised
+        _ = FlagApplierWithRetries(
+            httpClient: httpClient,
+            storage: prefilledStorage,
+            options: options,
+            metadata: metadata
+        )
+
+        await waitForExpectations(timeout: 5.0)
+
+        // Then http client sends 5 apply flag batch request, containing 20 records each
+        let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
+        XCTAssertEqual(httpClient.postCallCounter, 5)
+        XCTAssertEqual(request.flags.count, 20)
+    }
+
     func testApply_previoslyStoredData_partialFailure() async throws {
         // Given storage that has previously stored data (100 records, same token)
         let partiallyFailingHttpClient = HttpClientMock(testMode: .failFirstChunk)
