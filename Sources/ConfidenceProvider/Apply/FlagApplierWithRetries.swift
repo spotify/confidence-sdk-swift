@@ -56,8 +56,8 @@ final class FlagApplierWithRetries: FlagApplier {
     // MARK: private
 
     private func triggerBatch() async {
-        async let cacheData = await cacheDataInteractor.cache
-        await cacheData.resolveEvents.forEach { resolveEvent in
+        let cacheData = await cacheDataInteractor.cache
+        await cacheData.resolveEvents.asyncForEach { resolveEvent in
             let appliesToSend = resolveEvent.events.filter { $0.status == .created }
                 .chunk(size: 20)
 
@@ -65,40 +65,38 @@ final class FlagApplierWithRetries: FlagApplier {
                 return
             }
 
-            appliesToSend.forEach { chunk in
-                self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sending)
-                executeApply(
+            await appliesToSend.asyncForEach { chunk in
+                await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sending)
+                await executeApply(
                     resolveToken: resolveEvent.resolveToken,
                     items: chunk
                 ) { success in
                     guard success else {
-                        self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .created)
+                        await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .created)
                         return
                     }
                     // Set 'sent' property of apply events to true
-                    self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent)
+                    await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent)
                 }
             }
         }
     }
 
-    private func writeStatus(resolveToken: String, events: [FlagApply], status: ApplyEventStatus) {
+    private func writeStatus(resolveToken: String, events: [FlagApply], status: ApplyEventStatus) async {
         let lastIndex = events.count - 1
-        events.enumerated().forEach { index, event in
-            Task(priority: .medium) {
-                var data = await self.cacheDataInteractor.setEventStatus(
-                    resolveToken: resolveToken,
-                    name: event.name,
-                    status: status
-                )
+        await events.enumerated().asyncForEach { index, event in
+            var data = await self.cacheDataInteractor.setEventStatus(
+                resolveToken: resolveToken,
+                name: event.name,
+                status: status
+            )
 
-                if index == lastIndex {
-                    let unsentFlagApplies = data.resolveEvents.filter {
-                        $0.isSent == false
-                    }
-                    data.resolveEvents = unsentFlagApplies
-                    try? self.storage.save(data: data)
+            if index == lastIndex {
+                let unsentFlagApplies = data.resolveEvents.filter {
+                    $0.isSent == false
                 }
+                data.resolveEvents = unsentFlagApplies
+                try? self.storage.save(data: data)
             }
         }
     }
@@ -110,8 +108,8 @@ final class FlagApplierWithRetries: FlagApplier {
     private func executeApply(
         resolveToken: String,
         items: [FlagApply],
-        completion: @escaping (Bool) -> Void
-    ) {
+        completion: @escaping (Bool) async -> Void
+    ) async {
         let applyFlagRequestItems = items.map { applyEvent in
             AppliedFlagRequestItem(
                 flag: applyEvent.name,
@@ -126,25 +124,25 @@ final class FlagApplierWithRetries: FlagApplier {
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
 
-        performRequest(request: request) { result in
+        await performRequest(request: request) { result in
             switch result {
             case .success:
-                completion(true)
+                await completion(true)
             case .failure(let error):
                 self.logApplyError(error: error)
-                completion(false)
+                await completion(false)
             }
         }
     }
 
     private func performRequest(
         request: ApplyFlagsRequest,
-        completion: @escaping (ApplyFlagResult) -> Void
-    ) {
+        completion: @escaping (ApplyFlagResult) async -> Void
+    ) async {
         do {
-            try httpClient.post(path: ":apply", data: request, completion: completion)
+            try await httpClient.post(path: ":apply", data: request, completion: completion)
         } catch {
-            completion(.failure(handleError(error: error)))
+            await completion(.failure(handleError(error: error)))
         }
     }
 
@@ -165,6 +163,16 @@ final class FlagApplierWithRetries: FlagApplier {
         default:
             Logger(subsystem: "com.confidence.provider", category: "apply").error(
                 "Error while executing \"apply\": \(error)")
+        }
+    }
+}
+
+extension Sequence {
+    func asyncForEach(
+        _ transform: (Element) async throws -> Void
+    ) async rethrows {
+        for element in self {
+            try await transform(element)
         }
     }
 }

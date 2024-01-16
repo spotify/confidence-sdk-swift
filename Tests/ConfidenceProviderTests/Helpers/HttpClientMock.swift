@@ -22,13 +22,13 @@ final class HttpClientMock: HttpClient {
     func post<T>(
         path: String,
         data: Codable,
-        completion: @escaping (ConfidenceProvider.HttpClientResult<T>) -> Void
-    ) throws where T: Decodable {
+        completion: @escaping (ConfidenceProvider.HttpClientResult<T>) async -> Void
+    ) async throws where T: Decodable {
         do {
             let result: HttpClientResponse<T> = try handlePost(path: path, data: data)
-            completion(.success(result))
+            await completion(.success(result))
         } catch {
-            completion(.failure(error))
+            await completion(.failure(error))
         }
     }
 
