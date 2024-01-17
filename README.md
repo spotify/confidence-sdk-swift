@@ -172,3 +172,14 @@ OpenFeatureAPI.shared.provider =
 ```
 
 now, all resolves of `button.size` will return 4.
+
+## Apply events
+This Provider automatically emits `apply` events to the Confidence backend once a flag's property is read by the application. This allows Confidence to track who was exposed to what variant and when.
+
+_Note: the `apply` event reports which flag and variant was read by the application, but not which property the application has read from such variant's value._
+
+To avoid generating redundant data, as long as the flags' data returned from the backend for a user remains unchanged, only the first time a flag's property is read will generate an `apply` event. This is true also across restarts of the application.
+
+The Provider stores `apply` events on disk until they are emitted correctly, thus ensuring the apply data reaches the backend even if generated when there is no network available (assuming the device will ever re-connect to the network before the application is deleted by the user).
+
+<!-- Add link to the more detailed documentation on apply events in the Confidence portal once it's ready -->
