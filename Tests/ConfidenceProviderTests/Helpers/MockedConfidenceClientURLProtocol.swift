@@ -43,7 +43,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
         }
 
         switch path {
-        case _ where path.hasSuffix(":resolve"):
+        case _ where path.hasSuffix("/flags:resolve"):
             return resolve()
         default:
             client?.urlProtocol(self, didFailWithError: NSError(domain: "test", code: URLError.badURL.rawValue))
