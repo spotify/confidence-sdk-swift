@@ -43,113 +43,59 @@ final class NetworkClient: HttpClient {
 
     func post<T: Decodable>(
         path: String,
-        data: Codable,
-        completion: @escaping (HttpClientResult<T>) async -> Void
-    ) async throws {
+        data: Codable
+    ) async throws -> HttpClientResult<T> {
         let request = try buildRequest(path: path, data: data)
-        await perform(request: request, retry: self.retry) { response, data, error in
-            if let error {
-                await completion(.failure(error))
-                return
-            }
+        let requestResult = await perform(request: request, retry: self.retry)
+        if let error = requestResult.error {
+            return .failure(error)
+        }
 
-            guard let response, let data else {
-                await completion(.failure(ConfidenceError.internalError(message: "Bad response")))
-                return
-            }
+        guard let response = requestResult.httpResponse, let data = requestResult.data else {
+            return .failure(ConfidenceError.internalError(message: "Bad response"))
+        }
 
-            do {
-                let httpClientResult: HttpClientResponse<T> =
-                try self.buildResponse(response: response, data: data)
-                await completion(.success(httpClientResult))
-            } catch {
-                await completion(.failure(error))
-            }
+        do {
+            let httpClientResult: HttpClientResponse<T> =
+            try self.buildResponse(response: response, data: data)
+            return .success(httpClientResult)
+        } catch {
+            return .failure(error)
         }
     }
 
     private func perform(
         request: URLRequest,
-        retry: Retry,
-        completion: @escaping (HTTPURLResponse?, Data?, Error?) async -> Void
-    ) async {
+        retry: Retry
+    ) async -> RequestResult {
         let retryHandler = retry.handler()
         let retryWait: TimeInterval? = retryHandler.retryIn()
 
         do {
             let (data, response) = try await self.session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                await completion(nil, nil, HttpClientError.invalidResponse)
-                return
+                return RequestResult(httpResponse: nil, data: nil, error: HttpClientError.invalidResponse)
             }
             if self.shouldRetry(httpResponse: httpResponse), let retryWait {
                 try? await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
-                await self.perform(request: request, retry: retry, completion: completion)
-                return
+                return await self.perform(request: request, retry: retry)
             }
-            await completion(httpResponse, data, nil)
+            return RequestResult(httpResponse: httpResponse, data: data, error: nil)
         } catch {
             if self.shouldRetry(error: error), let retryWait {
                 try? await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
-                await self.perform(request: request, retry: retry, completion: completion)
+                return await self.perform(request: request, retry: retry)
             } else {
-                await completion(nil, nil, error)
+                return RequestResult(httpResponse: nil, data: nil, error: error)
             }
         }
     }
+}
 
-    // MARK: Async
-
-    func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResponse<T> {
-        let request = try buildRequest(path: path, data: data)
-        let result = try await perform(request: request, retry: self.retry)
-
-        return try buildResponse(response: result.response, data: result.data)
-    }
-
-    private func perform(
-        request: URLRequest,
-        retry: Retry
-    ) async throws -> (response: HTTPURLResponse, data: Data?) {
-        let retryHandler = retry.handler()
-        let retryWait: TimeInterval? = retryHandler.retryIn()
-
-        var resultData: Data?
-        var resultResponse: HTTPURLResponse?
-
-        do {
-            let result: (Data, URLResponse) = try await self.session.data(for: request)
-
-            guard let httpResponse = result.1 as? HTTPURLResponse else {
-                throw HttpClientError.invalidResponse
-            }
-
-            if shouldRetry(httpResponse: httpResponse) {
-                if let retryWait {
-                    try await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
-                    return try await perform(request: request, retry: retry)
-                }
-            }
-
-            resultData = result.0
-            resultResponse = httpResponse
-        } catch {
-            if shouldRetry(error: error) {
-                if let retryWait {
-                    try await Task.sleep(nanoseconds: UInt64(retryWait * 1_000_000_000))
-                    return try await perform(request: request, retry: retry)
-                }
-            }
-
-            throw error
-        }
-
-        guard let resultResponse else {
-            throw HttpClientError.internalError
-        }
-
-        return (resultResponse, resultData)
-    }
+struct RequestResult {
+    var httpResponse: HTTPURLResponse?
+    var data: Data?
+    var error: Error?
 }
 
 // MARK: Private
