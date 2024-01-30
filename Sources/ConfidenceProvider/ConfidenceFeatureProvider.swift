@@ -395,7 +395,7 @@ extension ConfidenceFeatureProvider {
 extension ConfidenceFeatureProvider {
     public struct Builder {
         var options: ConfidenceClientOptions
-        let metadata = ConfidenceMetadata(version: "0.1.2") // x-release-please-version
+        let metadata = ConfidenceMetadata(version: "0.1.3") // x-release-please-version
         var session: URLSession?
         var localOverrides: [String: LocalOverride] = [:]
         var storage: Storage = DefaultStorage.resolverFlagsCache()

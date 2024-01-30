@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.3](https://github.com/spotify/confidence-openfeature-provider-swift/compare/0.1.2...0.1.3) (2024-01-30)
+
+
+### 🐛 Bug Fixes
+
+* add a default endpoint to the provider ([#68](https://github.com/spotify/confidence-openfeature-provider-swift/issues/68)) ([9d8d173](https://github.com/spotify/confidence-openfeature-provider-swift/commit/9d8d1732f8224b719afd0ee20b9cbcf6b3b6e8a2))
+* Address in transit cache on startup ([#71](https://github.com/spotify/confidence-openfeature-provider-swift/issues/71)) ([a090f3e](https://github.com/spotify/confidence-openfeature-provider-swift/commit/a090f3ede3678c1513ad38b6313d38cc1c75a892))
+* Fix FlagApplier async behaviour ([#70](https://github.com/spotify/confidence-openfeature-provider-swift/issues/70)) ([f169d90](https://github.com/spotify/confidence-openfeature-provider-swift/commit/f169d907127b0c073204c3355f64443cb7299466))
+
+
+### 📚 Documentation
+
+* Add Confidence link to the README ([#64](https://github.com/spotify/confidence-openfeature-provider-swift/issues/64)) ([60ba971](https://github.com/spotify/confidence-openfeature-provider-swift/commit/60ba971efe94545c969f89f113e2f1dbce5c2561))
+* Add documentation about `apply` ([#72](https://github.com/spotify/confidence-openfeature-provider-swift/issues/72)) ([9cac324](https://github.com/spotify/confidence-openfeature-provider-swift/commit/9cac324b256fe4cdb67c7afbaa2d521578c044d1))
+* Add documentation about apply ([9cac324](https://github.com/spotify/confidence-openfeature-provider-swift/commit/9cac324b256fe4cdb67c7afbaa2d521578c044d1))
+* Fix SPM dependency in README ([#67](https://github.com/spotify/confidence-openfeature-provider-swift/issues/67)) ([9bdcb3e](https://github.com/spotify/confidence-openfeature-provider-swift/commit/9bdcb3e1f4fd554a0c07f6b3c4b60c0def7988ea))
+
+
+### 🔄 Refactoring
+
+* Remove callbacks from HttpClient ([#73](https://github.com/spotify/confidence-openfeature-provider-swift/issues/73)) ([403712a](https://github.com/spotify/confidence-openfeature-provider-swift/commit/403712a03c89bd3a3c6fb8aa9c2fc262c4133ddf))
+
 ## [0.1.2](https://github.com/spotify/confidence-openfeature-provider-swift/compare/0.1.1...0.1.2) (2023-11-16)
 
 
