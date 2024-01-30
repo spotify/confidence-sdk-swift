@@ -67,17 +67,16 @@ final class FlagApplierWithRetries: FlagApplier {
 
             await appliesToSend.asyncForEach { chunk in
                 await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sending)
-                await executeApply(
+                let success = await executeApply(
                     resolveToken: resolveEvent.resolveToken,
                     items: chunk
-                ) { success in
-                    guard success else {
-                        await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .created)
-                        return
-                    }
-                    // Set 'sent' property of apply events to true
-                    await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent)
+                )
+                guard success else {
+                    await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .created)
+                    return
                 }
+                // Set 'sent' property of apply events to true
+                await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent)
             }
         }
     }
@@ -107,9 +106,8 @@ final class FlagApplierWithRetries: FlagApplier {
 
     private func executeApply(
         resolveToken: String,
-        items: [FlagApply],
-        completion: @escaping (Bool) async -> Void
-    ) async {
+        items: [FlagApply]
+    ) async -> Bool {
         let applyFlagRequestItems = items.map { applyEvent in
             AppliedFlagRequestItem(
                 flag: applyEvent.name,
@@ -124,25 +122,23 @@ final class FlagApplierWithRetries: FlagApplier {
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
 
-        await performRequest(request: request) { result in
-            switch result {
-            case .success:
-                await completion(true)
-            case .failure(let error):
-                self.logApplyError(error: error)
-                await completion(false)
-            }
+        let result = await performRequest(request: request)
+        switch result {
+        case .success:
+            return true
+        case .failure(let error):
+            self.logApplyError(error: error)
+            return false
         }
     }
 
     private func performRequest(
-        request: ApplyFlagsRequest,
-        completion: @escaping (ApplyFlagResult) async -> Void
-    ) async {
+        request: ApplyFlagsRequest
+    ) async -> ApplyFlagResult {
         do {
-            try await httpClient.post(path: ":apply", data: request, completion: completion)
+            return try await httpClient.post(path: ":apply", data: request)
         } catch {
-            await completion(.failure(handleError(error: error)))
+            return .failure(handleError(error: error))
         }
     }
 

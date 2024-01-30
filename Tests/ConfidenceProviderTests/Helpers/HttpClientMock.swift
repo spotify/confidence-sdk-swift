@@ -19,34 +19,13 @@ final class HttpClientMock: HttpClient {
         self.testMode = testMode
     }
 
-    func post<T>(
-        path: String,
-        data: Codable,
-        completion: @escaping (ConfidenceProvider.HttpClientResult<T>) async -> Void
-    ) async throws where T: Decodable {
-        do {
-            let result: HttpClientResponse<T> = try handlePost(path: path, data: data)
-            await completion(.success(result))
-        } catch {
-            await completion(.failure(error))
-        }
-    }
-
-    func post<T>(
-        path: String, data: Codable
-    ) async throws -> ConfidenceProvider.HttpClientResponse<T> where T: Decodable {
-        try handlePost(path: path, data: data)
-    }
-
-    func post<T>(
-        path: String, data: Codable
-    ) throws -> ConfidenceProvider.HttpClientResponse<T> where T: Decodable {
+    func post<T>(path: String, data: Codable) async throws -> ConfidenceProvider.HttpClientResult<T> where T: Decodable {
         try handlePost(path: path, data: data)
     }
 
     private func handlePost<T>(
         path: String, data: Codable
-    ) throws -> ConfidenceProvider.HttpClientResponse<T> where T: Decodable {
+    ) throws -> ConfidenceProvider.HttpClientResult<T> where T: Decodable {
         defer {
             expectation?.fulfill()
         }
@@ -56,12 +35,12 @@ final class HttpClientMock: HttpClient {
 
         switch testMode {
         case .success:
-            return HttpClientResponse(response: HTTPURLResponse())
+            return .success(HttpClientResponse(response: HTTPURLResponse()))
         case .failFirstChunk:
             if postCallCounter == 1 {
                 throw HttpClientError.invalidResponse
             } else {
-                return HttpClientResponse(response: HTTPURLResponse())
+                return .success(HttpClientResponse(response: HTTPURLResponse()))
             }
         case .offline:
             throw HttpClientError.invalidResponse

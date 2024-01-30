@@ -3,13 +3,7 @@ import Foundation
 typealias HttpClientResult<T> = Result<HttpClientResponse<T>, Error>
 
 protocol HttpClient {
-    func post<T: Decodable>(
-        path: String,
-        data: Codable,
-        completion: @escaping (HttpClientResult<T>) async -> Void
-    ) async throws
-
-    func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResponse<T>
+    func post<T: Decodable>(path: String, data: Codable) async throws -> HttpClientResult<T>
 }
 
 struct HttpClientResponse<T> {

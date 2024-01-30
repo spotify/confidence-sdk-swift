@@ -36,23 +36,23 @@ public class RemoteConfidenceClient: ConfidenceClient {
         )
 
         do {
-            let result: HttpClientResponse<ResolveFlagsResponse> =
-                try await self.httpClient.post(path: ":resolve", data: request)
-
-            guard result.response.status == .ok else {
-                throw result.response.mapStatusToError(error: result.decodedError)
+            let result: HttpClientResult<ResolveFlagsResponse> =
+            try await self.httpClient.post(path: ":resolve", data: request)
+            switch result {
+            case .success(let successData):
+                guard successData.response.status == .ok else {
+                    throw successData.response.mapStatusToError(error: successData.decodedError)
+                }
+                guard let response = successData.decodedData else {
+                    throw OpenFeatureError.parseError(message: "Unable to parse request response")
+                }
+                let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+                    try convert(resolvedFlag: resolvedFlag, ctx: ctx)
+                }
+                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+            case .failure(let errorData):
+                throw handleError(error: errorData)
             }
-
-            guard let response = result.decodedData else {
-                throw OpenFeatureError.parseError(message: "Unable to parse request response")
-            }
-
-            let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                try convert(resolvedFlag: resolvedFlag, ctx: ctx)
-            }
-            return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-        } catch let error {
-            throw handleError(error: error)
         }
     }
 
