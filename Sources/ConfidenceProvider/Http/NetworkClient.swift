@@ -102,7 +102,7 @@ struct RequestResult {
 
 extension NetworkClient {
     private func constructURL(base: String, path: String) -> URL? {
-        let normalisedBase = base.hasSuffix("/") ? base : "\(base)/"
+        let normalisedBase = base.hasSuffix("/") ? base : "\(base)"
         let normalisedPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
 
         return URL(string: "\(normalisedBase)\(normalisedPath)")
