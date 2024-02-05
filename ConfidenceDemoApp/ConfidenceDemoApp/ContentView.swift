@@ -1,5 +1,6 @@
 import SwiftUI
 import OpenFeature
+import Combine
 
 struct ContentView: View {
     @StateObject var status = Status()
@@ -50,32 +51,22 @@ class Status: ObservableObject {
         case error(Error?)
     }
 
+    var cancellable: AnyCancellable?
+
     @Published var state: State = .unknown
 
     init() {
-        OpenFeatureAPI.shared.addHandler(
-            observer: self,
-            selector: #selector(confidenceReady(notification:)),
-            event: .ready
-        )
-
-        OpenFeatureAPI.shared.addHandler(
-            observer: self,
-            selector: #selector(confidenceError(notification:)),
-            event: .error
-        )
-    }
-
-    @objc func confidenceReady(notification: Notification) {
-        DispatchQueue.main.async {
-            self.state = .ready
-        }
-    }
-
-    @objc func confidenceError(notification: Notification) {
-        DispatchQueue.main.async {
-            let error = notification.userInfo?[providerEventDetailsKeyError] as? Error
-            self.state = .error(error)
+        cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                DispatchQueue.main.async {
+                    self.state = .ready
+                }
+            }
+            if event == .error {
+                DispatchQueue.main.async {
+                    self.state = .error(nil)
+                }
+            }
         }
     }
 }
