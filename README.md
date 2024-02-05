@@ -64,6 +64,11 @@ The evaluation context is the way for the client to specify contextual data that
 
 The `setProvider()` function is synchronous and returns immediately, however this does not mean that the provider is ready to be used. An asynchronous network request to the Confidence backend to fetch all the flags configured for your application must be completed by the provider first. The provider will then emit a _READY_ event indicating you can start resolving flags.
 
+There is also an `async/await` compatible API available for waiting the Provider to become ready:
+```swift
+await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
+```
+
 A ultity function is available on the provider to check if the current storage has any values stored - this can be used to determine the best initialization strategy.
 ```swift
 // If we have no cache, then do a fetch first.
@@ -73,17 +78,17 @@ if ConfidenceFeatureProvider.isStorageEmpty() {
 }
 ```
 
+Initialization strategies:
+- _acticateAndFetchAsync_: the flags in the cached are used for this session, while updated values are fetched and stored on disk for a future session;
+- _fetchAndActivate_: the Provider attempts to refresh the flag cache on disk before exposing the flags; this might prolongue the time needed for the Provider to become READY.
+
 To listen for the _READY_ event, you can add an event handler via the `OpenFeatureAPI` shared instance:
 ```swift
-func providerReady(notification: Notification) {
-    // Provider is ready.
+OpenFeatureAPI.shared.observe().sink { event in
+    if event == .ready {
+        // Provider is ready
+    }
 }
-
-OpenFeatureAPI.shared.addHandler(
-    observer: self,
-    selector: #selector(providerReady(notification:)),
-    event: .ready
-)
 ```
 
 **Note:** if you do attempt to resolve a flag before the READY event is emitted, you may receive the default value with reason `STALE`.
@@ -98,20 +103,9 @@ let ctx = MutableContext(targetingKey: "myNewTargetingKey", structure: MutableSt
 OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 ```
 
-`setEvaluationContext()` is a synchronous function similar to `setProvider()`. It calls the Confidence backend to fetch the flag evaluations according to the new evaluation context; if the call is successful, it replaces the on-device cache with the new flag data and emits a _CONFIGURATION CHANGED_ event.
+`setEvaluationContext()` is a synchronous function similar to `setProvider()`. It calls the Confidence backend to fetch the flag evaluations according to the new evaluation context; if the call is successful, it replaces the on-device cache with the new flag data.
 
-To listen for the _CONFIGURATION CHANGED_ event, you can add an event handler via the `OpenFeatureAPI` shared instance:
-```swift
-func configurationChanged(notification: Notification) {
-    // Configuration has changed.
-}
-
-OpenFeatureAPI.shared.addHandler(
-    observer: self,
-    selector: #selector(configurationChanged(notification:)),
-    event: .configurationChanged
-)
-```
+**Note:** if you do attempt to resolve a flag before the READY event is emitted, you may receive the default value with reason `STALE`.
 
 **Note:** A "targeting key" in the evaluation context is expected by the Confidence backend where each key gets assigned a different flag's variant (consistently). The `targetingKey` argument is the default place where to provide a targeting key at runtime (as defined by the OpenFeature APIs), but a different custom field inside the `structure` value can also be configured for this purpose in the Confidence portal (making the `targetingKey` argument redundant, i.e. feel free to set it to empty string).
 
@@ -121,18 +115,12 @@ When calling `setEvaluationContext()` or `setProvider()` via the `OpenFeatureAPI
 
 To listen for the _ERROR_ event, you can add an event handler via the `OpenFeatureAPI` shared instance:
 ```swift
-func providerError(notification: Notification) {
-    // Configuration has changed.
+OpenFeatureAPI.shared.observe().sink { event in
+    if event == .error {
+        // An error has been emitted
+    }
 }
-
-OpenFeatureAPI.shared.addHandler(
-    observer: self,
-    selector: #selector(providerError(notification:)),
-    event: .error
-)
 ```
-
-In the notification's `userInfo` dictionary you will find the originating error under the `providerEventDetailsKeyError` key.
 
 ### Request a flag / value
 
