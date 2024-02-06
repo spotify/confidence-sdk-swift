@@ -56,15 +56,15 @@ class Status: ObservableObject {
     @Published var state: State = .unknown
 
     init() {
-        cancellable = OpenFeatureAPI.shared.observe().sink { event in
+        cancellable = OpenFeatureAPI.shared.observe().sink { [weak self] event in
             if event == .ready {
                 DispatchQueue.main.async {
-                    self.state = .ready
+                    self?.state = .ready
                 }
             }
             if event == .error {
                 DispatchQueue.main.async {
-                    self.state = .error(nil)
+                    self?.state = .error(nil)
                 }
             }
         }
