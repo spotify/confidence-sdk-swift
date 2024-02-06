@@ -1,5 +1,6 @@
 import Foundation
 import OpenFeature
+import Combine
 import os
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
@@ -19,6 +20,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let flagApplier: FlagApplier
     private let initializationStrategy: InitializationStrategy
     private let storage: Storage
+    private let eventHandler = EventHandler(ProviderEvent.notReady)
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
@@ -48,7 +50,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         if self.initializationStrategy == .activateAndFetchAsync {
-            OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+            eventHandler.send(.ready)
         }
 
         Task {
@@ -64,11 +66,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
                 // signal the provider is ready after the network request is done
                 if self.initializationStrategy == .fetchAndActivate {
-                    OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                    eventHandler.send(.ready)
                 }
             } catch {
                 // We emit a ready event as the provider is ready, but is using default / cache values.
-                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                eventHandler.send(.ready)
             }
         }
     }
@@ -104,9 +106,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
                 // update the storage
                 try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
-                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                eventHandler.send(ProviderEvent.ready)
             } catch {
-                OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
+                eventHandler.send(ProviderEvent.ready)
                 // do nothing
             }
         }
@@ -160,6 +162,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             defaultValue: defaultValue,
             ctx: context,
             errorPrefix: "Error during object evaluation for key \(key)")
+    }
+
+    public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
+        return eventHandler.observe()
     }
 
     /// Allows you to override directly on the provider. See `overrides` on ``Builder`` for more information.
