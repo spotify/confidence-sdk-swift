@@ -47,7 +47,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
 
-        // signal the provider is ready right away
         if self.initializationStrategy == .activateAndFetchAsync {
             OpenFeatureAPI.shared.emitEvent(.ready, provider: self)
         }
@@ -178,8 +177,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func resolve(context: OpenFeature.EvaluationContext) async throws -> ResolvesResult {
-        // Racy: eval ctx and ctx in cache might differ until the latter is updated, resulting in STALE evaluations
-        OpenFeatureAPI.shared.emitEvent(.stale, provider: self)
         do {
             let resolveResult = try await client.resolve(ctx: context)
             return resolveResult
