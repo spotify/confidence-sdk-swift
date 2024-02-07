@@ -251,8 +251,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             )
             return evaluationResult
         } catch ConfidenceError.cachedValueExpired {
-            return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
-        } catch {
+            return ProviderEvaluation(value: defaultValue,
+                                      variant: nil, 
+                                      reason: Reason.error.rawValue,
+                                      errorCode: ErrorCode.providerNotReady
+            )}
+        catch {
             throw error
         }
     }
