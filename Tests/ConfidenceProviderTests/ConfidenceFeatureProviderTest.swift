@@ -347,10 +347,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 context: MutableContext(targetingKey: "user1"))
 
             XCTAssertEqual(evaluation.value, 0)
-            XCTAssertNil(evaluation.errorCode)
             XCTAssertNil(evaluation.errorMessage)
             XCTAssertNil(evaluation.variant)
-            XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
+            XCTAssertEqual(evaluation.errorCode, ErrorCode.providerNotReady)
+            XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
             XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
 
             // TODO: Check this - how do we check for something not called?
