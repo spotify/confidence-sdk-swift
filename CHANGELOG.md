@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.4](https://github.com/spotify/confidence-openfeature-provider-swift/compare/0.1.3...0.1.4) (2024-02-08)
+
+
+### 🐛 Bug Fixes
+
+* change STALE reason in case of context change ([#79](https://github.com/spotify/confidence-openfeature-provider-swift/issues/79)) ([9f5c91f](https://github.com/spotify/confidence-openfeature-provider-swift/commit/9f5c91feace22e227db63776a8808656fd926734))
+* Remove extra slash in URL ([#74](https://github.com/spotify/confidence-openfeature-provider-swift/issues/74)) ([1f33e21](https://github.com/spotify/confidence-openfeature-provider-swift/commit/1f33e21954bf2fd1e540dd30418bdfdb432c2a8c))
+* Remove STALE event ([#78](https://github.com/spotify/confidence-openfeature-provider-swift/issues/78)) ([485d09f](https://github.com/spotify/confidence-openfeature-provider-swift/commit/485d09f26a96fda0b2972f0c3d14f7b2e1ad12e3))
+
+
+### 🧹 Chore
+
+* Update CODEOWNERS ([#75](https://github.com/spotify/confidence-openfeature-provider-swift/issues/75)) ([500d84e](https://github.com/spotify/confidence-openfeature-provider-swift/commit/500d84ecc4c357f0239e850cf318f18c2299cca7))
+
 ## [0.1.3](https://github.com/spotify/confidence-openfeature-provider-swift/compare/0.1.2...0.1.3) (2024-01-30)
 
 
