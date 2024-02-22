@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7381EC6C2B87442600BBBA79 /* ConfidenceProvider in Frameworks */ = {isa = PBXBuildFile; productRef = 7381EC6B2B87442600BBBA79 /* ConfidenceProvider */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
@@ -14,7 +15,6 @@
 		C770C99F2A739FCE00C2AC8C /* ConfidenceDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C99E2A739FCE00C2AC8C /* ConfidenceDemoTests.swift */; };
 		C770C9A22A739FDF00C2AC8C /* ConfidenceDemoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9A02A739FDF00C2AC8C /* ConfidenceDemoUITests.swift */; };
 		C770C9A32A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9A12A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift */; };
-		C770C9AD2A73A06600C2AC8C /* ConfidenceProvider in Frameworks */ = {isa = PBXBuildFile; productRef = C770C9AC2A73A06600C2AC8C /* ConfidenceProvider */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,7 +54,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C770C9AD2A73A06600C2AC8C /* ConfidenceProvider in Frameworks */,
+				7381EC6C2B87442600BBBA79 /* ConfidenceProvider in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -166,7 +166,7 @@
 			);
 			name = ConfidenceDemoApp;
 			packageProductDependencies = (
-				C770C9AC2A73A06600C2AC8C /* ConfidenceProvider */,
+				7381EC6B2B87442600BBBA79 /* ConfidenceProvider */,
 			);
 			productName = ConfidenceDemoApp;
 			productReference = C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */;
@@ -243,6 +243,10 @@
 				Base,
 			);
 			mainGroup = C770C95F2A739FA000C2AC8C;
+			packageReferences = (
+				7381EC6A2B87442600BBBA79 /* XCRemoteSwiftPackageReference "confidence-openfeature-provider-swift" */,
+				7381EC6D2B87444500BBBA79 /* XCRemoteSwiftPackageReference "swift-sdk" */,
+			);
 			productRefGroup = C770C9692A739FA000C2AC8C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -446,6 +450,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ConfidenceDemoApp/Preview Content\"";
+				DEVELOPMENT_TEAM = F7RQ5BGG24;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ConfidenceDemoApp/Info.plist;
@@ -477,6 +482,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"ConfidenceDemoApp/Preview Content\"";
+				DEVELOPMENT_TEAM = F7RQ5BGG24;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ConfidenceDemoApp/Info.plist;
@@ -637,9 +643,29 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		7381EC6A2B87442600BBBA79 /* XCRemoteSwiftPackageReference "confidence-openfeature-provider-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/spotify/confidence-openfeature-provider-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.4;
+			};
+		};
+		7381EC6D2B87444500BBBA79 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/open-feature/swift-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
-		C770C9AC2A73A06600C2AC8C /* ConfidenceProvider */ = {
+		7381EC6B2B87442600BBBA79 /* ConfidenceProvider */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = 7381EC6A2B87442600BBBA79 /* XCRemoteSwiftPackageReference "confidence-openfeature-provider-swift" */;
 			productName = ConfidenceProvider;
 		};
 /* End XCSwiftPackageProductDependency section */

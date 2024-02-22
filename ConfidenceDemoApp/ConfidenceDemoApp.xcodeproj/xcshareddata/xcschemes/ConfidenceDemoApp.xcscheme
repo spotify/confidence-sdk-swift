@@ -72,6 +72,13 @@
             ReferencedContainer = "container:ConfidenceDemoApp.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <EnvironmentVariables>
+         <EnvironmentVariable
+            key = "CLIENT_SECRET"
+            value = "5GdaBq79NMVrMGXRVhN9g1pBKtG9cNK8"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
