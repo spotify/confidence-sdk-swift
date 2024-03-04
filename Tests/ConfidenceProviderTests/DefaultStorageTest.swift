@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 class DefaultStorageTest: XCTestCase {
     var storage = DefaultStorage(filePath: "resolver.cache")

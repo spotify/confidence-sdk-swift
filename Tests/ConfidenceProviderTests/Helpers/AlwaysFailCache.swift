@@ -1,7 +1,7 @@
 import Foundation
 import OpenFeature
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 public class AlwaysFailCache: ProviderCache {
     public func getValue(

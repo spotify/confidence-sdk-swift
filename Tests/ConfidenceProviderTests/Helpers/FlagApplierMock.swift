@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 class FlagApplierMock: FlagApplier {
     var applyCallCount = 0

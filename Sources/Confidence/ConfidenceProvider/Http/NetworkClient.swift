@@ -15,6 +15,8 @@ final class NetworkClient: HttpClient {
             return "https://resolver.eu.confidence.dev/v1/flags"
         case .usa:
             return "https://resolver.us.confidence.dev/v1/flags"
+        case .eventsEu:
+            return "https://events.eu.confidence.dev/v1/events"
         }
     }
 
@@ -46,6 +48,10 @@ final class NetworkClient: HttpClient {
         data: Codable
     ) async throws -> HttpClientResult<T> {
         let request = try buildRequest(path: path, data: data)
+        let encoder = JSONEncoder()
+        let jsonData = try encoder.encode(data)
+        let jsonString = String(data: jsonData, encoding: .utf8)
+        print(jsonString)
         let requestResult = await perform(request: request, retry: self.retry)
         if let error = requestResult.error {
             return .failure(error)

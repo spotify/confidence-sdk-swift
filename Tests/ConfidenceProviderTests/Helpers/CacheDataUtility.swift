@@ -1,6 +1,6 @@
 import Foundation
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 enum CacheDataUtility {
     /// Helper method for unit testing code that involves cache data.

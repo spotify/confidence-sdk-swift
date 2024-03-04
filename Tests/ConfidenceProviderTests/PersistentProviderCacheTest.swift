@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 class PersistentProviderCacheTest: XCTestCase {
     lazy var cache = InMemoryProviderCache.from(storage: storage)

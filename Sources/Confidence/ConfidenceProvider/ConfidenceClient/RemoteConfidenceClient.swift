@@ -190,6 +190,7 @@ public enum ConfidenceRegion {
     case global
     case europe
     case usa
+    case eventsEu
 }
 
 struct Sdk: Codable {

@@ -36,17 +36,17 @@ In the dependencies section of Package.swift add:
 
 and in the target dependencies section add:
 ```swift
-.product(name: "ConfidenceProvider", package: "confidence-openfeature-provider-swift"),
+.product(name: "Confidence", package: "confidence-openfeature-provider-swift"),
 ```
 
 ## Usage
 
 ### Import Modules
 
-Import the `ConfidenceProvider` and `OpenFeature` modules
+Import the `Confidence` and `OpenFeature` modules
 
 ```swift
-import ConfidenceProvider
+import Confidence
 import OpenFeature
 ```
 

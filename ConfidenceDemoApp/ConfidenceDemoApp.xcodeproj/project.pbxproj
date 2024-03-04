@@ -3,11 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7381EC6C2B87442600BBBA79 /* ConfidenceProvider in Frameworks */ = {isa = PBXBuildFile; productRef = 7381EC6B2B87442600BBBA79 /* ConfidenceProvider */; };
+		73FE9AD52B95C795008C5FCF /* Confidence in Frameworks */ = {isa = PBXBuildFile; productRef = 73FE9AD42B95C795008C5FCF /* Confidence */; };
+		73FE9AD82B95C7E3008C5FCF /* Confidence in Frameworks */ = {isa = PBXBuildFile; productRef = 73FE9AD72B95C7E3008C5FCF /* Confidence */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
@@ -35,6 +36,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		73CF42232B91EFC30051D9A0 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Package.swift; path = ../Package.swift; sourceTree = "<group>"; };
 		C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConfidenceDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9782A739FA100C2AC8C /* ConfidenceDemoAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9822A739FA100C2AC8C /* ConfidenceDemoAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -54,7 +56,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7381EC6C2B87442600BBBA79 /* ConfidenceProvider in Frameworks */,
+				73FE9AD82B95C7E3008C5FCF /* Confidence in Frameworks */,
+				73FE9AD52B95C795008C5FCF /* Confidence in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -145,6 +148,7 @@
 		C770C9AB2A73A06600C2AC8C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				73CF42232B91EFC30051D9A0 /* Package.swift */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -166,7 +170,8 @@
 			);
 			name = ConfidenceDemoApp;
 			packageProductDependencies = (
-				7381EC6B2B87442600BBBA79 /* ConfidenceProvider */,
+				73FE9AD42B95C795008C5FCF /* Confidence */,
+				73FE9AD72B95C7E3008C5FCF /* Confidence */,
 			);
 			productName = ConfidenceDemoApp;
 			productReference = C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */;
@@ -216,7 +221,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1420;
-				LastUpgradeCheck = 1420;
+				LastUpgradeCheck = 1510;
 				TargetAttributes = {
 					C770C9672A739FA000C2AC8C = {
 						CreatedOnToolsVersion = 14.2;
@@ -244,8 +249,8 @@
 			);
 			mainGroup = C770C95F2A739FA000C2AC8C;
 			packageReferences = (
-				7381EC6A2B87442600BBBA79 /* XCRemoteSwiftPackageReference "confidence-openfeature-provider-swift" */,
 				7381EC6D2B87444500BBBA79 /* XCRemoteSwiftPackageReference "swift-sdk" */,
+				73FE9AD62B95C7E3008C5FCF /* XCLocalSwiftPackageReference ".." */,
 			);
 			productRefGroup = C770C9692A739FA000C2AC8C /* Products */;
 			projectDirPath = "";
@@ -363,6 +368,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -423,6 +429,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -643,15 +650,14 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		7381EC6A2B87442600BBBA79 /* XCRemoteSwiftPackageReference "confidence-openfeature-provider-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/spotify/confidence-openfeature-provider-swift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.1.4;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		73FE9AD62B95C7E3008C5FCF /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
 		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
 		7381EC6D2B87444500BBBA79 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/open-feature/swift-sdk";
@@ -663,10 +669,13 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		7381EC6B2B87442600BBBA79 /* ConfidenceProvider */ = {
+		73FE9AD42B95C795008C5FCF /* Confidence */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7381EC6A2B87442600BBBA79 /* XCRemoteSwiftPackageReference "confidence-openfeature-provider-swift" */;
-			productName = ConfidenceProvider;
+			productName = Confidence;
+		};
+		73FE9AD72B95C7E3008C5FCF /* Confidence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Confidence;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

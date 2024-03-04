@@ -1,7 +1,7 @@
 import OpenFeature
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 final class MutableContextTests: XCTestCase {
     func testHashRespectsTargetingKey() throws {

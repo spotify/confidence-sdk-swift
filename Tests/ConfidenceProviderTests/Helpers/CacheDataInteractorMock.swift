@@ -1,11 +1,11 @@
 import Foundation
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 final actor CacheDataInteractorMock: CacheDataActor {
     var cache = CacheData.empty()
 
-    func add(resolveToken: String, flagName: String, applyTime: Date) -> (ConfidenceProvider.CacheData, Bool) {
+    func add(resolveToken: String, flagName: String, applyTime: Date) -> (CacheData, Bool) {
         return (cache, true)
     }
 

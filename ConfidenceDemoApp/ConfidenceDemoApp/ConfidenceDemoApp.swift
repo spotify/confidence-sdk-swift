@@ -1,4 +1,4 @@
-import ConfidenceProvider
+ import Confidence
 import OpenFeature
 import SwiftUI
 
@@ -16,22 +16,40 @@ struct ConfidenceDemoApp: App {
 
 extension ConfidenceDemoApp {
     func setup() {
-        guard let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] else {
-            return
-        }
 
         // If we have no cache, then do a fetch first.
-        var initializationStratgey: InitializationStrategy = .activateAndFetchAsync
+        var initializationStratgey: InitializationStrategy =  .activateAndFetchAsync
         if ConfidenceFeatureProvider.isStorageEmpty() {
             initializationStratgey = .fetchAndActivate
         }
 
-        let provider = ConfidenceFeatureProvider
-            .Builder(credentials: .clientSecret(secret: secret))
+        // Create an EventSender instance
+        let Confidence = Confidence(clientSecret: "xa0fQ4WKSvuxdjPtesupleiSbZeik6Gf")
+        let eventSender = Confidence.createEventSender()
+
+        // Configure the OF singleton
+        let provider = Confidence.providerBuilder()
             .with(initializationStrategy: initializationStratgey)
             .build()
-        // NOTE: Using a random UUID for each app start is not advised and can result in getting stale values.
-        let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
-        OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
+        let evalContext = MutableContext(
+            targetingKey: UUID.init().uuidString,
+            structure: MutableStructure())
+        OpenFeatureAPI.shared.setProvider(
+            provider: provider,
+            initialContext: evalContext)
+
+        // Send an event
+        eventSender.send(
+            eventName: "button-clicked",
+            message: ButtonClicked(
+                os_version: "17",
+                button_id: "sdk-test",
+                os_name: "iOS"))
     }
+}
+
+struct ButtonClicked: Codable {
+    var os_version: String
+    var button_id: String
+    var os_name: String
 }

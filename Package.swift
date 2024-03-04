@@ -4,22 +4,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "ConfidenceProvider",
+    name: "Confidence",
     platforms: [
         .iOS(.v14),
         .macOS(.v12)
     ],
     products: [
         .library(
-            name: "ConfidenceProvider",
-            targets: ["ConfidenceProvider"])
+            name: "Confidence",
+            targets: ["Confidence"])
     ],
     dependencies: [
         .package(url: "git@github.com:open-feature/swift-sdk.git", from: "0.1.0"),
     ],
     targets: [
         .target(
-            name: "ConfidenceProvider",
+            name: "Confidence",
             dependencies: [
                 .product(name: "OpenFeature", package: "swift-sdk"),
             ],
@@ -28,8 +28,9 @@ let package = Package(
         .testTarget(
             name: "ConfidenceProviderTests",
             dependencies: [
-                "ConfidenceProvider",
-            ]
+                "Confidence",
+            ],
+            path: "Tests/ConfidenceProviderTests"
         )
     ]
 )

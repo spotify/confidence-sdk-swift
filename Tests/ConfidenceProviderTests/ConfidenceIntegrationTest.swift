@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 class ConfidenceIntegrationTests: XCTestCase {
     let clientToken: String? = ProcessInfo.processInfo.environment["CLIENT_TOKEN"]

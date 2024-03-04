@@ -4,7 +4,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 @available(macOS 13.0, iOS 16.0, *)
 class FlagApplierWithRetriesTest: XCTestCase {

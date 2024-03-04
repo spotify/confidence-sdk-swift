@@ -1,7 +1,7 @@
 import Foundation
 import OpenFeature
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 class ClientMock: ConfidenceClient {
     var applyCount = 0

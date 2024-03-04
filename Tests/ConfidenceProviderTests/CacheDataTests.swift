@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 final class CacheDataTests: XCTestCase {
     func testCacheData_addEvent_emptyCache() throws {
