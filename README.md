@@ -166,6 +166,7 @@ now, all resolves of `button.size` will return 4.
 ## Apply events
 This Provider automatically emits `apply` events to the Confidence backend once a flag's property is read by the application. This allows Confidence to track who was exposed to what variant and when.
 
+_Note: the `apply` event is only generated for flags that are successfully evaluated (i.e. default values returned due to errors don't generate `apply` events)._
 _Note: the `apply` event reports which flag and variant was read by the application, but not which property the application has read from such variant's value._
 
 To avoid generating redundant data, as long as the flags' data returned from the backend for a user remains unchanged, only the first time a flag's property is read will generate an `apply` event. This is true also across restarts of the application.
