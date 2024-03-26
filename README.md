@@ -164,13 +164,13 @@ OpenFeatureAPI.shared.provider =
 now, all resolves of `button.size` will return 4.
 
 ## Apply events
-This Provider automatically emits `apply` events to the Confidence backend once a flag's property is read by the application. This allows Confidence to track who was exposed to what variant and when.
 
-_Note: the `apply` event is only generated for flags that are successfully evaluated (i.e. default values returned due to errors don't generate `apply` events)._
-_Note: the `apply` event reports which flag and variant was read by the application, but not which property the application has read from such variant's value._
+This provider automatically triggers 'apply' events to the Confidence backend once an application reads a flag's property. This functionality enables Confidence to monitor which users were exposed to which variants and when.
 
-To avoid generating redundant data, as long as the flags' data returned from the backend for a user remains unchanged, only the first time a flag's property is read will generate an `apply` event. This is true also across restarts of the application.
+Please note that the 'apply' event is generated only for flags that are successfully evaluated. In other words, default values returned due to errors do not trigger 'apply' events. Additionally, the apply event reports which flag and variant were read by the application, but it does not specify which property within the variant's value was accessed by the application.
 
-The Provider stores `apply` events on disk until they are emitted correctly, thus ensuring the apply data reaches the backend even if generated when there is no network available (assuming the device will ever re-connect to the network before the application is deleted by the user).
+To prevent redundant data generation, 'apply' events are generated only the first time a flag's property is read as long as the flag's data remains unchanged for a user. This behavior persists across application restarts.
+
+The provider stores 'apply' events on disk until they are successfully emitted. This ensures that apply data is sent to the backend even if it is generated when there is no network connection available. This assumes that the device will reconnect to the network before the user deletes the application.
 
 <!-- Add link to the more detailed documentation on apply events in the Confidence portal once it's ready -->
