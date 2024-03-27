@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "ConfidenceProvider",
+    name: "Confidence",
     platforms: [
         .iOS(.v14),
         .macOS(.v12)
@@ -12,7 +12,10 @@ let package = Package(
     products: [
         .library(
             name: "ConfidenceProvider",
-            targets: ["ConfidenceProvider"])
+            targets: ["ConfidenceProvider"]),
+        .library(
+            name: "Confidence",
+            targets: ["Confidence"])
     ],
     dependencies: [
         .package(url: "git@github.com:open-feature/swift-sdk.git", from: "0.1.0"),
@@ -22,7 +25,13 @@ let package = Package(
             name: "ConfidenceProvider",
             dependencies: [
                 .product(name: "OpenFeature", package: "swift-sdk"),
+                "Confidence"
             ],
+            plugins: []
+        ),
+        .target(
+            name: "Confidence",
+            dependencies: [],
             plugins: []
         ),
         .testTarget(
