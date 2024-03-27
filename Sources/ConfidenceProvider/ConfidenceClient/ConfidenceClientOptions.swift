@@ -1,4 +1,5 @@
 import Foundation
+import Confidence
 
 public struct ConfidenceClientOptions {
     public var credentials: ConfidenceClientCredentials // DEPRECATED
@@ -7,12 +8,12 @@ public struct ConfidenceClientOptions {
     public var initializationStrategy: InitializationStrategy
 
     public init(
-        credentials: ConfidenceClientCredentials? = nil,
+        credentials: ConfidenceClientCredentials,
         timeout: TimeInterval? = nil,
         region: ConfidenceRegion? = nil,
         initializationStrategy: InitializationStrategy = .fetchAndActivate
     ) {
-        self.credentials = credentials ?? ConfidenceClientCredentials.clientSecret(secret: "")
+        self.credentials = credentials
         self.timeout = timeout ?? 10.0
         self.region = region ?? .global
         self.initializationStrategy = initializationStrategy
@@ -28,14 +29,4 @@ public enum ConfidenceClientCredentials {
             return secret
         }
     }
-}
-
-public enum ConfidenceRegion {
-    case global
-    case europe
-    case usa
-}
-
-public enum InitializationStrategy {
-    case fetchAndActivate, activateAndFetchAsync
 }

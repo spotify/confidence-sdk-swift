@@ -22,16 +22,16 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "Confidence",
+            dependencies: [],
+            plugins: []
+        ),
+        .target(
             name: "ConfidenceProvider",
             dependencies: [
                 .product(name: "OpenFeature", package: "swift-sdk"),
                 "Confidence"
             ],
-            plugins: []
-        ),
-        .target(
-            name: "Confidence",
-            dependencies: [],
             plugins: []
         ),
         .testTarget(

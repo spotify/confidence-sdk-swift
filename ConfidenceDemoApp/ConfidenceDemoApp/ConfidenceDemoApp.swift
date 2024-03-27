@@ -36,6 +36,9 @@ extension ConfidenceDemoApp {
 
         // NOTE: Using a random UUID for each app start is not advised and can result in getting stale values.
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
-        OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
+        Task {
+            await OpenFeatureAPI.shared.setProviderAndWait(provider: provider, initialContext: ctx)
+            confidence.send(eventName: "my_event")
+        }
     }
 }

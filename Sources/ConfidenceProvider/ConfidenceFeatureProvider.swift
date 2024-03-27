@@ -54,6 +54,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         if self.initializationStrategy == .activateAndFetchAsync {
+            // TODO: Set the entire context
+            confidence?.context = ["targeting_key": "CACHED"]
             eventHandler.send(.ready)
         }
 
@@ -70,6 +72,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
                 // signal the provider is ready after the network request is done
                 if self.initializationStrategy == .fetchAndActivate {
+                    // TODO: Set the entire context
+                    confidence?.context = ["targeting_key": initialContext.getTargetingKey()]
                     eventHandler.send(.ready)
                 }
             } catch {
@@ -111,6 +115,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 // update the storage
                 try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
                 eventHandler.send(ProviderEvent.ready)
+                // TODO: Set the entire context
+                confidence?.context = ["targeting_key": newContext.getTargetingKey()]
             } catch {
                 eventHandler.send(ProviderEvent.ready)
                 // do nothing
@@ -416,7 +422,8 @@ extension ConfidenceFeatureProvider {
         var applyStorage: Storage = DefaultStorage.resolverApplyCache()
         var confidence: Confidence?
 
-        /// Initializes the builder with the given credentails. DEPRECATED
+        /// DEPRECATED
+        /// Initializes the builder with the given credentails.
         ///
         ///     OpenFeatureAPI.shared.setProvider(provider:
         ///     ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
@@ -427,9 +434,11 @@ extension ConfidenceFeatureProvider {
 
         /// TODO
         public init(confidence: Confidence) {
-            self.options = ConfidenceClientOptions(credentials: ConfidenceClientCredentials
-                .clientSecret(secret: confidence.clientSecret))
-            self.initializationStrategy = confidence.options.initializationStrategy
+            self.options = ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
+                timeout: confidence.timeout,
+                region: confidence.region)
+            self.initializationStrategy = confidence.initializationStrategy
             self.confidence = confidence
         }
 
