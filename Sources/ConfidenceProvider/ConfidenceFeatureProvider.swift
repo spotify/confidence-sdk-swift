@@ -1,6 +1,7 @@
 import Foundation
 import OpenFeature
 import Combine
+import Confidence
 import os
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
@@ -21,6 +22,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let initializationStrategy: InitializationStrategy
     private let storage: Storage
     private let eventHandler = EventHandler(ProviderEvent.notReady)
+    private let confidence: Confidence?
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder` instead.
     init(
@@ -31,7 +33,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         overrides: [String: LocalOverride] = [:],
         flagApplier: FlagApplier,
         applyStorage: Storage,
-        initializationStrategy: InitializationStrategy
+        initializationStrategy: InitializationStrategy,
+        confidence: Confidence?
     ) {
         self.client = client
         self.metadata = metadata
@@ -40,6 +43,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.flagApplier = flagApplier
         self.initializationStrategy = initializationStrategy
         self.storage = storage
+        self.confidence = confidence
 
         resolver = LocalStorageResolver(cache: cache)
     }
@@ -410,14 +414,23 @@ extension ConfidenceFeatureProvider {
         var flagApplier: (any FlagApplier)?
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
         var applyStorage: Storage = DefaultStorage.resolverApplyCache()
+        var confidence: Confidence?
 
-        /// Initializes the builder with the given credentails.
+        /// Initializes the builder with the given credentails. DEPRECATED
         ///
         ///     OpenFeatureAPI.shared.setProvider(provider:
         ///     ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
         ///         .build()
         public init(credentials: ConfidenceClientCredentials) {
             self.options = ConfidenceClientOptions(credentials: credentials)
+        }
+
+        /// TODO
+        public init(confidence: Confidence) {
+            self.options = ConfidenceClientOptions(credentials: ConfidenceClientCredentials
+                .clientSecret(secret: confidence.clientSecret))
+            self.initializationStrategy = confidence.options.initializationStrategy
+            self.confidence = confidence
         }
 
         init(
@@ -606,7 +619,8 @@ extension ConfidenceFeatureProvider {
                 overrides: localOverrides,
                 flagApplier: flagApplier,
                 applyStorage: applyStorage,
-                initializationStrategy: initializationStrategy
+                initializationStrategy: initializationStrategy,
+                confidence: confidence
             )
         }
     }

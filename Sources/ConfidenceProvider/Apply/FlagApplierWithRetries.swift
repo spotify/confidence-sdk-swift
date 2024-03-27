@@ -1,5 +1,6 @@
 import Foundation
 import OpenFeature
+import Confidence
 import os
 
 typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>

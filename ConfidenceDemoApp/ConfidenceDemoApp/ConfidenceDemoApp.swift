@@ -1,6 +1,7 @@
 import ConfidenceProvider
 import OpenFeature
 import SwiftUI
+import Confidence
 
 @main
 struct ConfidenceDemoApp: App {
@@ -26,10 +27,11 @@ extension ConfidenceDemoApp {
             initializationStratgey = .fetchAndActivate
         }
 
-        let provider = ConfidenceFeatureProvider
-            .Builder(credentials: .clientSecret(secret: secret))
-            .with(initializationStrategy: initializationStratgey)
+        let confidence = Confidence.Builder(clientSecret: secret)
+            .withOptions(options: ConfidenceClientOptions(initializationStrategy: initializationStratgey))
             .build()
+        let provider = ConfidenceFeatureProvider.Builder(confidence: confidence).build()
+
         // NOTE: Using a random UUID for each app start is not advised and can result in getting stale values.
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
         OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
