@@ -2,7 +2,6 @@
 // swiftlint:disable file_length
 import Foundation
 import OpenFeature
-import Confidence
 import XCTest
 
 @testable import ConfidenceProvider

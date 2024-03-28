@@ -7,10 +7,12 @@ public class Confidence: ConfidenceEventSender {
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
 
-    init(clientSecret: String,
-         timeout: TimeInterval,
-         region: ConfidenceRegion,
-         initializationStrategy: InitializationStrategy) {
+    init(
+        clientSecret: String,
+        timeout: TimeInterval,
+        region: ConfidenceRegion,
+        initializationStrategy: InitializationStrategy
+    ) {
         self.context = [:]
         self.clientSecret = clientSecret
         self.timeout = timeout
@@ -88,5 +90,3 @@ public enum ConfidenceRegion {
     case europe
     case usa
 }
-
-

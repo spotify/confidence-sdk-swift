@@ -1,5 +1,4 @@
 import Foundation
-import Confidence
 import OpenFeature
 import os
 

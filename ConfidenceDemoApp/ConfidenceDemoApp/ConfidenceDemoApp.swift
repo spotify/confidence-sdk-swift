@@ -22,17 +22,15 @@ extension ConfidenceDemoApp {
         }
 
         // If we have no cache, then do a fetch first.
-        var initializationStratgey: InitializationStrategy = .activateAndFetchAsync
+        var initializationStrategy: InitializationStrategy = .activateAndFetchAsync
         if ConfidenceFeatureProvider.isStorageEmpty() {
-            initializationStratgey = .fetchAndActivate
+            initializationStrategy = .fetchAndActivate
         }
 
-        // TODO: Remove Builder pattern
         let confidence = Confidence.Builder(clientSecret: secret)
-            .withOptions(options: ConfidenceClientOptions(initializationStrategy: initializationStratgey))
+            .withInitializationstrategy(initializationStrategy: initializationStrategy)
             .build()
-        // TODO: Remove Builder pattern
-        let provider = ConfidenceFeatureProvider.Builder(confidence: confidence).build()
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
 
         // NOTE: Using a random UUID for each app start is not advised and can result in getting stale values.
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
