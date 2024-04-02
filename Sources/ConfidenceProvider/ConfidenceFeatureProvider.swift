@@ -78,8 +78,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         if self.initializationStrategy == .activateAndFetchAsync {
-            // TODO: Set the entire context
-            confidence?.context = ["targeting_key": "CACHED"]
             eventHandler.send(.ready)
         }
 
@@ -96,8 +94,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
                 // signal the provider is ready after the network request is done
                 if self.initializationStrategy == .fetchAndActivate {
-                    // TODO: Set the entire context
-                    confidence?.context = ["targeting_key": initialContext.getTargetingKey()]
                     eventHandler.send(.ready)
                 }
             } catch {
@@ -139,8 +135,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 // update the storage
                 try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
                 eventHandler.send(ProviderEvent.ready)
-                // TODO: Set the entire context
-                confidence?.context = ["targeting_key": newContext.getTargetingKey()]
             } catch {
                 eventHandler.send(ProviderEvent.ready)
                 // do nothing
