@@ -1,7 +1,7 @@
 import Foundation
 
 public class Confidence: ConfidenceEventSender {
-    public var context: [String: String]
+    public var context: ConfidenceStruct
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
@@ -21,11 +21,11 @@ public class Confidence: ConfidenceEventSender {
     }
 
     // TODO: Implement actual event uploading to the backend
-    public func send(eventName: String) {
-        print("Sending \(eventName) - Targeting key: \(context["targeting_key"] ?? "UNKNOWN")")
+    public func send(definition: String, payload: ConfidenceStruct) {
+        print("Sending \(definition) - Targeting key: \(payload)")
     }
 
-    public func updateContextEntry(key: String, value: String) {
+    public func updateContextEntry(key: String, value: ConfidenceValue) {
         context[key] = value
     }
 
@@ -38,7 +38,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     // TODO: Implement creation of child instances
-    public func withContext(_ context: [String: String]) -> Self {
+    public func withContext(_ context: ConfidenceStruct) -> Self {
         return self
     }
 }
