@@ -80,13 +80,3 @@ extension Confidence {
         }
     }
 }
-
-public enum InitializationStrategy {
-    case fetchAndActivate, activateAndFetchAsync
-}
-
-public enum ConfidenceRegion {
-    case global
-    case europe
-    case usa
-}
