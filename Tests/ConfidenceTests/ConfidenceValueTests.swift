@@ -46,14 +46,13 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
-        let dateComponents = DateComponents(year: 2024, month: 1, day: 1)
 
         let value: ConfidenceValue = .structure([
             "null": .null,
             "bool": .boolean(true),
             "int": .integer(3),
             "double": .double(4.5),
-            "date": .date(dateComponents),
+            "date": .date(date),
             "timestamp": .timestamp(date),
             "list": .list([.boolean(false), .integer(4)]),
             "structure": .structure(["int": .integer(5)]),
@@ -69,14 +68,13 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
-        let dateComponents = DateComponents(year: 2024, month: 1, day: 1)
 
         let value: ConfidenceValue = .structure([
             "null": .null,
             "bool": .boolean(true),
             "int": .integer(3),
             "double": .double(4.5),
-            "date": .date(dateComponents),
+            "date": .date(date),
             "timestamp": .timestamp(date),
             "list": .list([.integer(3), .integer(5)]),
             "structure": .structure(["field1": .string("test"), "field2": .integer(12)]),
@@ -85,7 +83,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
             bool: true,
             int: 3,
             double: 4.5,
-            date: dateComponents,
+            date: date,
             timestamp: date,
             list: [3, 5],
             structure: .init(field1: "test", field2: 12))
@@ -100,7 +98,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         var bool: Bool
         var int: Int64
         var double: Double
-        var date: DateComponents
+        var date: Date
         var timestamp: Date
         var list: [Int64]
         var structure: TestSubConfidenceValue

@@ -8,7 +8,7 @@ public enum ConfidenceValue: Equatable, Codable {
     case string(String)
     case integer(Int64)
     case double(Double)
-    case date(DateComponents)
+    case date(Date)
     case timestamp(Date)
     case list([ConfidenceValue])
     case structure([String: ConfidenceValue])
@@ -23,7 +23,7 @@ public enum ConfidenceValue: Equatable, Codable {
             return .integer(value)
         } else if let value = value as? Double {
             return .double(value)
-        } else if let value = value as? DateComponents {
+        } else if let value = value as? Date {
             return .date(value)
         } else if let value = value as? Date {
             return .timestamp(value)
@@ -82,9 +82,9 @@ public enum ConfidenceValue: Equatable, Codable {
         return nil
     }
 
-    public func asDate() -> DateComponents? {
-        if case let .date(dateComponents) = self {
-            return dateComponents
+    public func asDate() -> Date? {
+        if case let .date(date) = self {
+            return date
         }
 
         return nil
@@ -164,14 +164,8 @@ extension ConfidenceValue {
             return int64
         case .double(let double):
             return double
-        case .date(let dateComponents):
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "dd-MM-yyyy"
-            if let date = Calendar.current.date(from: dateComponents) {
-                return dateFormatter.string(from: date)
-            } else {
-                throw ConfidenceError.internalError(message: "Error serializing 'date' value")
-            }
+        case .date(let date):
+            return date.timeIntervalSinceReferenceDate
         case .timestamp(let date):
             return date.timeIntervalSinceReferenceDate
         case .list(let list):
