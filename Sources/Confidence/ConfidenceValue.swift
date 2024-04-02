@@ -83,8 +83,8 @@ public enum ConfidenceValue: Equatable, Codable {
     }
 
     public func asDate() -> DateComponents? {
-        if case let .date(date) = self {
-            return date
+        if case let .date(dateComponents) = self {
+            return dateComponents
         }
 
         return nil

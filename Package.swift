@@ -39,6 +39,12 @@ let package = Package(
             dependencies: [
                 "ConfidenceProvider",
             ]
-        )
+        ),
+        .testTarget(
+            name: "ConfidenceTests",
+            dependencies: [
+                "Confidence"
+            ]
+        ),
     ]
 )
