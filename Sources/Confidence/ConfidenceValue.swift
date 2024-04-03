@@ -8,47 +8,11 @@ public enum ConfidenceValue: Equatable, Codable {
     case string(String)
     case integer(Int64)
     case double(Double)
-    case date(Date)
+    case date(DateComponents)
     case timestamp(Date)
     case list([ConfidenceValue])
     case structure([String: ConfidenceValue])
     case null
-
-    public static func of<T>(_ value: T) -> ConfidenceValue {
-        if let value = value as? Bool {
-            return .boolean(value)
-        } else if let value = value as? String {
-            return .string(value)
-        } else if let value = value as? Int64 {
-            return .integer(value)
-        } else if let value = value as? Double {
-            return .double(value)
-        } else if let value = value as? Date {
-            return .date(value)
-        } else if let value = value as? Date {
-            return .timestamp(value)
-        } else {
-            return .null
-        }
-    }
-
-    public func getTyped<T>() -> T? {
-        if let value = self as? T {
-            return value
-        }
-
-        switch self {
-        case .boolean(let value): return value as? T
-        case .string(let value): return value as? T
-        case .integer(let value): return value as? T
-        case .double(let value): return value as? T
-        case .date(let value): return value as? T
-        case .timestamp(let value): return value as? T
-        case .list(let value): return value as? T
-        case .structure(let value): return value as? T
-        case .null: return nil
-        }
-    }
 
     public func asBoolean() -> Bool? {
         if case let .boolean(bool) = self {
@@ -82,15 +46,15 @@ public enum ConfidenceValue: Equatable, Codable {
         return nil
     }
 
-    public func asDate() -> Date? {
-        if case let .date(date) = self {
-            return date
+    public func asDateComponents() -> DateComponents? {
+        if case let .date(dateComponents) = self {
+            return dateComponents
         }
 
         return nil
     }
 
-    public func asTimestamp() -> Date? {
+    public func asDate() -> Date? {
         if case let .timestamp(date) = self {
             return date
         }
@@ -149,31 +113,36 @@ extension ConfidenceValue: CustomStringConvertible {
 }
 
 extension ConfidenceValue {
-    public func decode<T: Decodable>() throws -> T {
-        let data = try JSONSerialization.data(withJSONObject: toJson(value: self))
-        return try JSONDecoder().decode(T.self, from: data)
-    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
 
-    func toJson(value: ConfidenceValue) throws -> Any {
-        switch value {
-        case .boolean(let bool):
-            return bool
-        case .string(let string):
-            return string
-        case .integer(let int64):
-            return int64
-        case .double(let double):
-            return double
-        case .date(let date):
-            return date.timeIntervalSinceReferenceDate
-        case .timestamp(let date):
-            return date.timeIntervalSinceReferenceDate
-        case .list(let list):
-            return try list.map(self.toJson)
-        case .structure(let structure):
-            return try structure.mapValues(self.toJson)
+        switch self {
         case .null:
-            return NSNull()
+            try container.encodeNil()
+        case .integer(let integer):
+            try container.encode(integer)
+        case .double(let double):
+            try container.encode(double)
+        case .string(let string):
+            try container.encode(string)
+        case .boolean(let boolean):
+            try container.encode(boolean)
+        case .date(let dateComponents):
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "dd-MM-yyyy"
+            if let date = Calendar.current.date(from: dateComponents) {
+                try container.encode(dateFormatter.string(from: date))
+            } else {
+                throw ConfidenceError.internalError(message: "Could not create date from components")
+            }
+        case .timestamp(let date):
+            let isoFormatter = ISO8601DateFormatter()
+            let isoString = isoFormatter.string(from: date)
+            try container.encode(isoString)
+        case .structure(let structure):
+            try container.encode(structure)
+        case .list(let list):
+            try container.encode(list)
         }
     }
 }
