@@ -76,6 +76,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
     func testEncodeDecode() throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.timeZone = TimeZone(abbreviation: "UTC")
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
         let dateComponents = DateComponents(year: 2024, month: 4, day: 3)
 
@@ -102,7 +103,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         \"null\":null,
         \"string\":\"value\",
         \"structure\":{\"int\":5},
-        \"timestamp\":\"2022-01-01T11:00:00Z\"}
+        \"timestamp\":\"2022-01-01T12:00:00Z\"}
         """.replacingOccurrences(of: "\n", with: "") // Newlines were added for readability
 
         XCTAssertEqual(resultString, expectedString)
