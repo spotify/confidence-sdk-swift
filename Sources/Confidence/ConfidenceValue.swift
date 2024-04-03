@@ -137,8 +137,8 @@ extension ConfidenceValue {
             }
         case .timestamp(let date):
             let isoFormatter = ISO8601DateFormatter()
-            let isoString = isoFormatter.string(from: date)
-            try container.encode(isoString)
+            let formattedDate = isoFormatter.string(from: date)
+            try container.encode(formattedDate)
         case .structure(let structure):
             try container.encode(structure)
         case .list(let list):
