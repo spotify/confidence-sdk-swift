@@ -3,7 +3,7 @@ import Foundation
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
 /// Serializable data structure meant for event sending via Confidence
-public enum ConfidenceValue: Equatable, Codable {
+public enum ConfidenceValue: Equatable, Encodable {
     case boolean(Bool)
     case string(String)
     case integer(Int64)
