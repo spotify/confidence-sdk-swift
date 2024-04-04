@@ -11,7 +11,7 @@ public enum ConfidenceValue: Equatable, Encodable {
     case date(DateComponents)
     case timestamp(Date)
     case list([ConfidenceValue])
-    case structure([String: ConfidenceValue])
+    case structure(ConfidenceStruct)
     case null
 
     public func asBoolean() -> Bool? {
