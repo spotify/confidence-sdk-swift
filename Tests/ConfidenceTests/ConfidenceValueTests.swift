@@ -42,10 +42,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
     }
 
     func testListShouldConvertToList() {
-        let value = ConfidenceValue(list: [
-            ConfidenceValue(integer: 3),
-            ConfidenceValue(integer: 4)
-        ])
+        let value = ConfidenceValue(integerList: [3, 4])
         XCTAssertEqual(value.asList(), [ConfidenceValue(integer: 3), ConfidenceValue(integer: 4)])
     }
 
@@ -61,7 +58,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
     }
 
     func testEmptyListAllowed() {
-        let value = ConfidenceValue(list: [])
+        let value = ConfidenceValue(integerList: [])
         XCTAssertEqual(value.asList(), [])
     }
 
@@ -94,7 +91,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
             "date": ConfidenceValue(date: dateComponents),
             "double": ConfidenceValue(double: 4.5),
             "int": ConfidenceValue(integer: 3),
-            "list": ConfidenceValue(list: [ConfidenceValue(boolean: false), ConfidenceValue(integer: 4)]),
+            "list": ConfidenceValue(integerList: [3, 5]),
             "null": ConfidenceValue(null: ()),
             "string": ConfidenceValue(string: "value"),
             "structure": ConfidenceValue(structure: ["int": ConfidenceValue(integer: 5)]),
@@ -108,7 +105,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         \"date\":\"03-04-2024\",
         \"double\":4.5,
         \"int\":3,
-        \"list\":[false,4],
+        \"list\":[3,5],
         \"null\":null,
         \"string\":\"value\",
         \"structure\":{\"int\":5},

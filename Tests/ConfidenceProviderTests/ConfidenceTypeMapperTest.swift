@@ -42,7 +42,7 @@ class ValueConverterTest: XCTestCase {
             "int": ConfidenceValue(integer: 3),
             "double": ConfidenceValue(double: 4.5),
             "date": ConfidenceValue(timestamp: date),
-            "list": ConfidenceValue(list: [ConfidenceValue(integer: 3), ConfidenceValue(integer: 5)]),
+            "list": ConfidenceValue(integerList: [3, 5]),
             "structure": ConfidenceValue(
                 structure: [
                     "field1": ConfidenceValue(string: "test"),

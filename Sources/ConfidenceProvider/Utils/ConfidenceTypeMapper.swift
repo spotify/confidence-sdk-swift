@@ -26,7 +26,7 @@ public enum ConfidenceTypeMapper {
         case .date(let value):
             return ConfidenceValue(timestamp: value)
         case .list(let values):
-            return ConfidenceValue(list: values.compactMap(convertValue))
+            return ConfidenceValue(valueList: values.compactMap(convertValue))
         case .structure(let values):
             return ConfidenceValue(structure: values.compactMapValues(convertValue))
         case .null:

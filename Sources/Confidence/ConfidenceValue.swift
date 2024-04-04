@@ -29,8 +29,35 @@ public class ConfidenceValue: Equatable, Encodable {
         self.value = .timestamp(timestamp)
     }
 
-    public init(list: [ConfidenceValue]) {
-        self.value = .list(list.map { $0.value })
+    // TODO: Handle heterogeneous types
+    public init(valueList: [ConfidenceValue]) {
+        self.value = .list(valueList.map { $0.value })
+    }
+
+    public init(boolList: [Bool]) {
+        self.value = .list(boolList.map { .boolean($0) })
+    }
+
+    public init(stringList: [String]) {
+        self.value = .list(stringList.map { .string($0) })
+    }
+
+
+    public init(integerList: [Int64]) {
+        self.value = .list(integerList.map { .integer($0) })
+    }
+
+    public init(doubleList: [Double]) {
+        self.value = .list(doubleList.map { .double($0) })
+    }
+
+
+    public init(dateComponentList: [DateComponents]) {
+        self.value = .list(dateComponentList.map { .date($0) })
+    }
+
+    public init(dateList: [Date]) {
+        self.value = .list(dateList.map { .timestamp($0) })
     }
 
     public init(structure: [String: ConfidenceValue]) {
