@@ -12,8 +12,8 @@ class ValueConverterTest: XCTestCase {
             structure: MutableStructure(attributes: (["key": .string("value")])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
-            "key": ConfidenceValue.string("value"),
-            "targeting_key": ConfidenceValue.string("userid")
+            "key": ConfidenceValue(string: "value"),
+            "targeting_key": ConfidenceValue(string: "userid")
         ]
         XCTAssertEqual(confidenceStruct, expected)
     }
@@ -35,16 +35,20 @@ class ValueConverterTest: XCTestCase {
         ])
 
         let confidenceValue = ConfidenceTypeMapper.from(value: openFeatureValue)
-        let expected = ConfidenceValue.structure([
-            "key": .string("value"),
-            "null": .null,
-            "bool": .boolean(true),
-            "int": .integer(3),
-            "double": .double(4.5),
-            "date": .timestamp(date),
-            "list": .list([.integer(3), .integer(5)]),
-            "structure": .structure(["field1": .string("test"), "field2": .integer(12)]),
-        ])
+        let expected = ConfidenceValue(structure: ([
+            "key": ConfidenceValue(string: "value"),
+            "null": ConfidenceValue(null: ()),
+            "bool": ConfidenceValue(boolean: true),
+            "int": ConfidenceValue(integer: 3),
+            "double": ConfidenceValue(double: 4.5),
+            "date": ConfidenceValue(timestamp: date),
+            "list": ConfidenceValue(list: [ConfidenceValue(integer: 3), ConfidenceValue(integer: 5)]),
+            "structure": ConfidenceValue(
+                structure: [
+                    "field1": ConfidenceValue(string: "test"),
+                    "field2": ConfidenceValue(integer: 12)
+                ])
+        ]))
         XCTAssertEqual(confidenceValue, expected)
     }
 }

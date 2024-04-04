@@ -3,27 +3,27 @@ import XCTest
 
 final class ConfidenceConfidenceValueTests: XCTestCase {
     func testNull() {
-        let value = ConfidenceValue.null
+        let value = ConfidenceValue(null: ())
         XCTAssertTrue(value.isNull())
     }
 
     func testIntShouldConvertToInt() {
-        let value: ConfidenceValue = .integer(3)
+        let value = ConfidenceValue(integer: 3)
         XCTAssertEqual(value.asInteger(), 3)
     }
 
     func testDoubleShouldConvertToDouble() {
-        let value: ConfidenceValue = .double(3.14)
+        let value = ConfidenceValue(double: 3.14)
         XCTAssertEqual(value.asDouble(), 3.14)
     }
 
     func testBoolShouldConvertToBool() {
-        let value: ConfidenceValue = .boolean(true)
+        let value = ConfidenceValue(boolean: true)
         XCTAssertEqual(value.asBoolean(), true)
     }
 
     func testStringShouldConvertToString() {
-        let value: ConfidenceValue = .string("test")
+        let value = ConfidenceValue(string: "test")
         XCTAssertEqual(value.asString(), "test")
     }
 
@@ -31,33 +31,42 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
-        let value: ConfidenceValue = .timestamp(date)
+        let value = ConfidenceValue(timestamp: date)
         XCTAssertEqual(value.asDate(), date)
     }
 
     func testStringShouldConvertToDateComponents() {
         let dateComponents = DateComponents(year: 2024, month: 4, day: 3)
-        let value: ConfidenceValue = .date(dateComponents)
+        let value = ConfidenceValue(date: dateComponents)
         XCTAssertEqual(value.asDateComponents(), dateComponents)
     }
 
     func testListShouldConvertToList() {
-        let value: ConfidenceValue = .list([.integer(3), .integer(4)])
-        XCTAssertEqual(value.asList(), [.integer(3), .integer(4)])
+        let value = ConfidenceValue(list: [
+            ConfidenceValue(integer: 3),
+            ConfidenceValue(integer: 4)
+        ])
+        XCTAssertEqual(value.asList(), [ConfidenceValue(integer: 3), ConfidenceValue(integer: 4)])
     }
 
     func testStructShouldConvertToStruct() {
-        let value: ConfidenceValue = .structure(["field1": .integer(3), "field2": .string("test")])
-        XCTAssertEqual(value.asStructure(), ["field1": .integer(3), "field2": .string("test")])
+        let value = ConfidenceValue(structure: [
+            "field1": ConfidenceValue(integer: 3),
+            "field2": ConfidenceValue(string: "test")
+        ])
+        XCTAssertEqual(value.asStructure(), [
+            "field1": ConfidenceValue(integer: 3),
+            "field2": ConfidenceValue(string: "test")
+        ])
     }
 
     func testEmptyListAllowed() {
-        let value: ConfidenceValue = .list([])
+        let value = ConfidenceValue(list: [])
         XCTAssertEqual(value.asList(), [])
     }
 
     func testWrongTypeDoesntThrow() {
-        let value = ConfidenceValue.null
+        let value = ConfidenceValue(null: ())
         XCTAssertNil(value.asList())
         XCTAssertNil(value.asDouble())
         XCTAssertNil(value.asString())
@@ -69,7 +78,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
     }
 
     func testIsNotNull() {
-        let value = ConfidenceValue.string("Test")
+        let value = ConfidenceValue(string: "Test")
         XCTAssertFalse(value.isNull())
     }
 
@@ -80,17 +89,17 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
         let dateComponents = DateComponents(year: 2024, month: 4, day: 3)
 
-        let value: ConfidenceValue = .structure([
-            "bool": .boolean(true),
-            "date": .date(dateComponents),
-            "double": .double(4.5),
-            "int": .integer(3),
-            "list": .list([.boolean(false), .integer(4)]),
-            "null": .null,
-            "string": .string("value"),
-            "structure": .structure(["int": .integer(5)]),
-            "timestamp": .timestamp(date),
-        ])
+        let value = ConfidenceValue(structure: ([
+            "bool": ConfidenceValue(boolean: true),
+            "date": ConfidenceValue(date: dateComponents),
+            "double": ConfidenceValue(double: 4.5),
+            "int": ConfidenceValue(integer: 3),
+            "list": ConfidenceValue(list: [ConfidenceValue(boolean: false), ConfidenceValue(integer: 4)]),
+            "null": ConfidenceValue(null: ()),
+            "string": ConfidenceValue(string: "value"),
+            "structure": ConfidenceValue(structure: ["int": ConfidenceValue(integer: 5)]),
+            "timestamp": ConfidenceValue(timestamp: date),
+        ]))
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         let resultString = String(data: try encoder.encode(value), encoding: .utf8)
