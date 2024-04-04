@@ -77,6 +77,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
 
+        self.updateConfidenceContext(context: initialContext)
         if self.initializationStrategy == .activateAndFetchAsync {
             eventHandler.send(.ready)
         }
@@ -128,18 +129,26 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
 
+        self.updateConfidenceContext(context: newContext)
         Task {
             do {
                 let resolveResult = try await resolve(context: newContext)
 
                 // update the storage
                 try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
+
                 eventHandler.send(ProviderEvent.ready)
             } catch {
                 eventHandler.send(ProviderEvent.ready)
                 // do nothing
             }
         }
+    }
+
+    private func updateConfidenceContext(context: EvaluationContext) {
+        confidence?.updateContextEntry(
+            key: "open_feature",
+            value: ConfidenceValue(structure: ConfidenceTypeMapper.from(ctx: context)))
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws

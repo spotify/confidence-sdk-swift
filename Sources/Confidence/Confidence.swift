@@ -22,7 +22,7 @@ public class Confidence: ConfidenceEventSender {
 
     // TODO: Implement actual event uploading to the backend
     public func send(definition: String, payload: ConfidenceStruct) {
-        print("Sending \(definition) - Targeting key: \(payload)")
+        print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
     }
 
     public func updateContextEntry(key: String, value: ConfidenceValue) {
