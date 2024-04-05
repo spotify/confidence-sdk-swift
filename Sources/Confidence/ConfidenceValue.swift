@@ -2,16 +2,171 @@ import Foundation
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
+public class ConfidenceValue: Equatable, Encodable {
+    private let value: ConfidenceValueInternal
+
+    public init(boolean: Bool) {
+        self.value = .boolean(boolean)
+    }
+
+    public init(string: String) {
+        self.value = .string(string)
+    }
+
+    public init(integer: Int64) {
+        self.value = .integer(integer)
+    }
+
+    public init(double: Double) {
+        self.value = .double(double)
+    }
+
+    public init(date: DateComponents) {
+        self.value = .date(date)
+    }
+
+    public init(timestamp: Date) {
+        self.value = .timestamp(timestamp)
+    }
+
+    // TODO: Handle heterogeneous types
+    public init(valueList: [ConfidenceValue]) {
+        self.value = .list(valueList.map { $0.value })
+    }
+
+    public init(boolList: [Bool]) {
+        self.value = .list(boolList.map { .boolean($0) })
+    }
+
+    public init(stringList: [String]) {
+        self.value = .list(stringList.map { .string($0) })
+    }
+
+
+    public init(integerList: [Int64]) {
+        self.value = .list(integerList.map { .integer($0) })
+    }
+
+    public init(doubleList: [Double]) {
+        self.value = .list(doubleList.map { .double($0) })
+    }
+
+
+    public init(dateComponentList: [DateComponents]) {
+        self.value = .list(dateComponentList.map { .date($0) })
+    }
+
+    public init(dateList: [Date]) {
+        self.value = .list(dateList.map { .timestamp($0) })
+    }
+
+    public init(structure: [String: ConfidenceValue]) {
+        self.value = .structure(structure.mapValues { $0.value })
+    }
+
+    public init(null: ()) {
+        self.value = .null
+    }
+
+    private init(valueInternal: ConfidenceValueInternal) {
+        self.value = valueInternal
+    }
+
+    public func asBoolean() -> Bool? {
+        if case let .boolean(bool) = value {
+            return bool
+        }
+
+        return nil
+    }
+
+    public func asString() -> String? {
+        if case let .string(string) = value {
+            return string
+        }
+
+        return nil
+    }
+
+    public func asInteger() -> Int64? {
+        if case let .integer(int64) = value {
+            return int64
+        }
+
+        return nil
+    }
+
+    public func asDouble() -> Double? {
+        if case let .double(double) = value {
+            return double
+        }
+
+        return nil
+    }
+
+    public func asDateComponents() -> DateComponents? {
+        if case let .date(dateComponents) = value {
+            return dateComponents
+        }
+
+        return nil
+    }
+
+    public func asDate() -> Date? {
+        if case let .timestamp(date) = value {
+            return date
+        }
+
+        return nil
+    }
+
+    public func asList() -> [ConfidenceValue]? {
+        if case let .list(values) = value {
+            return values.map { i in ConfidenceValue(valueInternal: i) }
+        }
+
+        return nil
+    }
+
+    public func asStructure() -> [String: ConfidenceValue]? {
+        if case let .structure(values) = value {
+            return values.mapValues { ConfidenceValue(valueInternal: $0) }
+        }
+
+        return nil
+    }
+
+    public func isNull() -> Bool {
+        if case .null = value {
+            return true
+        }
+
+        return false
+    }
+
+    public static func == (lhs: ConfidenceValue, rhs: ConfidenceValue) -> Bool {
+        lhs.value == rhs.value
+    }
+}
+
+extension ConfidenceValue {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(value)
+    }
+}
+
+
 /// Serializable data structure meant for event sending via Confidence
-public enum ConfidenceValue: Equatable, Encodable {
+private enum ConfidenceValueInternal: Equatable, Encodable {
     case boolean(Bool)
     case string(String)
     case integer(Int64)
     case double(Double)
     case date(DateComponents)
     case timestamp(Date)
-    case list([ConfidenceValue])
-    case structure(ConfidenceStruct)
+    case list([ConfidenceValueInternal])
+    case structure([String: ConfidenceValueInternal])
     case null
 
     public func asBoolean() -> Bool? {
@@ -62,7 +217,7 @@ public enum ConfidenceValue: Equatable, Encodable {
         return nil
     }
 
-    public func asList() -> [ConfidenceValue]? {
+    public func asList() -> [ConfidenceValueInternal]? {
         if case let .list(values) = self {
             return values
         }
@@ -70,7 +225,7 @@ public enum ConfidenceValue: Equatable, Encodable {
         return nil
     }
 
-    public func asStructure() -> [String: ConfidenceValue]? {
+    public func asStructure() -> [String: ConfidenceValueInternal]? {
         if case let .structure(values) = self {
             return values
         }
@@ -87,7 +242,7 @@ public enum ConfidenceValue: Equatable, Encodable {
     }
 }
 
-extension ConfidenceValue: CustomStringConvertible {
+extension ConfidenceValueInternal: CustomStringConvertible {
     public var description: String {
         switch self {
         case .boolean(let value):
@@ -112,7 +267,7 @@ extension ConfidenceValue: CustomStringConvertible {
     }
 }
 
-extension ConfidenceValue {
+extension ConfidenceValueInternal {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 

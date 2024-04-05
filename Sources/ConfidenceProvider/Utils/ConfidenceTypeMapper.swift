@@ -16,21 +16,21 @@ public enum ConfidenceTypeMapper {
     static private func convertValue(_ value: Value) -> ConfidenceValue {
         switch value {
         case .boolean(let value):
-            return .boolean(value)
+            return ConfidenceValue(boolean: value)
         case .string(let value):
-            return .string(value)
+            return ConfidenceValue(string: value)
         case .integer(let value):
-            return .integer(value)
+            return ConfidenceValue(integer: value)
         case .double(let value):
-            return .double(value)
+            return ConfidenceValue(double: value)
         case .date(let value):
-            return .timestamp(value)
+            return ConfidenceValue(timestamp: value)
         case .list(let values):
-            return .list(values.compactMap(convertValue))
+            return ConfidenceValue(valueList: values.compactMap(convertValue))
         case .structure(let values):
-            return .structure(values.compactMapValues(convertValue))
+            return ConfidenceValue(structure: values.compactMapValues(convertValue))
         case .null:
-            return .null
+            return ConfidenceValue(null: ())
         }
     }
 }
