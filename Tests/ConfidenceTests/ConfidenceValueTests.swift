@@ -41,9 +41,28 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         XCTAssertEqual(value.asDateComponents(), dateComponents)
     }
 
-    func testListShouldConvertToList() {
-        let value = ConfidenceValue(integerList: [3, 4])
-        XCTAssertEqual(value.asList(), [ConfidenceValue(integer: 3), ConfidenceValue(integer: 4)])
+    func testListShouldConvertToList() throws {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.timeZone = TimeZone(abbreviation: "UTC")
+        let date1 = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
+        let dateComponents1 = DateComponents(year: 2024, month: 4, day: 3)
+        let date2 = try XCTUnwrap(formatter.date(from: "2022-01-02 00:00:00"))
+        let dateComponents2 = DateComponents(year: 2024, month: 4, day: 2)
+
+        let boolListValue = ConfidenceValue(boolList: [true, false])
+        let integerListValue = ConfidenceValue(integerList: [3, 4])
+        let doubleListValue = ConfidenceValue(doubleList: [3.14, 4.0])
+        let stringListValue = ConfidenceValue(stringList: ["val1", "val2"])
+        let timestampListValue = ConfidenceValue(timestampList: [date1, date2])
+        let dateListValue = ConfidenceValue(dateList: [dateComponents1, dateComponents2])
+
+        XCTAssertEqual(boolListValue.asList(), [ConfidenceValue(boolean: true), ConfidenceValue(boolean: false)])
+        XCTAssertEqual(integerListValue.asList(), [ConfidenceValue(integer: 3), ConfidenceValue(integer: 4)])
+        XCTAssertEqual(doubleListValue.asList(), [ConfidenceValue(double: 3.14), ConfidenceValue(double: 4.0)])
+        XCTAssertEqual(stringListValue.asList(), [ConfidenceValue(string: "val1"), ConfidenceValue(string: "val2")])
+        XCTAssertEqual(timestampListValue.asList(), [ConfidenceValue(timestamp: date1), ConfidenceValue(timestamp: date2)])
+        XCTAssertEqual(dateListValue.asList(), [ConfidenceValue(date: dateComponents1), ConfidenceValue(date: dateComponents2)])
     }
 
     func testStructShouldConvertToStruct() {

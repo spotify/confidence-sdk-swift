@@ -52,12 +52,12 @@ public class ConfidenceValue: Equatable, Encodable {
     }
 
 
-    public init(dateComponentList: [DateComponents]) {
-        self.value = .list(dateComponentList.map { .date($0) })
+    public init(dateList: [DateComponents]) {
+        self.value = .list(dateList.map { .date($0) })
     }
 
-    public init(dateList: [Date]) {
-        self.value = .list(dateList.map { .timestamp($0) })
+    public init(timestampList: [Date]) {
+        self.value = .list(timestampList.map { .timestamp($0) })
     }
 
     public init(structure: [String: ConfidenceValue]) {
