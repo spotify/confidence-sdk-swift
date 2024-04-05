@@ -212,7 +212,7 @@ extension ConfidenceValueInternal {
             try container.encode(boolean)
         case .date(let dateComponents):
             let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "dd-MM-yyyy"
+            dateFormatter.dateFormat = "yyyy-MM-dd"
             if let date = Calendar.current.date(from: dateComponents) {
                 try container.encode(dateFormatter.string(from: date))
             } else {

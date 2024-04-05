@@ -121,7 +121,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let resultString = String(data: try encoder.encode(value), encoding: .utf8)
         let expectedString = """
         {\"bool\":true,
-        \"date\":\"03-04-2024\",
+        \"date\":\"2024-04-03\",
         \"double\":4.5,
         \"int\":3,
         \"list\":[3,5],
