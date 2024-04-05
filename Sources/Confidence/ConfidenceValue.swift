@@ -21,10 +21,16 @@ public class ConfidenceValue: Equatable, Encodable {
         self.value = .double(double)
     }
 
+    /// `date` should have at least precision to the "day".
+    /// If a custom TimeZone is set for the input DateComponents, the internal serializers
+    /// will convert the input to the local TimeZone before extracting the calendar day.
     public init(date: DateComponents) {
         self.value = .date(date)
     }
 
+    /// If a custom TimeZone is set for the input Date, the internal serializers will convert
+    /// the input to the local TimeZone (i.e. the local offset information is maintained
+    /// rather than the one customly set in Date).
     public init(timestamp: Date) {
         self.value = .timestamp(timestamp)
     }
@@ -211,17 +217,19 @@ extension ConfidenceValueInternal {
         case .boolean(let boolean):
             try container.encode(boolean)
         case .date(let dateComponents):
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.timeZone = TimeZone.current
+            dateFormatter.formatOptions = [.withFullDate]
             if let date = Calendar.current.date(from: dateComponents) {
                 try container.encode(dateFormatter.string(from: date))
             } else {
                 throw ConfidenceError.internalError(message: "Could not create date from components")
             }
         case .timestamp(let date):
-            let isoFormatter = ISO8601DateFormatter()
-            let formattedDate = isoFormatter.string(from: date)
-            try container.encode(formattedDate)
+            let timestampFormatter = ISO8601DateFormatter()
+            timestampFormatter.timeZone = TimeZone.current
+            let timestamp = timestampFormatter.string(from: date)
+            try container.encode(timestamp)
         case .structure(let structure):
             try container.encode(structure)
         case .list(let list):

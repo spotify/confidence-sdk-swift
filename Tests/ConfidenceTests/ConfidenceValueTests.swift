@@ -61,8 +61,14 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         XCTAssertEqual(integerListValue.asList(), [ConfidenceValue(integer: 3), ConfidenceValue(integer: 4)])
         XCTAssertEqual(doubleListValue.asList(), [ConfidenceValue(double: 3.14), ConfidenceValue(double: 4.0)])
         XCTAssertEqual(stringListValue.asList(), [ConfidenceValue(string: "val1"), ConfidenceValue(string: "val2")])
-        XCTAssertEqual(timestampListValue.asList(), [ConfidenceValue(timestamp: date1), ConfidenceValue(timestamp: date2)])
-        XCTAssertEqual(dateListValue.asList(), [ConfidenceValue(date: dateComponents1), ConfidenceValue(date: dateComponents2)])
+        XCTAssertEqual(timestampListValue.asList(), [
+            ConfidenceValue(timestamp: date1),
+            ConfidenceValue(timestamp: date2)
+        ])
+        XCTAssertEqual(dateListValue.asList(), [
+            ConfidenceValue(date: dateComponents1),
+            ConfidenceValue(date: dateComponents2)
+        ])
     }
 
     func testStructShouldConvertToStruct() {
@@ -101,8 +107,8 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
     func testEncodeDecode() throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        formatter.timeZone = TimeZone(abbreviation: "UTC")
-        let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
+        formatter.timeZone = TimeZone(abbreviation: "EDT") // Verify TimeZone conversion
+        let date = try XCTUnwrap(formatter.date(from: "2024-04-05 16:00:00"))
         let dateComponents = DateComponents(year: 2024, month: 4, day: 3)
 
         let value = ConfidenceValue(structure: ([
@@ -119,6 +125,10 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         let resultString = String(data: try encoder.encode(value), encoding: .utf8)
+
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.timeZone = TimeZone.current
+        let expectedSerializedTimestamp = isoFormatter.string(from: date)
         let expectedString = """
         {\"bool\":true,
         \"date\":\"2024-04-03\",
@@ -128,9 +138,11 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         \"null\":null,
         \"string\":\"value\",
         \"structure\":{\"int\":5},
-        \"timestamp\":\"2022-01-01T12:00:00Z\"}
+        \"timestamp\":\"\(expectedSerializedTimestamp)\"}
         """.replacingOccurrences(of: "\n", with: "") // Newlines were added for readability
 
+        // The "base" timestamp is in UTC, but the local offset is added (e.g. "+002").
+        XCTAssertTrue(expectedSerializedTimestamp.starts(with: "2024-04-05T22:00:00"))
         XCTAssertEqual(resultString, expectedString)
     }
 }
