@@ -60,6 +60,9 @@ public class Confidence: ConfidenceEventSender {
             context: context,
             parent: self)
     }
+    public func clearContext() {
+        context = [:]
+    }
 }
 
 extension Confidence {
