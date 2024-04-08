@@ -18,6 +18,51 @@ class ValueConverterTest: XCTestCase {
         XCTAssertEqual(confidenceStruct, expected)
     }
 
+    func testContextConversionWithLists() throws {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let date1 = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
+        let date2 = try XCTUnwrap(formatter.date(from: "2022-01-02 12:00:00"))
+
+        let openFeatureCtx = MutableContext(
+            targetingKey: "userid",
+            structure: MutableStructure(attributes: ([
+                "stringList": .list([.string("test1"), .string("test2")]),
+                "boolList": .list([.boolean(true), .boolean(false)]),
+                "integerList": .list([.integer(11), .integer(33)]),
+                "doubleList": .list([.double(3.14), .double(1.0)]),
+                "dateList": .list([.date(date1), .date(date2)]),
+                "nullList": .list([.null, .null]),
+                "listList": .list([.list([.string("nested_value1")]), .list([.string("nested_value2")])]),
+                "structList": .list([.structure(["test": .string("nested_test1")]), .structure(["test": .string("nested_test2")])])
+            ])))
+        let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
+        let expected = [
+            "stringList": ConfidenceValue(stringList: ["test1", "test2"]),
+            "boolList": ConfidenceValue(boolList: [true, false]),
+            "integerList": ConfidenceValue(integerList: [11, 33]),
+            "doubleList": ConfidenceValue(doubleList: [3.14, 1.0]),
+            "dateList": ConfidenceValue(timestampList: [date1, date2]),
+            "nullList": ConfidenceValue(nullList: [(), ()]),
+            "listList": ConfidenceValue(nullList: [(), ()]),
+            "structList": ConfidenceValue(nullList: [(), ()]),
+            "targeting_key": ConfidenceValue(string: "userid")
+        ]
+        XCTAssertEqual(confidenceStruct, expected)
+    }
+
+    func testContextConversionWithHeterogenousLists() throws {
+        let openFeatureCtx = MutableContext(
+            targetingKey: "userid",
+            structure: MutableStructure(attributes: (["key": .list([.string("test1"), .integer(1)])])))
+        let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
+        let expected = [
+            "key": ConfidenceValue(nullList: [()]),
+            "targeting_key": ConfidenceValue(string: "userid")
+        ]
+        XCTAssertEqual(confidenceStruct, expected)
+    }
+
     func testValueConversion() throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"

@@ -35,11 +35,6 @@ public class ConfidenceValue: Equatable, Encodable {
         self.value = .timestamp(timestamp)
     }
 
-    // TODO: Handle heterogeneous types
-    public init(valueList: [ConfidenceValue]) {
-        self.value = .list(valueList.map { $0.value })
-    }
-
     public init(boolList: [Bool]) {
         self.value = .list(boolList.map { .boolean($0) })
     }
@@ -57,6 +52,9 @@ public class ConfidenceValue: Equatable, Encodable {
         self.value = .list(doubleList.map { .double($0) })
     }
 
+    public init(nullList: [()]) {
+        self.value = .list(nullList.map { .null })
+    }
 
     public init(dateList: [DateComponents]) {
         self.value = .list(dateList.map { .date($0) })
@@ -150,6 +148,29 @@ public class ConfidenceValue: Equatable, Encodable {
         return false
     }
 
+    public func type() -> ConfidenceValueType {
+        switch value {
+        case .boolean:
+            return .boolean
+        case .string:
+            return .string
+        case .integer:
+            return .integer
+        case .double:
+            return .double
+        case .date:
+            return .date
+        case .timestamp:
+            return .timestamp
+        case .list:
+            return .list
+        case .structure:
+            return .structure
+        case .null:
+            return .null
+        }
+    }
+
     public static func == (lhs: ConfidenceValue, rhs: ConfidenceValue) -> Bool {
         lhs.value == rhs.value
     }
@@ -160,6 +181,18 @@ extension ConfidenceValue {
         var container = encoder.singleValueContainer()
         try container.encode(value)
     }
+}
+
+public enum ConfidenceValueType: CaseIterable {
+    case boolean
+    case string
+    case integer
+    case double
+    case date
+    case timestamp
+    case list
+    case structure
+    case null
 }
 
 
