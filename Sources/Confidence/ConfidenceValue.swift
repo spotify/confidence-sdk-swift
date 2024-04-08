@@ -35,8 +35,8 @@ public class ConfidenceValue: Equatable, Encodable {
         self.value = .timestamp(timestamp)
     }
 
-    public init(boolList: [Bool]) {
-        self.value = .list(boolList.map { .boolean($0) })
+    public init(booleanList: [Bool]) {
+        self.value = .list(booleanList.map { .boolean($0) })
     }
 
     public init(stringList: [String]) {

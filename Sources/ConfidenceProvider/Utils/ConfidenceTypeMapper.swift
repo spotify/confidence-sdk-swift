@@ -33,7 +33,7 @@ public enum ConfidenceTypeMapper {
             }
             switch listType {
             case .boolean:
-                return ConfidenceValue.init(boolList: values.compactMap { $0.asBoolean() })
+                return ConfidenceValue.init(booleanList: values.compactMap { $0.asBoolean() })
             case .string:
                 return ConfidenceValue.init(stringList: values.compactMap { $0.asString() })
             case .integer:

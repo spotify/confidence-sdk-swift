@@ -50,14 +50,14 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let date2 = try XCTUnwrap(formatter.date(from: "2022-01-02 00:00:00"))
         let dateComponents2 = DateComponents(year: 2024, month: 4, day: 2)
 
-        let boolListValue = ConfidenceValue(boolList: [true, false])
+        let booleanListValue = ConfidenceValue(booleanList: [true, false])
         let integerListValue = ConfidenceValue(integerList: [3, 4])
         let doubleListValue = ConfidenceValue(doubleList: [3.14, 4.0])
         let stringListValue = ConfidenceValue(stringList: ["val1", "val2"])
         let timestampListValue = ConfidenceValue(timestampList: [date1, date2])
         let dateListValue = ConfidenceValue(dateList: [dateComponents1, dateComponents2])
 
-        XCTAssertEqual(boolListValue.asList(), [ConfidenceValue(boolean: true), ConfidenceValue(boolean: false)])
+        XCTAssertEqual(booleanListValue.asList(), [ConfidenceValue(boolean: true), ConfidenceValue(boolean: false)])
         XCTAssertEqual(integerListValue.asList(), [ConfidenceValue(integer: 3), ConfidenceValue(integer: 4)])
         XCTAssertEqual(doubleListValue.asList(), [ConfidenceValue(double: 3.14), ConfidenceValue(double: 4.0)])
         XCTAssertEqual(stringListValue.asList(), [ConfidenceValue(string: "val1"), ConfidenceValue(string: "val2")])

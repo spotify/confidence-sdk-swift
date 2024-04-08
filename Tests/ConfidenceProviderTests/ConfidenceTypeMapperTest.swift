@@ -28,7 +28,7 @@ class ValueConverterTest: XCTestCase {
             targetingKey: "userid",
             structure: MutableStructure(attributes: ([
                 "stringList": .list([.string("test1"), .string("test2")]),
-                "boolList": .list([.boolean(true), .boolean(false)]),
+                "booleanList": .list([.boolean(true), .boolean(false)]),
                 "integerList": .list([.integer(11), .integer(33)]),
                 "doubleList": .list([.double(3.14), .double(1.0)]),
                 "dateList": .list([.date(date1), .date(date2)]),
@@ -39,7 +39,7 @@ class ValueConverterTest: XCTestCase {
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "stringList": ConfidenceValue(stringList: ["test1", "test2"]),
-            "boolList": ConfidenceValue(boolList: [true, false]),
+            "booleanList": ConfidenceValue(booleanList: [true, false]),
             "integerList": ConfidenceValue(integerList: [11, 33]),
             "doubleList": ConfidenceValue(doubleList: [3.14, 1.0]),
             "dateList": ConfidenceValue(timestampList: [date1, date2]),
