@@ -12,8 +12,8 @@ internal class EventStorageImpl: EventStorage {
     static let READYTOSENDEXTENSION = ".ready"
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
-    var folderURL: URL = URL(string: "")!
-    var fileURL: URL = URL(string: "")!
+    let folderURL: URL
+    var fileURL: URL
     var currentBatch: [Event] = []
 
     init() throws {
