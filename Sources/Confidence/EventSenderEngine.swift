@@ -5,7 +5,9 @@ protocol EventsUploader {
     func upload(request: EventBatchRequest) -> Bool
 }
 
-struct Event: Codable {}
+struct Event: Codable, Equatable {
+    let name: String
+}
 
 protocol FlushPolicy {
     func reset()
@@ -18,14 +20,12 @@ protocol Clock {
 }
 
 protocol EventSenderEngine {
-    associatedtype T: Codable
-    func send(name: String, message: T)
+    func send(name: String)
     func shutdown()
 }
 
-final class EventSenderEngineImpl<T: Codable>: EventSenderEngine {
+final class EventSenderEngineImpl: EventSenderEngine {
     private let SEND_SIG: String = "FLUSH"
-    typealias T = T
     private let storage: any EventStorage
     private let writeReqChannel = PassthroughSubject<Event, Never>()
     private let uploadReqChannel = PassthroughSubject<String, Never>()
@@ -69,14 +69,14 @@ final class EventSenderEngineImpl<T: Codable>: EventSenderEngine {
         uploadReqChannel.sink(receiveValue: { _ in
             do {
                 try storage.startNewBatch()
-                let urls = storage.batchReadyFiles()
-                for url in urls {
-                    let events = try storage.eventsFrom(fileURL: url)
+                let ids = storage.batchReadyIds()
+                for id in ids {
+                    let events = try storage.eventsFrom(id: id)
                     let batchRequest = EventBatchRequest(
                         clientSecret: clientSecret, sendTime: clock.now(), events: events)
                     let shouldCleanup = uploader.upload(request: batchRequest)
                     if shouldCleanup {
-                        try storage.remove(fileUrl: url)
+                        try storage.remove(id: id)
                     }
                 }
             } catch {
@@ -85,8 +85,8 @@ final class EventSenderEngineImpl<T: Codable>: EventSenderEngine {
         }).store(in: &cancellables)
     }
 
-    func send(name: String, message: T) {
-        writeReqChannel.send(Event())
+    func send(name: String) {
+        writeReqChannel.send(Event(name: name))
     }
 
     func shutdown() {

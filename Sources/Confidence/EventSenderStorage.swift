@@ -9,7 +9,7 @@ struct EventBatchRequest: Codable {
 internal protocol EventStorage {
     func startNewBatch() throws
     func writeEvent(event: Event) throws
-    func batchReadyFiles() -> [URL]
-    func eventsFrom(fileURL: URL) throws -> [Event]
-    func remove(fileUrl: URL) throws
+    func batchReadyIds() -> [String]
+    func eventsFrom(id: String) throws -> [Event]
+    func remove(id: String) throws
 }
