@@ -6,10 +6,10 @@ struct EventBatchRequest: Codable {
     let events: [Event]
 }
 
-protocol EventSenderStorage {
-    func createBatch()
-    func write(event: Event)
-    func batchReadyPaths() -> [String]
-    func eventBatchForPath(atPath: String) -> [Event]
-    func remove(atPath: String)
+internal protocol EventStorage {
+    func startNewBatch() throws
+    func writeEvent(event: Event) throws
+    func batchReadyFiles() -> [URL]
+    func eventsFrom(fileURL: URL) throws -> [Event]
+    func remove(fileUrl: URL) throws
 }
