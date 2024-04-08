@@ -8,8 +8,8 @@ internal protocol EventStorage {
 }
 
 internal class EventStorageImpl: EventStorage {
-    let DIRECTORY = "events"
-    let READYTOSENDEXTENSION = ".ready"
+    static let DIRECTORY = "events"
+    static let READYTOSENDEXTENSION = ".ready"
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
     var folderURL: URL = URL(string: "")!
@@ -17,12 +17,12 @@ internal class EventStorageImpl: EventStorage {
     var currentBatch: [Event] = []
 
     init() throws {
-        folderURL = URL(fileURLWithPath: try getFolderURL())
+        folderURL = URL(fileURLWithPath: try EventStorageImpl.getFolderURL())
         fileURL = folderURL.appendingPathComponent("events-\(Date().currentTime)")
     }
 
     func startNewBatch() throws {
-        let urlString = "\(fileURL)"+"\(READYTOSENDEXTENSION)"
+        let urlString = "\(fileURL)"+"\(EventStorageImpl.READYTOSENDEXTENSION)"
         let newPath = URL(fileURLWithPath: urlString)
         try FileManager.default.moveItem(at: fileURL, to: newPath)
         fileURL = folderURL.appendingPathComponent("events-\(Date().currentTime)")
@@ -39,7 +39,7 @@ internal class EventStorageImpl: EventStorage {
         var readyFilesList: [URL] = []
         let directoryContents = try FileManager.default.contentsOfDirectory(atPath: folderURL.absoluteString)
         for file in directoryContents {
-            if file.hasSuffix(READYTOSENDEXTENSION) {
+            if file.hasSuffix(EventStorageImpl.READYTOSENDEXTENSION) {
                 readyFilesList.append(URL(string: file)!)
             }
         }
@@ -52,7 +52,7 @@ internal class EventStorageImpl: EventStorage {
         return events
     }
 
-    private func getFolderURL() throws -> String {
+    private static func getFolderURL() throws -> String {
         let rootFolderURL = try FileManager.default.url(
             for: .cachesDirectory,
             in: .userDomainMask,
