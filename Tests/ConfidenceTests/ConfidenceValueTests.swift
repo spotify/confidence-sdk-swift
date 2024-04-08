@@ -126,9 +126,6 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         encoder.outputFormatting = .sortedKeys
         let resultString = String(data: try encoder.encode(value), encoding: .utf8)
 
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.timeZone = TimeZone.current
-        let expectedSerializedTimestamp = isoFormatter.string(from: date)
         let expectedString = """
         {\"bool\":true,
         \"date\":\"2024-04-03\",
@@ -138,11 +135,9 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         \"null\":null,
         \"string\":\"value\",
         \"structure\":{\"int\":5},
-        \"timestamp\":\"\(expectedSerializedTimestamp)\"}
+        \"timestamp\":\"2024-04-05T20:00:00Z"}
         """.replacingOccurrences(of: "\n", with: "") // Newlines were added for readability
 
-        // The "base" timestamp is in UTC, but the local offset is added (e.g. "+002").
-        XCTAssertTrue(expectedSerializedTimestamp.starts(with: "2024-04-05T22:00:00"))
         XCTAssertEqual(resultString, expectedString)
     }
 }

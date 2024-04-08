@@ -260,7 +260,7 @@ extension ConfidenceValueInternal {
             }
         case .timestamp(let date):
             let timestampFormatter = ISO8601DateFormatter()
-            timestampFormatter.timeZone = TimeZone.current
+            timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
             let timestamp = timestampFormatter.string(from: date)
             try container.encode(timestamp)
         case .structure(let structure):
