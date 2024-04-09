@@ -1,10 +1,12 @@
 import Foundation
+import os
 
 internal protocol EventStorage {
     func startNewBatch() throws
     func writeEvent(event: Event) throws
-    func batchReadyFiles() throws -> [URL]
-    func eventsFrom(fileURL: URL) throws -> [Event]
+    func batchReadyFiles() throws -> [String]
+    func eventsFrom(id: String) throws -> [Event]
+    func remove(id: String)
 }
 
 internal class EventStorageImpl: EventStorage {
@@ -35,21 +37,31 @@ internal class EventStorageImpl: EventStorage {
         try data.write(to: fileURL, options: .atomic)
     }
     
-    func batchReadyFiles() throws -> [URL] {
-        var readyFilesList: [URL] = []
+    func batchReadyFiles() throws -> [String] {
+        var readyFilesList: [String] = []
         let directoryContents = try FileManager.default.contentsOfDirectory(atPath: folderURL.absoluteString)
         for file in directoryContents {
             if file.hasSuffix(EventStorageImpl.READYTOSENDEXTENSION) {
-                readyFilesList.append(URL(string: file)!)
+                readyFilesList.append(file)
             }
         }
         return readyFilesList
     }
     
-    func eventsFrom(fileURL: URL) throws -> [Event] {
-        let data = try Data(contentsOf: fileURL)
-        let events = try decoder.decode([Event].self, from: data)
+    func eventsFrom(id: String) throws -> [Event] {
+        let currentData = try Data(contentsOf: fileURL)
+
+        let events = try decoder.decode([Event].self, from: currentData)
         return events
+    }
+
+    func remove(id: String) {
+        do {
+            try FileManager.default.removeItem(atPath: id)
+        } catch {
+            Logger(subsystem: "com.confidence.eventstorage", category: "storage").error(
+                "Error when trying to delete an event batch: \(error)")
+        }
     }
 
     private static func getFolderURL() throws -> String {
