@@ -10,29 +10,35 @@ internal protocol EventStorage {
 }
 
 internal class EventStorageImpl: EventStorage {
-    static let DIRECTORY = "events"
-    static let READYTOSENDEXTENSION = ".ready"
-    let encoder = JSONEncoder()
-    let decoder = JSONDecoder()
-    let folderURL: URL
-    var fileURL: URL
-    var currentBatch: [Event] = []
+    private static let DIRECTORY = "events"
+    private static let READYTOSENDEXTENSION = ".ready"
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+    private let currentFolderURL: URL
+    private var currentFileURL: URL
+    private var currentBatch: [Event] = []
 
     init() throws {
-        folderURL = URL(fileURLWithPath: try EventStorageImpl.getFolderURL())
-        fileURL = folderURL.appendingPathComponent("events-\(Date().currentTime)")
+        currentFolderURL = URL(fileURLWithPath: try EventStorageImpl.getFolderURL())
+        currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
     }
 
     func startNewBatch() {
-        let urlString = "\(fileURL)"+"\(EventStorageImpl.READYTOSENDEXTENSION)"
+        let latestWriteFile = latestWriteFile()
+        if latestWriteFile != nil {
+            currentFileURL = latestWriteFile!
+            currentBatch = eventsFrom(id: latestWriteFile!.absoluteString)
+            return
+        }
+        let urlString = "\(currentFileURL)"+"\(EventStorageImpl.READYTOSENDEXTENSION)"
         let newPath = URL(fileURLWithPath: urlString)
         do {
-            try FileManager.default.moveItem(at: fileURL, to: newPath)
+            try FileManager.default.moveItem(at: currentFileURL, to: newPath)
         } catch {
             Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
             "Error when trying to start a new batch: \(error)")
         }
-        fileURL = folderURL.appendingPathComponent("events-\(Date().currentTime)")
+        currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
         currentBatch = []
     }
     
@@ -40,7 +46,7 @@ internal class EventStorageImpl: EventStorage {
         currentBatch.append(event)
         do {
             let data = try encoder.encode(currentBatch)
-            try data.write(to: fileURL, options: .atomic)
+            try data.write(to: currentFileURL, options: .atomic)
         } catch {
             Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
             "Error when trying to write to disk: \(error)")
@@ -51,7 +57,7 @@ internal class EventStorageImpl: EventStorage {
         var readyFilesList: [String] = []
         var directoryContents: [String] = []
         do {
-            directoryContents = try FileManager.default.contentsOfDirectory(atPath: folderURL.absoluteString)
+            directoryContents = try FileManager.default.contentsOfDirectory(atPath: currentFolderURL.absoluteString)
         } catch {
             Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
             "Error when trying to read contents of directory on disk: \(error)")
@@ -99,6 +105,22 @@ internal class EventStorageImpl: EventStorage {
             nestedFolderURL = rootFolderURL.appendingPathComponent(DIRECTORY, isDirectory: true).absoluteString
         }
         return nestedFolderURL
+    }
+
+    private func latestWriteFile() -> URL? {
+        var directoryContents: [String] = []
+        do {
+            directoryContents = try FileManager.default.contentsOfDirectory(atPath: EventStorageImpl.getFolderURL())
+        } catch {
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+            "Error when trying to read contents of directory on disk: \(error)")
+        }
+        for file in directoryContents {
+            if !file.hasSuffix(EventStorageImpl.READYTOSENDEXTENSION) {
+                return URL(string: file)
+            }
+        }
+        return nil
     }
 }
 
