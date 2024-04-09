@@ -51,11 +51,6 @@ public class Confidence: ConfidenceEventSender {
         removedContextKeys.insert(key)
     }
 
-    public func clearContext() {
-        removedContextKeys.removeAll()
-        context = [:]
-    }
-
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,

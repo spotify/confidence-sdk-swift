@@ -180,41 +180,4 @@ final class ConfidenceTests: XCTestCase {
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
-
-    func testClearContext() {
-        let confidence = Confidence.init(
-            clientSecret: "",
-            timeout: TimeInterval(),
-            region: .europe,
-            initializationStrategy: .activateAndFetchAsync,
-            context: [
-                "k1": ConfidenceValue(string: "v1"),
-                "k2": ConfidenceValue(string: "v2")
-            ]
-        )
-        confidence.clearContext()
-        let expected: ConfidenceStruct = [:]
-        XCTAssertEqual(confidence.getContext(), expected)
-    }
-
-    func testClearContextReturnsParentContext() {
-        let confidenceParent = Confidence.init(
-            clientSecret: "",
-            timeout: TimeInterval(),
-            region: .europe,
-            initializationStrategy: .activateAndFetchAsync,
-            context: ["k1": ConfidenceValue(string: "v1")]
-        )
-        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
-            [
-                "k1": ConfidenceValue(string: "v1"),
-                "k2": ConfidenceValue(string: "v2")
-            ]
-        )
-        confidenceChild.clearContext()
-        let expected = [
-            "k1": ConfidenceValue(string: "v1")
-        ]
-        XCTAssertEqual(confidenceChild.getContext(), expected)
-    }
 }
