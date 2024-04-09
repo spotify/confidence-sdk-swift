@@ -1,23 +1,40 @@
 import Foundation
 
 public class Confidence: ConfidenceEventSender {
-    public var context: ConfidenceStruct
+    private let parent: ConfidenceEventSender?
+    private var localContext: ConfidenceStruct
+
+    public var context: ConfidenceStruct {
+        get {
+            var mergedContext = parent?.context ?? [:]
+            localContext.forEach { entry in
+                mergedContext.updateValue(entry.value, forKey: entry.key)
+            }
+            return mergedContext
+        }
+        set {
+            self.localContext = newValue
+        }
+    }
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
 
-    init(
+    required public init(
         clientSecret: String,
         timeout: TimeInterval,
         region: ConfidenceRegion,
-        initializationStrategy: InitializationStrategy
+        initializationStrategy: InitializationStrategy,
+        context: ConfidenceStruct = [:],
+        parent: ConfidenceEventSender? = nil
     ) {
-        self.context = [:]
         self.clientSecret = clientSecret
         self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
+        self.localContext = context
+        self.parent = parent
     }
 
     // TODO: Implement actual event uploading to the backend
@@ -26,20 +43,25 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func updateContextEntry(key: String, value: ConfidenceValue) {
-        context[key] = value
+        localContext[key] = value
     }
 
     public func removeContextEntry(key: String) {
-        context.removeValue(forKey: key)
+        localContext.removeValue(forKey: key)
     }
 
     public func clearContext() {
-        context = [:]
+        localContext = [:]
     }
 
-    // TODO: Implement creation of child instances
     public func withContext(_ context: ConfidenceStruct) -> Self {
-        return self
+        return Self.init(
+            clientSecret: clientSecret,
+            timeout: timeout,
+            region: region,
+            initializationStrategy: initializationStrategy,
+            context: context,
+            parent: self)
     }
 }
 
