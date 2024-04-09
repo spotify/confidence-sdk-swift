@@ -24,21 +24,17 @@ internal class EventStorageImpl: EventStorage {
     }
 
     func startNewBatch() {
-        guard let latestWriteFile = EventStorageImpl.latestWriteFile() else {
-            let urlString = "\(currentFileURL)\(EventStorageImpl.READYTOSENDEXTENSION)"
-            let newPath = URL(fileURLWithPath: urlString)
-            do {
-                try FileManager.default.moveItem(at: currentFileURL, to: newPath)
-            } catch {
-                Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
-                "Error when trying to start a new batch: \(error)")
-            }
-            currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
-            currentBatch = []
-            return
+        let urlString = "\(currentFileURL)\(EventStorageImpl.READYTOSENDEXTENSION)"
+        let newPath = URL(fileURLWithPath: urlString)
+        do {
+            try FileManager.default.moveItem(at: currentFileURL, to: newPath)
+        } catch {
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+            "Error when trying to start a new batch: \(error)")
         }
-        currentFileURL = latestWriteFile
-        currentBatch = eventsFrom(id: latestWriteFile.absoluteString)
+        currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
+        currentBatch = []
+        return
     }
     
     func writeEvent(event: Event) {
