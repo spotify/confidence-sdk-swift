@@ -17,7 +17,7 @@ final class ConfidenceTests: XCTestCase {
             "k1": ConfidenceValue(string: "v1"),
             "k2": ConfidenceValue(string: "v2")
         ]
-        XCTAssertEqual(confidenceChild.context, expected)
+        XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
     func testWithContextUpdateParent() {
@@ -39,7 +39,7 @@ final class ConfidenceTests: XCTestCase {
             "k2": ConfidenceValue(string: "v2"),
             "k3": ConfidenceValue(string: "v3"),
         ]
-        XCTAssertEqual(confidenceChild.context, expected)
+        XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
     func testUpdateContextWithOverride() {
@@ -56,7 +56,7 @@ final class ConfidenceTests: XCTestCase {
         let expected = [
             "k1": ConfidenceValue(string: "v3"),
         ]
-        XCTAssertEqual(confidence.context, expected)
+        XCTAssertEqual(confidence.getContext(), expected)
     }
 
     func testWithContextUpdateParentWithoutOverride() {
@@ -77,7 +77,7 @@ final class ConfidenceTests: XCTestCase {
             "k1": ConfidenceValue(string: "v1"),
             "k2": ConfidenceValue(string: "v2"),
         ]
-        XCTAssertEqual(confidenceChild.context, expected)
+        XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
     func testWithContextUpdateChildWithOverride() {
@@ -98,7 +98,7 @@ final class ConfidenceTests: XCTestCase {
             "k1": ConfidenceValue(string: "v1"),
             "k2": ConfidenceValue(string: "v4"),
         ]
-        XCTAssertEqual(confidenceChild.context, expected)
+        XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
     func testRemoveContextEntry() {
@@ -116,7 +116,7 @@ final class ConfidenceTests: XCTestCase {
         let expected = [
             "k1": ConfidenceValue(string: "v1")
         ]
-        XCTAssertEqual(confidence.context, expected)
+        XCTAssertEqual(confidence.getContext(), expected)
     }
 
     func testClearContext() {
@@ -132,6 +132,6 @@ final class ConfidenceTests: XCTestCase {
         )
         confidence.clearContext()
         let expected: ConfidenceStruct = [:]
-        XCTAssertEqual(confidence.context, expected)
+        XCTAssertEqual(confidence.getContext(), expected)
     }
 }

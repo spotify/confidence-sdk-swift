@@ -1,21 +1,8 @@
 import Foundation
 
 public class Confidence: ConfidenceEventSender {
-    private let parent: ConfidenceEventSender?
-    private var localContext: ConfidenceStruct
-
-    public var context: ConfidenceStruct {
-        get {
-            var mergedContext = parent?.context ?? [:]
-            localContext.forEach { entry in
-                mergedContext.updateValue(entry.value, forKey: entry.key)
-            }
-            return mergedContext
-        }
-        set {
-            self.localContext = newValue
-        }
-    }
+    private let parent: ConfidenceContextProvider?
+    private var context: ConfidenceStruct
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
@@ -33,7 +20,7 @@ public class Confidence: ConfidenceEventSender {
         self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
-        self.localContext = context
+        self.context = context
         self.parent = parent
     }
 
@@ -42,16 +29,25 @@ public class Confidence: ConfidenceEventSender {
         print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
     }
 
+
+    public func getContext() -> ConfidenceStruct {
+        var mergedContext = parent?.getContext() ?? [:]
+        self.context.forEach { entry in
+            mergedContext.updateValue(entry.value, forKey: entry.key)
+        }
+        return mergedContext
+    }
+
     public func updateContextEntry(key: String, value: ConfidenceValue) {
-        localContext[key] = value
+        context[key] = value
     }
 
     public func removeContextEntry(key: String) {
-        localContext.removeValue(forKey: key)
+        context.removeValue(forKey: key)
     }
 
     public func clearContext() {
-        localContext = [:]
+        context = [:]
     }
 
     public func withContext(_ context: ConfidenceStruct) -> Self {
