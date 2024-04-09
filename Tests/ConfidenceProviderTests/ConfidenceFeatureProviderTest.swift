@@ -913,7 +913,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         {
             provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
             wait(for: [readyExpectation], timeout: 5)
-            let context = confidence.context
+            let context = confidence.getContext()
             let expected = [
                 "open_feature": ConfidenceValue(structure: ["targeting_key": ConfidenceValue(string: "user1")])
             ]
@@ -940,7 +940,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             provider.initialize(initialContext: ctx1)
             provider.onContextSet(oldContext: ctx1, newContext: ctx2)
             wait(for: [readyExpectation], timeout: 5)
-            let context = confidence.context
+            let context = confidence.getContext()
             let expected = [
                 "open_feature": ConfidenceValue(structure: [
                     "targeting_key": ConfidenceValue(string: "user1"),

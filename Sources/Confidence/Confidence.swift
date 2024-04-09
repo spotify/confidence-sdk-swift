@@ -7,6 +7,7 @@ public class Confidence: ConfidenceEventSender {
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
+    private var removedContextKeys: Set<String> = Set()
 
     required public init(
         clientSecret: String,
@@ -31,11 +32,14 @@ public class Confidence: ConfidenceEventSender {
 
 
     public func getContext() -> ConfidenceStruct {
-        var mergedContext = parent?.getContext() ?? [:]
-        self.context.forEach { entry in
-            mergedContext.updateValue(entry.value, forKey: entry.key)
+        let parentContext = parent?.getContext() ?? [:]
+        var reconciledCtx = parentContext.filter {
+            !removedContextKeys.contains($0.key)
         }
-        return mergedContext
+        self.context.forEach { entry in
+            reconciledCtx.updateValue(entry.value, forKey: entry.key)
+        }
+        return reconciledCtx
     }
 
     public func updateContextEntry(key: String, value: ConfidenceValue) {
@@ -44,9 +48,11 @@ public class Confidence: ConfidenceEventSender {
 
     public func removeContextEntry(key: String) {
         context.removeValue(forKey: key)
+        removedContextKeys.insert(key)
     }
 
     public func clearContext() {
+        removedContextKeys.removeAll()
         context = [:]
     }
 

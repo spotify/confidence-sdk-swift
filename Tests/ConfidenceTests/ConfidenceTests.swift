@@ -42,7 +42,7 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testUpdateContextWithOverride() {
+    func testUpdateLocalContext() {
         let confidence = Confidence.init(
             clientSecret: "",
             timeout: TimeInterval(),
@@ -59,28 +59,7 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertEqual(confidence.getContext(), expected)
     }
 
-    func testWithContextUpdateParentWithoutOverride() {
-        let confidenceParent = Confidence.init(
-            clientSecret: "",
-            timeout: TimeInterval(),
-            region: .europe,
-            initializationStrategy: .activateAndFetchAsync,
-            context: ["k1": ConfidenceValue(string: "v1")]
-        )
-        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
-            ["k2": ConfidenceValue(string: "v2")]
-        )
-        confidenceParent.updateContextEntry(
-            key: "k2",
-            value: ConfidenceValue(string: "v4"))
-        let expected = [
-            "k1": ConfidenceValue(string: "v1"),
-            "k2": ConfidenceValue(string: "v2"),
-        ]
-        XCTAssertEqual(confidenceChild.getContext(), expected)
-    }
-
-    func testWithContextUpdateChildWithOverride() {
+    func testUpdateLocalContextWithoutOverride() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
             timeout: TimeInterval(),
@@ -97,6 +76,27 @@ final class ConfidenceTests: XCTestCase {
         let expected = [
             "k1": ConfidenceValue(string: "v1"),
             "k2": ConfidenceValue(string: "v4"),
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
+    }
+
+    func testUpdateParentContextWithOverride() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")]
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            ["k2": ConfidenceValue(string: "v2")]
+        )
+        confidenceParent.updateContextEntry(
+            key: "k2",
+            value: ConfidenceValue(string: "v4"))
+        let expected = [
+            "k1": ConfidenceValue(string: "v1"),
+            "k2": ConfidenceValue(string: "v2"),
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
@@ -119,6 +119,68 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertEqual(confidence.getContext(), expected)
     }
 
+    func testRemoveContextEntryFromParent() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")]
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            ["k2": ConfidenceValue(string: "v2")]
+        )
+        confidenceChild.removeContextEntry(key: "k1")
+        let expected = [
+            "k2": ConfidenceValue(string: "v2")
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
+    }
+
+    func testRemoveContextEntryFromParentAndChild() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")]
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            [
+                "k2": ConfidenceValue(string: "v2"),
+                "k1": ConfidenceValue(string: "v3"),
+            ]
+        )
+        confidenceChild.removeContextEntry(key: "k1")
+        let expected = [
+            "k2": ConfidenceValue(string: "v2")
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
+    }
+
+    func testRemoveContextEntryFromParentAndChildThenUpdate() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")]
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            [
+                "k2": ConfidenceValue(string: "v2"),
+                "k1": ConfidenceValue(string: "v3"),
+            ]
+        )
+        confidenceChild.removeContextEntry(key: "k1")
+        confidenceChild.updateContextEntry(key: "k1", value: ConfidenceValue(string: "v4"))
+        let expected = [
+            "k2": ConfidenceValue(string: "v2"),
+            "k1": ConfidenceValue(string: "v4"),
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
+    }
+
     func testClearContext() {
         let confidence = Confidence.init(
             clientSecret: "",
@@ -133,5 +195,26 @@ final class ConfidenceTests: XCTestCase {
         confidence.clearContext()
         let expected: ConfidenceStruct = [:]
         XCTAssertEqual(confidence.getContext(), expected)
+    }
+
+    func testClearContextReturnsParentContext() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")]
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            [
+                "k1": ConfidenceValue(string: "v1"),
+                "k2": ConfidenceValue(string: "v2")
+            ]
+        )
+        confidenceChild.clearContext()
+        let expected = [
+            "k1": ConfidenceValue(string: "v1")
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 }
