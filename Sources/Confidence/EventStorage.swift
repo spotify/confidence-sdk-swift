@@ -2,10 +2,10 @@ import Foundation
 import os
 
 internal protocol EventStorage {
-    func startNewBatch() throws
-    func writeEvent(event: Event) throws
-    func batchReadyFiles() throws -> [String]
-    func eventsFrom(id: String) throws -> [Event]
+    func startNewBatch()
+    func writeEvent(event: Event)
+    func batchReadyIds() -> [String]
+    func eventsFrom(id: String) -> [Event]
     func remove(id: String)
 }
 
@@ -23,23 +23,39 @@ internal class EventStorageImpl: EventStorage {
         fileURL = folderURL.appendingPathComponent("events-\(Date().currentTime)")
     }
 
-    func startNewBatch() throws {
+    func startNewBatch() {
         let urlString = "\(fileURL)"+"\(EventStorageImpl.READYTOSENDEXTENSION)"
         let newPath = URL(fileURLWithPath: urlString)
-        try FileManager.default.moveItem(at: fileURL, to: newPath)
+        do {
+            try FileManager.default.moveItem(at: fileURL, to: newPath)
+        } catch {
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+            "Error when trying to start a new batch: \(error)")
+        }
         fileURL = folderURL.appendingPathComponent("events-\(Date().currentTime)")
         currentBatch = []
     }
     
-    func writeEvent(event: Event) throws {
+    func writeEvent(event: Event) {
         currentBatch.append(event)
-        let data = try encoder.encode(currentBatch)
-        try data.write(to: fileURL, options: .atomic)
+        do {
+            let data = try encoder.encode(currentBatch)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+            "Error when trying to write to disk: \(error)")
+        }
     }
     
-    func batchReadyFiles() throws -> [String] {
+    func batchReadyIds() -> [String] {
         var readyFilesList: [String] = []
-        let directoryContents = try FileManager.default.contentsOfDirectory(atPath: folderURL.absoluteString)
+        var directoryContents: [String] = []
+        do {
+            directoryContents = try FileManager.default.contentsOfDirectory(atPath: folderURL.absoluteString)
+        } catch {
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+            "Error when trying to read contents of directory on disk: \(error)")
+        }
         for file in directoryContents {
             if file.hasSuffix(EventStorageImpl.READYTOSENDEXTENSION) {
                 readyFilesList.append(file)
@@ -48,10 +64,15 @@ internal class EventStorageImpl: EventStorage {
         return readyFilesList
     }
     
-    func eventsFrom(id: String) throws -> [Event] {
-        let currentData = try Data(contentsOf: fileURL)
-
-        let events = try decoder.decode([Event].self, from: currentData)
+    func eventsFrom(id: String) -> [Event] {
+        var events: [Event] = []
+        do {
+            let currentData = try Data(contentsOf: URL(string: id)!)
+            events = try decoder.decode([Event].self, from: currentData)
+        } catch {
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+            "Error when trying to get events at path: \(error)")
+        }
         return events
     }
 
@@ -59,7 +80,7 @@ internal class EventStorageImpl: EventStorage {
         do {
             try FileManager.default.removeItem(atPath: id)
         } catch {
-            Logger(subsystem: "com.confidence.eventstorage", category: "storage").error(
+            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
                 "Error when trying to delete an event batch: \(error)")
         }
     }
