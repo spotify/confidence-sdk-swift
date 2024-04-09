@@ -1,28 +1,45 @@
 import Foundation
 
 public class Confidence: ConfidenceEventSender {
-    public var context: ConfidenceStruct
+    private let parent: ConfidenceContextProvider?
+    private var context: ConfidenceStruct
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
+    private var removedContextKeys: Set<String> = Set()
 
-    init(
+    required public init(
         clientSecret: String,
         timeout: TimeInterval,
         region: ConfidenceRegion,
-        initializationStrategy: InitializationStrategy
+        initializationStrategy: InitializationStrategy,
+        context: ConfidenceStruct = [:],
+        parent: ConfidenceEventSender? = nil
     ) {
-        self.context = [:]
         self.clientSecret = clientSecret
         self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
+        self.context = context
+        self.parent = parent
     }
 
     // TODO: Implement actual event uploading to the backend
     public func send(definition: String, payload: ConfidenceStruct) {
         print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
+    }
+
+
+    public func getContext() -> ConfidenceStruct {
+        let parentContext = parent?.getContext() ?? [:]
+        var reconciledCtx = parentContext.filter {
+            !removedContextKeys.contains($0.key)
+        }
+        self.context.forEach { entry in
+            reconciledCtx.updateValue(entry.value, forKey: entry.key)
+        }
+        return reconciledCtx
     }
 
     public func updateContextEntry(key: String, value: ConfidenceValue) {
@@ -31,15 +48,17 @@ public class Confidence: ConfidenceEventSender {
 
     public func removeContextEntry(key: String) {
         context.removeValue(forKey: key)
+        removedContextKeys.insert(key)
     }
 
-    public func clearContext() {
-        context = [:]
-    }
-
-    // TODO: Implement creation of child instances
     public func withContext(_ context: ConfidenceStruct) -> Self {
-        return self
+        return Self.init(
+            clientSecret: clientSecret,
+            timeout: timeout,
+            region: region,
+            initializationStrategy: initializationStrategy,
+            context: context,
+            parent: self)
     }
 }
 
