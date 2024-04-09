@@ -20,26 +20,25 @@ internal class EventStorageImpl: EventStorage {
 
     init() throws {
         currentFolderURL = URL(fileURLWithPath: try EventStorageImpl.getFolderURL())
-        currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
+        currentFileURL = EventStorageImpl.latestWriteFile() ?? currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
     }
 
     func startNewBatch() {
-        let latestWriteFile = latestWriteFile()
-        if latestWriteFile != nil {
-            currentFileURL = latestWriteFile!
-            currentBatch = eventsFrom(id: latestWriteFile!.absoluteString)
+        guard let latestWriteFile = EventStorageImpl.latestWriteFile() else {
+            let urlString = "\(currentFileURL)\(EventStorageImpl.READYTOSENDEXTENSION)"
+            let newPath = URL(fileURLWithPath: urlString)
+            do {
+                try FileManager.default.moveItem(at: currentFileURL, to: newPath)
+            } catch {
+                Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
+                "Error when trying to start a new batch: \(error)")
+            }
+            currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
+            currentBatch = []
             return
         }
-        let urlString = "\(currentFileURL)"+"\(EventStorageImpl.READYTOSENDEXTENSION)"
-        let newPath = URL(fileURLWithPath: urlString)
-        do {
-            try FileManager.default.moveItem(at: currentFileURL, to: newPath)
-        } catch {
-            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
-            "Error when trying to start a new batch: \(error)")
-        }
-        currentFileURL = currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
-        currentBatch = []
+        currentFileURL = latestWriteFile
+        currentBatch = eventsFrom(id: latestWriteFile.absoluteString)
     }
     
     func writeEvent(event: Event) {
@@ -107,7 +106,7 @@ internal class EventStorageImpl: EventStorage {
         return nestedFolderURL
     }
 
-    private func latestWriteFile() -> URL? {
+    private static func latestWriteFile() -> URL? {
         var directoryContents: [String] = []
         do {
             directoryContents = try FileManager.default.contentsOfDirectory(atPath: EventStorageImpl.getFolderURL())
