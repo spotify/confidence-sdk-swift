@@ -2,8 +2,11 @@ import Foundation
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
-public class ConfidenceValue: Equatable, Encodable {
+public class ConfidenceValue: Equatable, Encodable, CustomStringConvertible {
     private let value: ConfidenceValueInternal
+    public var description: String {
+        return value.description
+    }
 
     public init(boolean: Bool) {
         self.value = .boolean(boolean)

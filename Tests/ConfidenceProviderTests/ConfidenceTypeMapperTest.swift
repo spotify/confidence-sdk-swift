@@ -34,7 +34,10 @@ class ValueConverterTest: XCTestCase {
                 "dateList": .list([.date(date1), .date(date2)]),
                 "nullList": .list([.null, .null]),
                 "listList": .list([.list([.string("nested_value1")]), .list([.string("nested_value2")])]),
-                "structList": .list([.structure(["test": .string("nested_test1")]), .structure(["test": .string("nested_test2")])])
+                "structList": .list([
+                    .structure(["test": .string("nested_test1")]),
+                    .structure(["test": .string("nested_test2")])
+                ])
             ])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [

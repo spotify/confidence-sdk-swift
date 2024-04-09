@@ -1,6 +1,7 @@
 // swiftlint:disable type_body_length
 // swiftlint:disable file_length
 import Foundation
+import Confidence
 import OpenFeature
 import XCTest
 
@@ -896,6 +897,57 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "treatment")
             XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
             XCTAssertEqual(evaluation.value, 5)
+        }
+    }
+
+    func testConfidenceContextOnInitialize() throws {
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        withExtendedLifetime(
+            provider.observe().sink { event in
+                if event == .ready {
+                    self.readyExpectation.fulfill()
+                }
+            })
+        {
+            provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+            wait(for: [readyExpectation], timeout: 5)
+            let context = confidence.context
+            let expected = [
+                "open_feature": ConfidenceValue(structure: ["targeting_key": ConfidenceValue(string: "user1")])
+            ]
+            XCTAssertEqual(context, expected)
+        }
+    }
+
+    func testConfidenceContextOnContextChange() throws {
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        let readyExpectation = self.expectation(description: "Waiting for init and ctx change to complete")
+        readyExpectation.expectedFulfillmentCount = 2
+
+        withExtendedLifetime(
+            provider.observe().sink { event in
+                if event == .ready {
+                    readyExpectation.fulfill()
+                }
+            })
+        {
+            let ctx1 = MutableContext(targetingKey: "user1")
+            let ctx2 = MutableContext(targetingKey: "user1", structure: MutableStructure(attributes: ["active": Value.boolean(true)]))
+            provider.initialize(initialContext: ctx1)
+            provider.onContextSet(oldContext: ctx1, newContext: ctx2)
+            wait(for: [readyExpectation], timeout: 5)
+            let context = confidence.context
+            let expected = [
+                "open_feature": ConfidenceValue(structure: [
+                    "targeting_key": ConfidenceValue(string: "user1"),
+                    "active": ConfidenceValue(boolean: true)
+                ])
+            ]
+            XCTAssertEqual(context, expected)
         }
     }
 }
