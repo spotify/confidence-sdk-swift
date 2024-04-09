@@ -1,4 +1,5 @@
 import Foundation
+import Confidence
 import OpenFeature
 
 public class LocalStorageResolver: Resolver {

@@ -1,4 +1,5 @@
 import Foundation
+import Confidence
 import OpenFeature
 
 extension HTTPURLResponse {

@@ -36,7 +36,7 @@ extension ConfidenceDemoApp {
         let ctx = MutableContext(targetingKey: UUID.init().uuidString, structure: MutableStructure())
         Task {
             await OpenFeatureAPI.shared.setProviderAndWait(provider: provider, initialContext: ctx)
-            confidence.send(eventName: "my_event")
+            confidence.send(definition: "my_event", payload: ConfidenceStruct())
         }
     }
 }
