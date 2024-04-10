@@ -48,6 +48,7 @@ internal class EventStorageImpl: EventStorage {
         guard let delimiter else {
             return
         }
+        currentFileHandle.seekToEndOfFile()
         try currentFileHandle.write(contentsOf: delimiter)
         try currentFileHandle.write(contentsOf: serialied)
     }
