@@ -19,8 +19,8 @@ internal class EventStorageImpl: EventStorage {
     private var currentBatch: [Event] = []
 
     init() throws {
-        currentFolderURL = URL(fileURLWithPath: try EventStorageImpl.getFolderURL())
-        currentFileURL = EventStorageImpl.latestWriteFile() ?? currentFolderURL.appendingPathComponent("events-\(Date().currentTime)")
+        currentFolderURL = URL(fileURLWithPath: try getFolderURL())
+        currentFileURL = getOrCreatelatestWriteFile(inFolder: currentFolderURL)
     }
 
     func startNewBatch() {
@@ -86,7 +86,7 @@ internal class EventStorageImpl: EventStorage {
         }
     }
 
-    private static func getFolderURL() throws -> String {
+    private func getFolderURL() throws -> String {
         let rootFolderURL = try FileManager.default.url(
             for: .cachesDirectory,
             in: .userDomainMask,
@@ -95,27 +95,39 @@ internal class EventStorageImpl: EventStorage {
         )
         var nestedFolderURL: String
         if #available(iOS 16.0, *) {
-            nestedFolderURL = rootFolderURL.appending(path: DIRECTORY).absoluteString
+            nestedFolderURL = rootFolderURL.appending(path: EventStorageImpl.DIRECTORY).absoluteString
         } else {
-            nestedFolderURL = rootFolderURL.appendingPathComponent(DIRECTORY, isDirectory: true).absoluteString
+            nestedFolderURL = rootFolderURL.appendingPathComponent(EventStorageImpl.DIRECTORY, isDirectory: true).absoluteString
+        }
+        if !FileManager.default.fileExists(atPath: nestedFolderURL) {
+            do {
+                try FileManager.default.createDirectory(
+                    atPath: nestedFolderURL,
+                    withIntermediateDirectories: true,
+                    attributes: nil)
+            } catch {
+                print(error.localizedDescription)
+            }
         }
         return nestedFolderURL
     }
 
-    private static func latestWriteFile() -> URL? {
+    private func getOrCreatelatestWriteFile(inFolder: URL) -> URL {
         var directoryContents: [String] = []
         do {
-            directoryContents = try FileManager.default.contentsOfDirectory(atPath: EventStorageImpl.getFolderURL())
+            directoryContents = try FileManager.default.contentsOfDirectory(atPath: inFolder.absoluteString)
         } catch {
             Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
-            "Error when trying to read contents of directory on disk: \(error)")
+            "No previous batch file found \(error)")
         }
         for file in directoryContents {
             if !file.hasSuffix(EventStorageImpl.READYTOSENDEXTENSION) {
-                return URL(string: file)
+                return URL(string: file)!
             }
         }
-        return nil
+        let newFileURL = inFolder.appendingPathComponent("events-\(Date().currentTime)")
+        FileManager.default.createFile(atPath: newFileURL.absoluteString, contents: nil)
+        return newFileURL
     }
 }
 
@@ -131,7 +143,7 @@ struct Event: Codable {
 extension Date {
     var currentTime: String {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .short
+        dateFormatter.dateStyle = .long
         return dateFormatter.string(from: self)
     }
 }
