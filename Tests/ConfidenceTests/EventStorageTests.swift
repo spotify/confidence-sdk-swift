@@ -8,10 +8,12 @@ class EventStorageTest: XCTestCase {
     func testCreateNewBatch() throws {
         let eventStorage = try EventStorageImpl()
         try eventStorage.writeEvent(event: Event(eventDefinition: "some event", eventTime: Date().self, payload: ["pants"], context: ["pants context"]))
+        try eventStorage.writeEvent(event: Event(eventDefinition: "some event 2", eventTime: Date().self, payload: ["pants"], context: ["pants context"]))
         try eventStorage.startNewBatch()
         try XCTAssertEqual(eventStorage.batchReadyIds().count, 1)
         let events = try eventStorage.eventsFrom(id: try eventStorage.batchReadyIds()[0])
-        try XCTAssertEqual(events[0].eventDefinition, "some event")
+        XCTAssertEqual(events[0].eventDefinition, "some event")
+        XCTAssertEqual(events[1].eventDefinition, "some event 2")
     }
 
     func testContinueWritingToOldBatch() {
