@@ -1,10 +1,10 @@
 import Foundation
 
-extension URL {
+public extension URL {
     struct Backport {
         var base: URL
 
-        init(base: URL) {
+        public init(base: URL) {
             self.base = base
         }
     }
@@ -14,7 +14,7 @@ extension URL {
     }
 }
 
-extension URL.Backport {
+public extension URL.Backport {
     var path: String {
         if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
             return self.base.path(percentEncoded: false)
@@ -36,14 +36,14 @@ extension URL.Backport {
     }
 }
 
-extension Date {
+public extension Date {
     struct Backport {
     }
 
     static var backport: Backport.Type { Backport.self }
 }
 
-extension Date.Backport {
+public extension Date.Backport {
     static var now: Date {
         if #available(macOS 12, iOS 15, tvOS 15, watchOS 8, *) {
             return Date.now
@@ -60,7 +60,7 @@ extension Date.Backport {
         }
     }
 
-    static public func toISOString(date: Date) -> String {
+    static func toISOString(date: Date) -> String {
         if #available(macOS 12, iOS 15, tvOS 15, watchOS 8, *) {
             return date.ISO8601Format()
         } else {
