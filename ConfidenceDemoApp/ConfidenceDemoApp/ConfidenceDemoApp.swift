@@ -28,6 +28,7 @@ extension ConfidenceDemoApp {
         }
 
         let confidence = Confidence.Builder(clientSecret: secret)
+            .withRegion(region: .europe)
             .withInitializationstrategy(initializationStrategy: initializationStrategy)
             .build()
         let provider = ConfidenceFeatureProvider(confidence: confidence)
@@ -39,8 +40,8 @@ extension ConfidenceDemoApp {
         Task {
             await OpenFeatureAPI.shared.setProviderAndWait(provider: provider, initialContext: ctx)
             confidence.send(
-                definition: "my_event",
-                payload: ["my_string_field": ConfidenceValue(string: "hello_from_world")])
+                definition: "abcd",
+                payload: ["my_key": ConfidenceValue(string: "hello_from_world")])
         }
     }
 }
