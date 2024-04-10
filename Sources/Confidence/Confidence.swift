@@ -8,6 +8,7 @@ public class Confidence: ConfidenceEventSender {
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
     private var removedContextKeys: Set<String> = Set()
+    private var client: ConfidenceClient
 
     required public init(
         clientSecret: String,
@@ -15,6 +16,7 @@ public class Confidence: ConfidenceEventSender {
         region: ConfidenceRegion,
         initializationStrategy: InitializationStrategy,
         context: ConfidenceStruct = [:],
+        client: ConfidenceClient,
         parent: ConfidenceEventSender? = nil
     ) {
         self.clientSecret = clientSecret
@@ -22,12 +24,16 @@ public class Confidence: ConfidenceEventSender {
         self.region = region
         self.initializationStrategy = initializationStrategy
         self.context = context
+        self.client = client
         self.parent = parent
     }
 
     // TODO: Implement actual event uploading to the backend
     public func send(definition: String, payload: ConfidenceStruct) {
         print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
+        Task {
+            try? await client.send(definition: definition, payload: payload)
+        }
     }
 
 
@@ -58,6 +64,7 @@ public class Confidence: ConfidenceEventSender {
             region: region,
             initializationStrategy: initializationStrategy,
             context: context,
+            client: client,
             parent: self)
     }
 }
@@ -94,7 +101,13 @@ extension Confidence {
                 clientSecret: clientSecret,
                 timeout: timeout,
                 region: region,
-                initializationStrategy: initializationStrategy
+                initializationStrategy: initializationStrategy,
+                client: RemoteConfidenceClient(
+                    options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret), region: region),
+                    metadata: ConfidenceMetadata(
+                        name: "SDK_ID_SWIFT_CONFIDENCE",
+                        version: "0.1.4") // x-release-please-version
+                )
             )
         }
     }
