@@ -35,8 +35,8 @@ final class EventSenderEngineTest: XCTestCase {
 
         var events: [Event] = []
         for i in 0..<5 {
-            events.append(Event(name: "\(i)"))
-            eventSenderEngine.send(name: "\(i)")
+            events.append(Event(name: "\(i)", payload: [:]))
+            eventSenderEngine.send(name: "\(i)", message: [:])
         }
 
         let expectedRequest = EventBatchRequest(clientSecret: "CLIENT_SECRET", sendTime: Date(), events: events)
@@ -45,7 +45,7 @@ final class EventSenderEngineTest: XCTestCase {
         XCTAssertTrue(uploadRequest.events == expectedRequest.events)
 
         uploader.reset()
-        eventSenderEngine.send(name: "Hello")
+        eventSenderEngine.send(name: "Hello", message: [:])
         XCTAssertNil(uploader.calledRequest)
     }
 }

@@ -26,7 +26,7 @@ protocol EventSenderEngine {
 }
 
 final class EventSenderEngineImpl: EventSenderEngine {
-    private let SEND_SIG: String = "FLUSH"
+    private static let sendSignalName: String = "FLUSH"
     private let storage: any EventStorage
     private let writeReqChannel = PassthroughSubject<Event, Never>()
     private let uploadReqChannel = PassthroughSubject<String, Never>()
@@ -61,7 +61,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
             let shouldFlush = self.flushPolicies.contains(where: { policy in policy.shouldFlush() })
 
             if shouldFlush {
-                self.uploadReqChannel.send(self.SEND_SIG)
+                self.uploadReqChannel.send(EventSenderEngineImpl.sendSignalName)
                 self.flushPolicies.forEach({ policy in policy.reset() })
             }
 
