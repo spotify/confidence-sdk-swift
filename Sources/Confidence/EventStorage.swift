@@ -34,6 +34,7 @@ internal class EventStorageImpl: EventStorage {
             return
         }
 
+        try currentFileHandle?.close()
         try FileManager.default.moveItem(at: currentFileName, to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
         try resetCurrentFile()
     }
