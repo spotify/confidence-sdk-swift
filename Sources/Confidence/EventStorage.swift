@@ -20,7 +20,6 @@ internal class EventStorageImpl: EventStorage {
 
     init() throws {
         self.folderURL = try EventStorageImpl.getFolderURL()
-        try FileManager.default.removeItem(at: folderURL)
         if(!FileManager.default.fileExists(atPath: folderURL.backport.path)) {
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
         }
@@ -94,14 +93,14 @@ internal class EventStorageImpl: EventStorage {
             self.currentFileUrl = currentFile
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
-            let fileUrl = folderURL.appendingPathComponent(Date().currentTime)
+            let fileUrl = folderURL.appendingPathComponent(String(Date().timeIntervalSince1970))
             FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
             self.currentFileUrl = fileUrl
             self.currentFileHandle = try FileHandle(forWritingTo: fileUrl)
         }
     }
 
-    private static func getFolderURL() throws -> URL {
+    internal static func getFolderURL() throws -> URL {
         guard
             let applicationSupportUrl: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
                 .last
