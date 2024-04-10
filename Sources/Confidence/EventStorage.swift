@@ -54,28 +54,6 @@ internal class EventStorageImpl: EventStorage {
         try currentFileHandle.write(contentsOf: serialied)
     }
 
-    private func currentWritingFile() throws -> URL? {
-        let files = try FileManager.default.contentsOfDirectory(at: getFolderURL(), includingPropertiesForKeys: nil)
-        for fileUrl in files {
-            if fileUrl.pathExtension != READYTOSENDEXTENSION {
-                return fileUrl
-            }
-        }
-        return nil
-    }
-
-    private func resetCurrentFile() throws {
-        if let currentFile = try currentWritingFile() {
-            self.currentFileUrl = currentFile
-            self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
-        } else {
-            let fileUrl = try getFolderURL().appendingPathComponent(Date().currentTime)
-            FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
-            self.currentFileUrl = fileUrl
-            self.currentFileHandle = try FileHandle(forWritingTo: fileUrl)
-        }
-    }
-
 
     func batchReadyIds() throws -> [String]{
         let folderUrl = try FileManager.default.contentsOfDirectory(at: getFolderURL(), includingPropertiesForKeys: nil)
@@ -99,6 +77,28 @@ internal class EventStorageImpl: EventStorage {
         } catch {
             Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
                 "Error when trying to delete an event batch: \(error)")
+        }
+    }
+
+    private func currentWritingFile() throws -> URL? {
+        let files = try FileManager.default.contentsOfDirectory(at: getFolderURL(), includingPropertiesForKeys: nil)
+        for fileUrl in files {
+            if fileUrl.pathExtension != READYTOSENDEXTENSION {
+                return fileUrl
+            }
+        }
+        return nil
+    }
+
+    private func resetCurrentFile() throws {
+        if let currentFile = try currentWritingFile() {
+            self.currentFileUrl = currentFile
+            self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
+        } else {
+            let fileUrl = try getFolderURL().appendingPathComponent(Date().currentTime)
+            FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
+            self.currentFileUrl = fileUrl
+            self.currentFileHandle = try FileHandle(forWritingTo: fileUrl)
         }
     }
 
