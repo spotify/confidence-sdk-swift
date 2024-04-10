@@ -35,6 +35,13 @@ class EventStorageTest: XCTestCase {
     func testRemoveFile() {
         
     }
+
+    override func setUp() {
+        let folderURL = try! EventStorageImpl.getFolderURL()
+        if FileManager.default.fileExists(atPath: folderURL.path) {
+            try! FileManager.default.removeItem(at: folderURL)
+        }
+    }
 }
 
 
