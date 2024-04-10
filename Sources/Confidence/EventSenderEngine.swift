@@ -5,8 +5,9 @@ protocol EventsUploader {
     func upload(request: EventBatchRequest) -> Bool
 }
 
-struct Event: Codable, Equatable {
+struct Event: Encodable, Equatable {
     let name: String
+    let payload: [String: ConfidenceValue]
 }
 
 protocol FlushPolicy {
@@ -20,7 +21,7 @@ protocol Clock {
 }
 
 protocol EventSenderEngine {
-    func send(name: String)
+    func send(name: String, message: [String: ConfidenceValue])
     func shutdown()
 }
 
@@ -60,21 +61,22 @@ final class EventSenderEngineImpl: EventSenderEngine {
             let shouldFlush = self.flushPolicies.contains(where: { policy in policy.shouldFlush() })
 
             if shouldFlush {
-                uploadReqChannel.send(SEND_SIG)
+                self.uploadReqChannel.send(self.SEND_SIG)
                 self.flushPolicies.forEach({ policy in policy.reset() })
             }
 
         }).store(in: &cancellables)
 
-        uploadReqChannel.sink(receiveValue: { _ in
+        uploadReqChannel.sink(receiveValue: { [weak self] _ in
             do {
-                try storage.startNewBatch()
+                guard let self = self else { return }
+                try self.storage.startNewBatch()
                 let ids = storage.batchReadyIds()
                 for id in ids {
-                    let events = try storage.eventsFrom(id: id)
+                    let events = try self.storage.eventsFrom(id: id)
                     let batchRequest = EventBatchRequest(
                         clientSecret: clientSecret, sendTime: clock.now(), events: events)
-                    let shouldCleanup = uploader.upload(request: batchRequest)
+                    let shouldCleanup = self.uploader.upload(request: batchRequest)
                     if shouldCleanup {
                         try storage.remove(id: id)
                     }
@@ -85,8 +87,8 @@ final class EventSenderEngineImpl: EventSenderEngine {
         }).store(in: &cancellables)
     }
 
-    func send(name: String) {
-        writeReqChannel.send(Event(name: name))
+    func send(name: String, message: [String: ConfidenceValue]) {
+        writeReqChannel.send(Event(name: name, payload: message))
     }
 
     func shutdown() {
