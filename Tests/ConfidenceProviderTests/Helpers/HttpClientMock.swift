@@ -1,12 +1,13 @@
 import Foundation
+import Confidence
 import XCTest
 
-@testable import ConfidenceProvider
+@testable import Confidence
 
 final class HttpClientMock: HttpClient {
     var testMode: TestMode
     var postCallCounter = 0
-    var data: [Codable]?
+    var data: [Encodable]?
     var expectation: XCTestExpectation?
 
     enum TestMode {
@@ -19,13 +20,13 @@ final class HttpClientMock: HttpClient {
         self.testMode = testMode
     }
 
-    func post<T>(path: String, data: Codable) async throws -> ConfidenceProvider.HttpClientResult<T> where T: Decodable {
+    func post<T>(path: String, data: Encodable) async throws -> HttpClientResult<T> where T : Decodable {
         try handlePost(path: path, data: data)
     }
 
     private func handlePost<T>(
-        path: String, data: Codable
-    ) throws -> ConfidenceProvider.HttpClientResult<T> where T: Decodable {
+        path: String, data: Encodable
+    ) throws -> HttpClientResult<T> where T: Decodable {
         defer {
             expectation?.fulfill()
         }

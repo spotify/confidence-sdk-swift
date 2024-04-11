@@ -3,7 +3,7 @@ import Confidence
 import OpenFeature
 
 
-public class RemoteConfidenceClient: ConfidenceClient {
+public class RemoteConfidenceClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private let flagApplier: FlagApplier
     private var options: ConfidenceClientOptions
@@ -11,6 +11,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
+    private var baseUrl: String
 
     init(
         options: ConfidenceClientOptions,
@@ -20,10 +21,18 @@ public class RemoteConfidenceClient: ConfidenceClient {
         metadata: ConfidenceMetadata
     ) {
         self.options = options
-        self.httpClient = NetworkClient(session: session, region: options.region)
         self.flagApplier = flagApplier
         self.applyOnResolve = applyOnResolve
         self.metadata = metadata
+        switch options.region {
+        case .global:
+            self.baseUrl = "https://resolver.confidence.dev/v1/flags"
+        case .europe:
+            self.baseUrl = "https://resolver.eu.confidence.dev/v1/flags"
+        case .usa:
+            self.baseUrl = "https://resolver.us.confidence.dev/v1/flags"
+        }
+        self.httpClient = NetworkClient(session: session, baseUrl: baseUrl)
     }
 
     // MARK: Resolver

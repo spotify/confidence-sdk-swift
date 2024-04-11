@@ -1,24 +1,29 @@
 import Foundation
 
-typealias HttpClientResult<T> = Result<HttpClientResponse<T>, Error>
+public typealias HttpClientResult<T> = Result<HttpClientResponse<T>, Error>
 
-protocol HttpClient {
+public protocol HttpClient {
     func post<T: Decodable>(path: String, data: Encodable) async throws -> HttpClientResult<T>
 }
 
-struct HttpClientResponse<T> {
-    var decodedData: T?
-    var decodedError: HttpError?
-    var response: HTTPURLResponse
+public struct HttpClientResponse<T> {
+    public var decodedData: T?
+    public var decodedError: HttpError?
+    public var response: HTTPURLResponse
 }
 
-struct HttpError: Codable {
-    var code: Int
-    var message: String
-    var details: [String]
+public struct HttpError: Codable {
+    public init(code: Int, message: String, details: [String]) {
+        self.code = code
+        self.message = message
+        self.details = details
+    }
+    public var code: Int
+    public var message: String
+    public var details: [String]
 }
 
-enum HttpClientError: Error {
+public enum HttpClientError: Error {
     case invalidResponse
     case internalError
 }

@@ -15,7 +15,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private var resolver: Resolver
-    private let client: ConfidenceClient
+    private let client: ConfidenceResolveClient
     private var cache: ProviderCache
     private var overrides: [String: LocalOverride]
     private let flagApplier: FlagApplier
@@ -57,8 +57,17 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.cache = InMemoryProviderCache.from(storage: DefaultStorage.resolverFlagsCache())
         self.storage = DefaultStorage.resolverFlagsCache()
         self.resolver = LocalStorageResolver(cache: cache)
+        let baseUrl: String
+        switch options.region {
+        case .global:
+            baseUrl = "https://resolver.confidence.dev/v1/flags"
+        case .europe:
+            baseUrl = "https://resolver.eu.confidence.dev/v1/flags"
+        case .usa:
+            baseUrl = "https://resolver.us.confidence.dev/v1/flags"
+        }
         self.flagApplier = FlagApplierWithRetries(
-            httpClient: NetworkClient(region: options.region),
+            httpClient: NetworkClient(baseUrl: baseUrl),
             storage: DefaultStorage.applierFlagsCache(),
             options: options,
             metadata: metadata)
@@ -608,10 +617,19 @@ extension ConfidenceFeatureProvider {
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
+            let baseUrl: String
+            switch options.region {
+            case .global:
+                baseUrl = "https://resolver.confidence.dev/v1/flags"
+            case .europe:
+                baseUrl = "https://resolver.eu.confidence.dev/v1/flags"
+            case .usa:
+                baseUrl = "https://resolver.us.confidence.dev/v1/flags"
+            }
             let flagApplier =
             flagApplier
             ?? FlagApplierWithRetries(
-                httpClient: NetworkClient(region: options.region),
+                httpClient: NetworkClient(baseUrl: baseUrl),
                 storage: DefaultStorage.applierFlagsCache(),
                 options: options,
                 metadata: metadata

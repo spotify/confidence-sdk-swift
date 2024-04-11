@@ -1,15 +1,13 @@
 import Foundation
 
-final class NetworkClient: HttpClient {
+final public class NetworkClient: HttpClient {
     private let headers: [String: String]
     private let retry: Retry
     private let timeout: TimeInterval
     private let session: URLSession
     private let baseUrl: String
 
-
-
-    init(
+    public init(
         session: URLSession? = nil,
         baseUrl: String,
         defaultHeaders: [String: String] = [:],
@@ -32,7 +30,7 @@ final class NetworkClient: HttpClient {
         self.baseUrl = baseUrl
     }
 
-    func post<T: Decodable>(
+    public func post<T: Decodable>(
         path: String,
         data: Encodable
     ) async throws -> HttpClientResult<T> {

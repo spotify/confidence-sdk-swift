@@ -1,6 +1,6 @@
 import Foundation
 
-enum Retry {
+public enum Retry {
     case none
     case exponential(maxBackoff: TimeInterval, maxAttempts: UInt)
 
@@ -14,11 +14,11 @@ enum Retry {
     }
 }
 
-protocol RetryHandler {
+public protocol RetryHandler {
     func retryIn() -> TimeInterval?
 }
 
-class ExponentialBackoffRetryHandler: RetryHandler {
+public class ExponentialBackoffRetryHandler: RetryHandler {
     private var currentAttempts: UInt = 0
     private let maxBackoff: TimeInterval
     private let maxAttempts: UInt
@@ -28,7 +28,7 @@ class ExponentialBackoffRetryHandler: RetryHandler {
         self.maxAttempts = maxAttempts
     }
 
-    func retryIn() -> TimeInterval? {
+    public func retryIn() -> TimeInterval? {
         if currentAttempts >= maxAttempts {
             return nil
         }
@@ -40,8 +40,8 @@ class ExponentialBackoffRetryHandler: RetryHandler {
     }
 }
 
-class NoneRetryHandler: RetryHandler {
-    func retryIn() -> TimeInterval? {
+public class NoneRetryHandler: RetryHandler {
+    public func retryIn() -> TimeInterval? {
         return nil
     }
 }

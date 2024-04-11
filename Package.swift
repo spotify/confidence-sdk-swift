@@ -43,7 +43,7 @@ let package = Package(
         .testTarget(
             name: "ConfidenceTests",
             dependencies: [
-                "Confidence"
+                "Confidence",
             ]
         ),
     ]

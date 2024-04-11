@@ -1,9 +1,10 @@
 import Foundation
+import Confidence
 import OpenFeature
 
 @testable import ConfidenceProvider
 
-class ClientMock: ConfidenceClient {
+class ClientMock: ConfidenceResolveClient {
     var applyCount = 0
     var batchApplyCount = 0
     var testMode: TestMode
