@@ -18,8 +18,8 @@ public enum TypeMapper {
     static func from(
         object: NetworkStruct, schema: StructFlagSchema
     )
-        throws
-        -> Value
+    throws
+    -> Value
     {
         return .structure(
             Dictionary(
@@ -35,9 +35,9 @@ public enum TypeMapper {
         case .string(let value):
             return NetworkStructValue.string(value)
         case .integer(let value):
-            return NetworkStructValue.integer(value)
+            return NetworkStructValue.number(Double(value))
         case .double(let value):
-            return NetworkStructValue.double(value)
+            return NetworkStructValue.number(value)
         case .date(let value):
             return NetworkStructValue.timestamp(value)
         case .list(let values):
@@ -60,9 +60,7 @@ public enum TypeMapper {
         switch structValue {
         case .null:
             return .null
-        case .integer(let value):
-            return .integer(value)
-        case .double(let value):
+        case .number(let value):
             switch fieldType {
             case .intSchema:
                 return .integer(Int64(value))
@@ -80,11 +78,12 @@ public enum TypeMapper {
                 throw OpenFeatureError.parseError(message: "Error converting date data")
             }
             return .date(timestamp)
+        case .timestamp(let value):
+            return .date(value)
         case .structure(let mapValue):
             guard case .structSchema(let structSchema) = fieldType else {
                 throw OpenFeatureError.parseError(message: "Field is struct in schema but something else in value")
             }
-
             return .structure(
                 Dictionary(
                     uniqueKeysWithValues: try mapValue.fields.map { field, fieldValue in
@@ -100,12 +99,6 @@ public enum TypeMapper {
                     try convertStructValueToValue(fieldValue, schema: listSchema)
                 }
             )
-        case .integer(let value):
-            return .integer(value)
-        case .double(let value):
-            return .double(value)
-        case .timestamp(let value):
-            return .date(value)
         }
     }
 }

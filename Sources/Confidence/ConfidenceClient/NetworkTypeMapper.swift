@@ -23,12 +23,12 @@ public enum NetworkTypeMapper {
             guard let value = value.asInteger() else {
                 return nil
             }
-            return NetworkStructValue.integer(value)
+            return NetworkStructValue.number(Double(value))
         case .double:
             guard let value = value.asDouble() else {
                 return nil
             }
-            return NetworkStructValue.double(value)
+            return NetworkStructValue.number(value)
         case .date:
             guard let value = value.asDateComponents() else {
                 return nil

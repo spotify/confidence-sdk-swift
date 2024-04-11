@@ -9,9 +9,8 @@ public struct NetworkStruct: Equatable {
 
 public enum NetworkStructValue: Equatable {
     case null
-    case integer(Int64)
     case string(String)
-    case double(Double)
+    case number(Double)
     case boolean(Bool)
     case date(DateComponents)
     case timestamp(Date)
@@ -20,16 +19,13 @@ public enum NetworkStructValue: Equatable {
 }
 
 extension NetworkStructValue: Codable {
-    // swiftlint:disable:next cyclomatic_complexity
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
         switch self {
         case .null:
             try container.encodeNil()
-        case .integer(let integer):
-            try container.encode(integer)
-        case .double(let double):
+        case .number(let double):
             try container.encode(double)
         case .string(let string):
             try container.encode(string)
@@ -61,7 +57,7 @@ extension NetworkStructValue: Codable {
         if container.decodeNil() {
             self = .null
         } else if let double = try? container.decode(Double.self) {
-            self = .double(double)
+            self = .number(double)
         } else if let string = try? container.decode(String.self) {
             self = .string(string)
         } else if let bool = try? container.decode(Bool.self) {
