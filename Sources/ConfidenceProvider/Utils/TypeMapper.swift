@@ -31,7 +31,7 @@ public enum TypeMapper {
     static private func convertValueToStructValue(_ value: Value) -> StructValue? {
         switch value {
         case .boolean(let value):
-            return StructValue.bool(value)
+            return StructValue.boolean(value)
         case .string(let value):
             return StructValue.string(value)
         case .integer(let value):
@@ -39,11 +39,11 @@ public enum TypeMapper {
         case .double(let value):
             return StructValue.number(value)
         case .date(let value):
-            return StructValue.date(value)
+            return StructValue.timestamp(value)
         case .list(let values):
             return .list(values.compactMap(convertValueToStructValue))
         case .structure(let values):
-            return .object(Struct(fields: values.compactMapValues(convertValueToStructValue)))
+            return .structure(Struct(fields: values.compactMapValues(convertValueToStructValue)))
         case .null:
             return StructValue.null
         }
@@ -71,11 +71,14 @@ public enum TypeMapper {
             }
         case .string(let value):
             return .string(value)
-        case .bool(let value):
+        case .boolean(let value):
             return .boolean(value)
         case .date(let value):
-            return .date(value)
-        case .object(let mapValue):
+            guard let timestamp = Calendar.current.date(from: value) else {
+                throw OpenFeatureError.parseError(message: "Error converting date data")
+            }
+            return .date(timestamp)
+        case .structure(let mapValue):
             guard case .structSchema(let structSchema) = fieldType else {
                 throw OpenFeatureError.parseError(message: "Field is struct in schema but something else in value")
             }
@@ -95,6 +98,12 @@ public enum TypeMapper {
                     try convertStructValueToValue(fieldValue, schema: listSchema)
                 }
             )
+        case .integer(let value):
+            return .integer(value)
+        case .double(let value):
+            return .double(value)
+        case .timestamp(let value):
+            return .date(value)
         }
     }
 }

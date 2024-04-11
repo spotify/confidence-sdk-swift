@@ -79,7 +79,7 @@ struct PublishEventRequest: Encodable {
 
 struct Event: Encodable {
     var eventDefinition: String
-    var payload: ConfidenceStruct
+    var payload: Struct
     var eventTime: String
 }
 

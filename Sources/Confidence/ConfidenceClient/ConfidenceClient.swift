@@ -1,4 +1,5 @@
 import Foundation
+import Common
 
 public protocol ConfidenceClient {
     func upload(batch: [ConfidenceClientEvent]) async throws
@@ -6,5 +7,5 @@ public protocol ConfidenceClient {
 
 public struct ConfidenceClientEvent {
     var definition: String
-    var payload: ConfidenceStruct
+    var payload: Struct
 }

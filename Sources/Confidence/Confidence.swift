@@ -33,7 +33,7 @@ public class Confidence: ConfidenceEventSender {
         Task {
             // TODO: This will be called inside the EventSenderEngine once implemented
             try? await client.upload(batch: [
-                ConfidenceClientEvent(definition: definition, payload: payload)
+                ConfidenceClientEvent(definition: definition, payload: NetworkTypeMapper.from(value: payload))
             ])
         }
     }
