@@ -1,5 +1,6 @@
 import Foundation
 import Common
+import os
 
 public class RemoteConfidenceClient: ConfidenceClient {
     private var options: ConfidenceClientOptions
@@ -26,10 +27,17 @@ public class RemoteConfidenceClient: ConfidenceClient {
     }
 
     public func send(definition: String, payload: ConfidenceStruct) async throws {
+        let timeString = Date.backport.nowISOString
         let request = PublishEventRequest(
-            eventDefinition: definition,
-            payload: payload,
+            events: [
+                Event(
+                    eventDefinition: "eventDefinitions/\(definition)",
+                    payload: payload,
+                    eventTime: timeString
+                )
+            ],
             clientSecret: options.credentials.getSecret(),
+            sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
 
@@ -40,6 +48,11 @@ public class RemoteConfidenceClient: ConfidenceClient {
             case .success(let successData):
                 guard successData.response.status == .ok else {
                     throw successData.response.mapStatusToError(error: successData.decodedError)
+                }
+                let indexedErrorsCount = successData.decodedData?.errors.count ?? 0
+                if indexedErrorsCount > 0 {
+                    Logger(subsystem: "com.confidence.client", category: "network").error(
+                        "Backend reported errors for \(indexedErrorsCount) event(s) in batch")
                 }
                 return
             case .failure(let errorData):
@@ -58,14 +71,35 @@ public class RemoteConfidenceClient: ConfidenceClient {
 }
 
 struct PublishEventRequest: Encodable {
-    var eventDefinition: String
-    var payload: ConfidenceStruct
+    var events: [Event]
     var clientSecret: String
+    var sendTime: String
     var sdk: Sdk
 }
 
-struct PublishEventResponse: Codable {
+struct Event: Encodable {
+    var eventDefinition: String
+    var payload: ConfidenceStruct
+    var eventTime: String
 }
+
+struct PublishEventResponse: Decodable {
+    var errors: [EventError]
+}
+
+struct EventError: Decodable {
+    var index: Int
+    var reason: Reason
+    var message: String
+
+    enum Reason: String, Decodable, CaseIterableDefaultsLast {
+        case unspecified = "REASON_UNSPECIFIED"
+        case eventDefinitionNotFound = "EVENT_DEFINITION_NOT_FOUND"
+        case eventSchemaValidationFailed = "EVENT_SCHEMA_VALIDATION_FAILED"
+        case unknown
+    }
+}
+
 
 struct Sdk: Encodable {
     init(id: String?, version: String?) {

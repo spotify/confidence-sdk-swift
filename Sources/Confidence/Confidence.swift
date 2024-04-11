@@ -103,7 +103,9 @@ extension Confidence {
                 region: region,
                 initializationStrategy: initializationStrategy,
                 client: RemoteConfidenceClient(
-                    options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret), region: region),
+                    options: ConfidenceClientOptions(
+                        credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
+                        region: region),
                     metadata: ConfidenceMetadata(
                         name: "SDK_ID_SWIFT_CONFIDENCE",
                         version: "0.1.4") // x-release-please-version
