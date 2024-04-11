@@ -87,7 +87,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             resolveReason: convert(resolveReason: resolvedFlag.reason))
     }
 
-    private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> Struct {
+    private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> NetworkStruct {
         var evaluationContext = TypeMapper.from(value: ctx)
         evaluationContext.fields[targetingKey] = .string(ctx.getTargetingKey())
         return evaluationContext
@@ -114,7 +114,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
 
 struct ResolveFlagsRequest: Codable {
     var flags: [String]
-    var evaluationContext: Struct
+    var evaluationContext: NetworkStruct
     var clientSecret: String
     var apply: Bool
     var sdk: Sdk
@@ -127,7 +127,7 @@ struct ResolveFlagsResponse: Codable {
 
 struct ResolvedFlag: Codable {
     var flag: String
-    var value: Struct? = Struct(fields: [:])
+    var value: NetworkStruct? = NetworkStruct(fields: [:])
     var variant: String = ""
     var flagSchema: StructFlagSchema? = StructFlagSchema(schema: [:])
     var reason: ResolveReason

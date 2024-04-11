@@ -79,7 +79,7 @@ struct PublishEventRequest: Encodable {
 
 struct Event: Encodable {
     var eventDefinition: String
-    var payload: Struct
+    var payload: NetworkStruct
     var eventTime: String
 }
 

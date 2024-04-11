@@ -1,13 +1,13 @@
 import Foundation
 
-public struct Struct: Equatable {
-    public init(fields: [String: StructValue]) {
+public struct NetworkStruct: Equatable {
+    public init(fields: [String: NetworkStructValue]) {
         self.fields = fields
     }
-    public var fields: [String: StructValue]
+    public var fields: [String: NetworkStructValue]
 }
 
-public enum StructValue: Equatable {
+public enum NetworkStructValue: Equatable {
     case null
     case integer(Int64)
     case string(String)
@@ -16,11 +16,11 @@ public enum StructValue: Equatable {
     case boolean(Bool)
     case date(DateComponents)
     case timestamp(Date)
-    case structure(Struct)
-    case list([StructValue])
+    case structure(NetworkStruct)
+    case list([NetworkStructValue])
 }
 
-extension StructValue: Codable {
+extension NetworkStructValue: Codable {
     // swiftlint:disable:next cyclomatic_complexity
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -71,9 +71,9 @@ extension StructValue: Codable {
             self = .boolean(bool)
         } else if let date = try? container.decode(Date.self) {
             self = .timestamp(date)
-        } else if let object = try? container.decode(Struct.self) {
+        } else if let object = try? container.decode(NetworkStruct.self) {
             self = .structure(object)
-        } else if let list = try? container.decode([StructValue].self) {
+        } else if let list = try? container.decode([NetworkStructValue].self) {
             self = .list(list)
         } else {
             throw DecodingError.dataCorrupted(
@@ -82,7 +82,7 @@ extension StructValue: Codable {
     }
 }
 
-extension Struct: Codable {
+extension NetworkStruct: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(fields)
@@ -90,6 +90,6 @@ extension Struct: Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        self.fields = try container.decode([String: StructValue].self)
+        self.fields = try container.decode([String: NetworkStructValue].self)
     }
 }

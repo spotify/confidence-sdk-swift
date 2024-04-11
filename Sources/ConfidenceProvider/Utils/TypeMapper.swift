@@ -3,20 +3,20 @@ import Common
 import OpenFeature
 
 public enum TypeMapper {
-    static func from(value: Structure) -> Struct {
-        return Struct(fields: value.asMap().compactMapValues(convertValueToStructValue))
+    static func from(value: Structure) -> NetworkStruct {
+        return NetworkStruct(fields: value.asMap().compactMapValues(convertValueToStructValue))
     }
 
-    static func from(value: Value) throws -> Struct {
+    static func from(value: Value) throws -> NetworkStruct {
         guard case .structure(let values) = value else {
             throw OpenFeatureError.parseError(message: "Value must be a .structure")
         }
 
-        return Struct(fields: values.compactMapValues(convertValueToStructValue))
+        return NetworkStruct(fields: values.compactMapValues(convertValueToStructValue))
     }
 
     static func from(
-        object: Struct, schema: StructFlagSchema
+        object: NetworkStruct, schema: StructFlagSchema
     )
         throws
         -> Value
@@ -28,30 +28,30 @@ public enum TypeMapper {
                 }))
     }
 
-    static private func convertValueToStructValue(_ value: Value) -> StructValue? {
+    static private func convertValueToStructValue(_ value: Value) -> NetworkStructValue? {
         switch value {
         case .boolean(let value):
-            return StructValue.boolean(value)
+            return NetworkStructValue.boolean(value)
         case .string(let value):
-            return StructValue.string(value)
+            return NetworkStructValue.string(value)
         case .integer(let value):
-            return StructValue.number(Double(value))
+            return NetworkStructValue.number(Double(value))
         case .double(let value):
-            return StructValue.number(value)
+            return NetworkStructValue.number(value)
         case .date(let value):
-            return StructValue.timestamp(value)
+            return NetworkStructValue.timestamp(value)
         case .list(let values):
             return .list(values.compactMap(convertValueToStructValue))
         case .structure(let values):
-            return .structure(Struct(fields: values.compactMapValues(convertValueToStructValue)))
+            return .structure(NetworkStruct(fields: values.compactMapValues(convertValueToStructValue)))
         case .null:
-            return StructValue.null
+            return NetworkStructValue.null
         }
     }
 
     // swiftlint:disable:next cyclomatic_complexity
     static private func convertStructValueToValue(
-        _ structValue: StructValue, schema: FlagSchema?
+        _ structValue: NetworkStructValue, schema: FlagSchema?
     ) throws -> Value {
         guard let fieldType = schema else {
             throw OpenFeatureError.parseError(message: "Mismatch between schema and value")

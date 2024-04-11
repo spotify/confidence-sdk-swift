@@ -88,7 +88,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
                     return ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
                 }
-                var responseValue: Struct?
+                var responseValue: NetworkStruct?
                 do {
                     responseValue = try TypeMapper.from(value: resolved.value)
                 } catch {

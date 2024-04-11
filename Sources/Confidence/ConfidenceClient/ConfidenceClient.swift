@@ -7,5 +7,5 @@ public protocol ConfidenceClient {
 
 public struct ConfidenceClientEvent {
     var definition: String
-    var payload: Struct
+    var payload: NetworkStruct
 }
