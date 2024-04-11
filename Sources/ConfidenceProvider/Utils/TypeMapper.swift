@@ -35,9 +35,9 @@ public enum TypeMapper {
         case .string(let value):
             return NetworkStructValue.string(value)
         case .integer(let value):
-            return NetworkStructValue.number(Double(value))
+            return NetworkStructValue.integer(value)
         case .double(let value):
-            return NetworkStructValue.number(value)
+            return NetworkStructValue.double(value)
         case .date(let value):
             return NetworkStructValue.timestamp(value)
         case .list(let values):
@@ -60,7 +60,9 @@ public enum TypeMapper {
         switch structValue {
         case .null:
             return .null
-        case .number(let value):
+        case .integer(let value):
+            return .integer(value)
+        case .double(let value):
             switch fieldType {
             case .intSchema:
                 return .integer(Int64(value))
