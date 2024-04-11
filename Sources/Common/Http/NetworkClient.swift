@@ -130,7 +130,6 @@ extension NetworkClient {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             if response.response.status == .ok {
-                // TODO: Inspect and log errors
                 response.decodedData = try decoder.decode(T.self, from: responseData)
             } else {
                 do {

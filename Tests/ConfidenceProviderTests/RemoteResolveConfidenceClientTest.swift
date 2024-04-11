@@ -4,7 +4,7 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-class RemoteConfidenceClientTest: XCTestCase {
+class RemoteResolveConfidenceClientTest: XCTestCase {
     var flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [:]
     let resolvedFlag1 = MockedConfidenceClientURLProtocol.ResolvedTestFlag(
         variant: "control", value: .structure(["size": .integer(3)]))
@@ -26,7 +26,7 @@ class RemoteConfidenceClientTest: XCTestCase {
         let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
         let flagApplier = FlagApplierMock()
 
-        let client = RemoteConfidenceClient(
+        let client = RemoteConfidenceResolveClient(
             options: .init(credentials: .clientSecret(secret: "test")),
             session: session,
             applyOnResolve: true,

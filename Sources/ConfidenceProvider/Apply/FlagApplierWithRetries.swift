@@ -1,6 +1,6 @@
 import Foundation
-import Confidence
 import Common
+import Confidence
 import OpenFeature
 import os
 

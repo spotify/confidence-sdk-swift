@@ -28,11 +28,13 @@ public class Confidence: ConfidenceEventSender {
         self.parent = parent
     }
 
-    // TODO: Implement actual event uploading to the backend
     public func send(definition: String, payload: ConfidenceStruct) {
         print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
         Task {
-            try? await client.send(definition: definition, payload: payload)
+            // TODO: This will be called inside the EventSenderEngine once implemented
+            try? await client.upload(batch: [
+                ConfidenceClientEvent(definition: definition, payload: payload)
+            ])
         }
     }
 
@@ -105,6 +107,7 @@ extension Confidence {
                 client: RemoteConfidenceClient(
                     options: ConfidenceClientOptions(
                         credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
+                        timeout: timeout,
                         region: region),
                     metadata: ConfidenceMetadata(
                         name: "SDK_ID_SWIFT_CONFIDENCE",

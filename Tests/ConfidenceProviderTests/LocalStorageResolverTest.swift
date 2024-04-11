@@ -1,7 +1,7 @@
 import Foundation
+import Common
 import Confidence
 import OpenFeature
-import Common
 import XCTest
 
 @testable import ConfidenceProvider

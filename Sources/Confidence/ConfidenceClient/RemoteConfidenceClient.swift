@@ -26,16 +26,16 @@ public class RemoteConfidenceClient: ConfidenceClient {
         self.metadata = metadata
     }
 
-    public func send(definition: String, payload: ConfidenceStruct) async throws {
+    public func upload(batch: [ConfidenceClientEvent]) async throws {
         let timeString = Date.backport.nowISOString
         let request = PublishEventRequest(
-            events: [
+            events: batch.map { event in
                 Event(
-                    eventDefinition: "eventDefinitions/\(definition)",
-                    payload: payload,
+                    eventDefinition: "eventDefinitions/\(event.definition)",
+                    payload: event.payload,
                     eventTime: timeString
                 )
-            ],
+            },
             clientSecret: options.credentials.getSecret(),
             sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)
@@ -98,15 +98,4 @@ struct EventError: Decodable {
         case eventSchemaValidationFailed = "EVENT_SCHEMA_VALIDATION_FAILED"
         case unknown
     }
-}
-
-
-struct Sdk: Encodable {
-    init(id: String?, version: String?) {
-        self.id = id ?? "SDK_ID_SWIFT_PROVIDER"
-        self.version = version ?? "unknown"
-    }
-
-    var id: String
-    var version: String
 }

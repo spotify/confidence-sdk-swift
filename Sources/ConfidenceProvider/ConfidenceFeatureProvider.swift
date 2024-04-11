@@ -1,8 +1,8 @@
 import Foundation
-import Confidence
-import OpenFeature
 import Combine
 import Common
+import Confidence
+import OpenFeature
 import os
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
@@ -28,7 +28,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder`or init with `Confidence` instead.
     init(
         metadata: ProviderMetadata,
-        client: RemoteConfidenceClient,
+        client: RemoteConfidenceResolveClient,
         cache: ProviderCache,
         storage: Storage,
         overrides: [String: LocalOverride] = [:],
@@ -58,21 +58,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.cache = InMemoryProviderCache.from(storage: DefaultStorage.resolverFlagsCache())
         self.storage = DefaultStorage.resolverFlagsCache()
         self.resolver = LocalStorageResolver(cache: cache)
-        let baseUrl: String
-        switch options.region {
-        case .global:
-            baseUrl = "https://resolver.confidence.dev/v1/flags"
-        case .europe:
-            baseUrl = "https://resolver.eu.confidence.dev/v1/flags"
-        case .usa:
-            baseUrl = "https://resolver.us.confidence.dev/v1/flags"
-        }
         self.flagApplier = FlagApplierWithRetries(
-            httpClient: NetworkClient(baseUrl: baseUrl),
+            httpClient: NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region)),
             storage: DefaultStorage.applierFlagsCache(),
             options: options,
             metadata: metadata)
-        self.client = RemoteConfidenceClient(
+        self.client = RemoteConfidenceResolveClient(
             options: options,
             applyOnResolve: false,
             flagApplier: flagApplier,
@@ -618,19 +609,10 @@ extension ConfidenceFeatureProvider {
 
         /// Creates the `ConfidenceFeatureProvider` according to the settings specified in the builder.
         public func build() -> ConfidenceFeatureProvider {
-            let baseUrl: String
-            switch options.region {
-            case .global:
-                baseUrl = "https://resolver.confidence.dev/v1/flags"
-            case .europe:
-                baseUrl = "https://resolver.eu.confidence.dev/v1/flags"
-            case .usa:
-                baseUrl = "https://resolver.us.confidence.dev/v1/flags"
-            }
             let flagApplier =
             flagApplier
             ?? FlagApplierWithRetries(
-                httpClient: NetworkClient(baseUrl: baseUrl),
+                httpClient: NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region)),
                 storage: DefaultStorage.applierFlagsCache(),
                 options: options,
                 metadata: metadata
@@ -638,7 +620,7 @@ extension ConfidenceFeatureProvider {
 
             let cache = cache ?? InMemoryProviderCache.from(storage: storage)
 
-            let client = RemoteConfidenceClient(
+            let client = RemoteConfidenceResolveClient(
                 options: options,
                 session: self.session,
                 applyOnResolve: false,

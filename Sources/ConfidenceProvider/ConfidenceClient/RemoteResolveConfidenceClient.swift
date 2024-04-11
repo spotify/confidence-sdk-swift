@@ -1,9 +1,9 @@
 import Foundation
+import Common
 import Confidence
 import OpenFeature
-import Common
 
-public class RemoteConfidenceClient: ConfidenceResolveClient {
+public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private let flagApplier: FlagApplier
     private var options: ConfidenceClientOptions
@@ -11,7 +11,6 @@ public class RemoteConfidenceClient: ConfidenceResolveClient {
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
-    private var baseUrl: String
 
     init(
         options: ConfidenceClientOptions,
@@ -24,15 +23,9 @@ public class RemoteConfidenceClient: ConfidenceResolveClient {
         self.flagApplier = flagApplier
         self.applyOnResolve = applyOnResolve
         self.metadata = metadata
-        switch options.region {
-        case .global:
-            self.baseUrl = "https://resolver.confidence.dev/v1/flags"
-        case .europe:
-            self.baseUrl = "https://resolver.eu.confidence.dev/v1/flags"
-        case .usa:
-            self.baseUrl = "https://resolver.us.confidence.dev/v1/flags"
-        }
-        self.httpClient = NetworkClient(session: session, baseUrl: baseUrl)
+        self.httpClient = NetworkClient(
+            session: session,
+            baseUrl: BaseUrlMapper.from(region: options.region))
     }
 
     // MARK: Resolver
@@ -170,16 +163,6 @@ struct ApplyFlagsRequest: Codable {
 }
 
 struct ApplyFlagsResponse: Codable {
-}
-
-struct Sdk: Codable {
-    init(id: String?, version: String?) {
-        self.id = id ?? "SDK_ID_SWIFT_PROVIDER"
-        self.version = version ?? "unknown"
-    }
-
-    var id: String
-    var version: String
 }
 
 private func displayName(resolvedFlag: ResolvedFlag) throws -> String {
