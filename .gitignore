@@ -10,3 +10,4 @@ DerivedData/
 .build
 .mockingbird
 project.json
+.swiftpm
