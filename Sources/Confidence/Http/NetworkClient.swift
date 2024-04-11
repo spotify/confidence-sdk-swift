@@ -5,22 +5,13 @@ final class NetworkClient: HttpClient {
     private let retry: Retry
     private let timeout: TimeInterval
     private let session: URLSession
-    private let region: ConfidenceRegion
+    private let baseUrl: String
 
-    private var baseUrl: String {
-        switch region {
-        case .global:
-            return "https://events.confidence.dev/v1/events"
-        case .europe:
-            return "https://events.eu.confidence.dev/v1/events"
-        case .usa:
-            return "https://events.us.confidence.dev/v1/events"
-        }
-    }
+
 
     init(
         session: URLSession? = nil,
-        region: ConfidenceRegion,
+        baseUrl: String,
         defaultHeaders: [String: String] = [:],
         timeout: TimeInterval = 30.0,
         retry: Retry = .none
@@ -38,7 +29,7 @@ final class NetworkClient: HttpClient {
         self.headers = defaultHeaders
         self.retry = retry
         self.timeout = timeout
-        self.region = region
+        self.baseUrl = baseUrl
     }
 
     func post<T: Decodable>(

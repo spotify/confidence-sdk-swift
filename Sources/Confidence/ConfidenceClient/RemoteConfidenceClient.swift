@@ -4,6 +4,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
     private var options: ConfidenceClientOptions
     private let metadata: ConfidenceMetadata
     private var httpClient: HttpClient
+    private var baseUrl: String
 
     init(
         options: ConfidenceClientOptions,
@@ -11,7 +12,15 @@ public class RemoteConfidenceClient: ConfidenceClient {
         metadata: ConfidenceMetadata
     ) {
         self.options = options
-        self.httpClient = NetworkClient(session: session, region: options.region)
+        switch options.region {
+        case .global:
+            self.baseUrl = "https://events.confidence.dev/v1/events"
+        case .europe:
+            self.baseUrl = "https://events.eu.confidence.dev/v1/events"
+        case .usa:
+            self.baseUrl = "https://events.us.confidence.dev/v1/events"
+        }
+        self.httpClient = NetworkClient(session: session, baseUrl: baseUrl)
         self.metadata = metadata
     }
 
