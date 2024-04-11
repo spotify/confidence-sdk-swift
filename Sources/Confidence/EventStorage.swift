@@ -6,79 +6,80 @@ internal protocol EventStorage {
     func writeEvent(event: Event) throws
     func batchReadyIds() throws -> [String]
     func eventsFrom(id: String) throws -> [Event]
-    func remove(id: String)
+    func remove(id: String) throws
 }
 
 internal class EventStorageImpl: EventStorage {
     private let READYTOSENDEXTENSION = "READY"
-    private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
+    private let storageQueue = DispatchQueue(label: "com.confidence.events.storage")
     private var folderURL: URL
     private var currentFileUrl: URL? = nil
     private var currentFileHandle: FileHandle? = nil
-    private var currentBatch: [Event] = []
 
     init() throws {
         self.folderURL = try EventStorageImpl.getFolderURL()
         if(!FileManager.default.fileExists(atPath: folderURL.backport.path)) {
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
         }
-
         try resetCurrentFile()
     }
 
     func startNewBatch() throws {
-        guard let currentFileName = self.currentFileUrl else {
-            return
+        try storageQueue.sync {
+            guard let currentFileName = self.currentFileUrl else {
+                return
+            }
+            try currentFileHandle?.close()
+            try FileManager.default.moveItem(at: currentFileName, to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
+            try resetCurrentFile()
         }
-
-        try currentFileHandle?.close()
-        try FileManager.default.moveItem(at: currentFileName, to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
-        try resetCurrentFile()
     }
     
     func writeEvent(event: Event) throws {
-        guard let currentFileHandle = currentFileHandle else {
-            return
+        try storageQueue.sync {
+            guard let currentFileHandle = currentFileHandle else {
+                return
+            }
+            let encoder = JSONEncoder()
+            let serialied = try encoder.encode(event)
+            let delimiter = "\n".data(using: .utf8)
+            guard let delimiter else {
+                return
+            }
+            currentFileHandle.seekToEndOfFile()
+            try currentFileHandle.write(contentsOf: delimiter)
+            try currentFileHandle.write(contentsOf: serialied)
         }
-        let encoder = JSONEncoder()
-        let serialied = try encoder.encode(event)
-        let delimiter = "\n".data(using: .utf8)
-        guard let delimiter else {
-            return
-        }
-        currentFileHandle.seekToEndOfFile()
-        try currentFileHandle.write(contentsOf: delimiter)
-        try currentFileHandle.write(contentsOf: serialied)
     }
 
 
-    func batchReadyIds() throws -> [String]{
-        let folderUrl = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-        return folderUrl.filter({ url in url.pathExtension ==  READYTOSENDEXTENSION}).map({ url in url.lastPathComponent })
+    func batchReadyIds() throws -> [String] {
+        try storageQueue.sync {
+            let fileUrls = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
+            return fileUrls.filter({ url in url.pathExtension ==  READYTOSENDEXTENSION }).map({ url in url.lastPathComponent })
+        }
     }
     
     func eventsFrom(id: String) throws -> [Event] {
-        let decoder = JSONDecoder()
-        let fileUrl = folderURL.appendingPathComponent(id)
-        let data = try Data(contentsOf: fileUrl)
-        let dataString = String(data: data, encoding: .utf8)
-        return try dataString?.components(separatedBy: "\n")
-            .filter({ events in !events.isEmpty })
-            .map({eventString in try decoder.decode(Event.self, from: eventString.data(using: .utf8)!)}) ?? []
-    }
-
-    func remove(id: String) {
-        do {
+        try storageQueue.sync {
+            let decoder = JSONDecoder()
             let fileUrl = folderURL.appendingPathComponent(id)
-            try FileManager.default.removeItem(at: fileUrl)
-        } catch {
-            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
-                "Error when trying to delete an event batch: \(error)")
+            let data = try Data(contentsOf: fileUrl)
+            let dataString = String(data: data, encoding: .utf8)
+            return try dataString?.components(separatedBy: "\n")
+                .filter({ events in !events.isEmpty })
+                .map({ eventString in try decoder.decode(Event.self, from: eventString.data(using: .utf8)!)}) ?? []
         }
     }
 
-    private func currentWritingFile() throws -> URL? {
+    func remove(id: String) throws {
+        try storageQueue.sync {
+                let fileUrl = folderURL.appendingPathComponent(id)
+                try FileManager.default.removeItem(at: fileUrl)
+        }
+    }
+
+    private func getLastWritingFile() throws -> URL? {
         let files = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
         for fileUrl in files {
             if fileUrl.pathExtension != READYTOSENDEXTENSION {
@@ -89,7 +90,7 @@ internal class EventStorageImpl: EventStorage {
     }
 
     private func resetCurrentFile() throws {
-        if let currentFile = try currentWritingFile() {
+        if let currentFile = try getLastWritingFile() {
             self.currentFileUrl = currentFile
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
@@ -102,7 +103,7 @@ internal class EventStorageImpl: EventStorage {
 
     internal static func getFolderURL() throws -> URL {
         guard
-            let applicationSupportUrl: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            let applicationSupportUrl = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
                 .last
         else {
             throw ConfidenceError.cacheError(message: "Could not get URL for application directory")
@@ -115,26 +116,6 @@ internal class EventStorageImpl: EventStorage {
         return applicationSupportUrl.backport.appending(
             components: "com.confidence.cache", "\(bundleIdentifier)", "events")
     }
-
-    private func latestWriteFile() throws -> URL? {
-        var directoryContents: [URL] = []
-        do {
-            directoryContents = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil, options: [])
-        } catch {
-            Logger(subsystem: "com.confidence.eventsender", category: "storage").error(
-            "No previous batch file found \(error)")
-        }
-        for fileUrl in directoryContents {
-            if fileUrl.pathExtension.lowercased() == READYTOSENDEXTENSION  {
-                return fileUrl
-            }
-        }
-        return nil
-    }
-
-    private static func createNewFile(path: URL) {
-        FileManager.default.createFile(atPath: path.absoluteString, contents: nil)
-    }
 }
 
 struct Event: Codable {
@@ -143,14 +124,4 @@ struct Event: Codable {
     // TODO: fix this to be ConfidenceValue
     let payload: [String]
     let context: [String]
-}
-
-
-extension Date {
-    var currentTime: String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
-        dateFormatter.dateFormat = "YY-MM-dd-HH-mm-ss"
-        return dateFormatter.string(from: self).replacingOccurrences(of: "%", with: "")
-    }
 }
