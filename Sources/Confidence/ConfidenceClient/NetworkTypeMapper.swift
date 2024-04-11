@@ -30,13 +30,25 @@ public enum NetworkTypeMapper {
             }
             return NetworkStructValue.number(value)
         case .date:
-            return nil
+            guard let value = value.asDateComponents() else {
+                return nil
+            }
+            return NetworkStructValue.date(value)
         case .timestamp:
-            return nil
+            guard let value = value.asDate() else {
+                return nil
+            }
+            return NetworkStructValue.timestamp(value)
         case .list:
-            return nil
+            guard let value = value.asList() else {
+                return nil
+            }
+            return NetworkStructValue.list(value.compactMap(convertValue))
         case .structure:
-            return nil
+            guard let value = value.asStructure() else {
+                return nil
+            }
+            return NetworkStructValue.structure(NetworkStruct(fields: value.compactMapValues(convertValue)))
         case .null:
             return nil
         }
