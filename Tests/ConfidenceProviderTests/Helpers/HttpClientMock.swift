@@ -1,8 +1,7 @@
 import Foundation
 import Confidence
+import Common
 import XCTest
-
-@testable import Confidence
 
 final class HttpClientMock: HttpClient {
     var testMode: TestMode

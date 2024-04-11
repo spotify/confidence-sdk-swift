@@ -7,6 +7,11 @@ public protocol HttpClient {
 }
 
 public struct HttpClientResponse<T> {
+    public init(decodedData: T? = nil, decodedError: HttpError? = nil, response: HTTPURLResponse) {
+        self.decodedData = decodedData
+        self.decodedError = decodedError
+        self.response = response
+    }
     public var decodedData: T?
     public var decodedError: HttpError?
     public var response: HTTPURLResponse
@@ -29,7 +34,7 @@ public enum HttpClientError: Error {
 }
 
 extension HTTPURLResponse {
-    func mapStatusToError(error: HttpError?, flag: String = "unknown") -> Error {
+    public func mapStatusToError(error: HttpError?, flag: String = "unknown") -> Error {
         let defaultError = ConfidenceError.internalError(
             message: "General error: \(error?.message ?? "Unknown error")")
 

@@ -1,6 +1,7 @@
 import Foundation
 import Confidence
 import OpenFeature
+import Common
 import XCTest
 
 @testable import ConfidenceProvider

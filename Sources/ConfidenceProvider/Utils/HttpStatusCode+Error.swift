@@ -1,6 +1,7 @@
 import Foundation
 import Confidence
 import OpenFeature
+import Common
 
 extension HTTPURLResponse {
     func mapStatusToError(error: HttpError?, flag: String = "unknown") -> Error {

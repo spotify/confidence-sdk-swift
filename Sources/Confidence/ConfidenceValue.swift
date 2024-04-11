@@ -1,4 +1,5 @@
 import Foundation
+import Common
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 

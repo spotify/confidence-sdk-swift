@@ -2,6 +2,7 @@ import Foundation
 import Confidence
 import OpenFeature
 import Combine
+import Common
 import os
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.

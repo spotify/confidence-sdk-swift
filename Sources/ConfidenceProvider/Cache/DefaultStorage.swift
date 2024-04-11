@@ -1,5 +1,6 @@
 import Foundation
 import Confidence
+import Common
 
 public class DefaultStorage: Storage {
     private let storageQueue = DispatchQueue(label: "com.confidence.storage")

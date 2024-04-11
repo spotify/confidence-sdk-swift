@@ -1,4 +1,5 @@
 import Foundation
+import Common
 
 public class RemoteConfidenceClient: ConfidenceClient {
     private var options: ConfidenceClientOptions

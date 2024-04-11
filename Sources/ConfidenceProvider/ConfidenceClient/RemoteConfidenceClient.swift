@@ -1,7 +1,7 @@
 import Foundation
 import Confidence
 import OpenFeature
-
+import Common
 
 public class RemoteConfidenceClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"

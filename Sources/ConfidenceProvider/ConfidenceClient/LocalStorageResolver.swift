@@ -1,6 +1,7 @@
 import Foundation
 import Confidence
 import OpenFeature
+import Common
 
 public class LocalStorageResolver: Resolver {
     private var cache: ProviderCache
