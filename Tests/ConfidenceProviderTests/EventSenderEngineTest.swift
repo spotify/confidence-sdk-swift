@@ -33,19 +33,25 @@ final class EventSenderEngineTest: XCTestCase {
             flushPolicies: flushPolicies
         )
 
+        let expectation = XCTestExpectation(description: "Upload finished")
+        let cancellable = uploader.subject.sink { value in
+            expectation.fulfill()
+        }
+
         var events: [Event] = []
         for i in 0..<5 {
-            events.append(Event(name: "\(i)", payload: [:]))
+            events.append(Event(name: "\(i)", payload: [:], eventTime: Date()))
             eventSenderEngine.send(name: "\(i)", message: [:])
         }
 
-        let expectedRequest = EventBatchRequest(clientSecret: "CLIENT_SECRET", sendTime: Date(), events: events)
+        wait(for: [expectation], timeout: 5)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest == expectedRequest.events)
+        XCTAssertTrue(uploadRequest.map { $0.name } == events.map { $0.name })
 
         uploader.reset()
         eventSenderEngine.send(name: "Hello", message: [:])
         XCTAssertNil(uploader.calledRequest)
+        cancellable.cancel()
     }
 }
 

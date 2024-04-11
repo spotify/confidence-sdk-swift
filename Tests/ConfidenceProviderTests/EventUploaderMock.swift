@@ -1,10 +1,13 @@
 import Foundation
+import Combine
 @testable import Confidence
 
 final class EventUploaderMock: EventsUploader {
     var calledRequest: [Event]? = nil
-    func upload(request: [Event]) -> Bool {
+    let subject: PassthroughSubject<Int, Never> = PassthroughSubject()
+    func upload(request: [Event]) async -> Bool {
         calledRequest = request
+        subject.send(1)
         return true
     }
 

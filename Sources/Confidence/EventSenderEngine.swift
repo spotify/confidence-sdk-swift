@@ -8,6 +8,7 @@ protocol EventsUploader {
 struct Event: Encodable, Equatable {
     let name: String
     let payload: [String: ConfidenceValue]
+    let eventTime: Date
 }
 
 protocol FlushPolicy {
@@ -86,7 +87,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func send(name: String, message: [String: ConfidenceValue]) {
-        writeReqChannel.send(Event(name: name, payload: message))
+        writeReqChannel.send(Event(name: name, payload: message, eventTime: Date()))
     }
 
     func shutdown() {
