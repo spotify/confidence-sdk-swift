@@ -1,10 +1,13 @@
 import Foundation
 
-struct Struct: Equatable {
-    var fields: [String: StructValue]
+public struct Struct: Equatable {
+    public init(fields: [String : StructValue]) {
+        self.fields = fields
+    }
+    public var fields: [String: StructValue]
 }
 
-enum StructValue: Equatable {
+public enum StructValue: Equatable {
     case null
     case number(Double)
     case string(String)
@@ -15,7 +18,7 @@ enum StructValue: Equatable {
 }
 
 extension StructValue: Codable {
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
         switch self {
@@ -60,7 +63,7 @@ extension StructValue: Codable {
 }
 
 extension Struct: Codable {
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(fields)
     }
