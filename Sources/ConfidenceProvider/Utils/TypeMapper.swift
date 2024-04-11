@@ -18,8 +18,8 @@ public enum TypeMapper {
     static func from(
         object: NetworkStruct, schema: StructFlagSchema
     )
-    throws
-    -> Value
+        throws
+        -> Value
     {
         return .structure(
             Dictionary(
@@ -39,7 +39,10 @@ public enum TypeMapper {
         case .double(let value):
             return NetworkStructValue.number(value)
         case .date(let value):
-            return NetworkStructValue.timestamp(value)
+            let timestampFormatter = ISO8601DateFormatter()
+            timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
+            let timestamp = timestampFormatter.string(from: value)
+            return NetworkStructValue.string(timestamp)
         case .list(let values):
             return .list(values.compactMap(convertValueToStructValue))
         case .structure(let values):
@@ -73,13 +76,6 @@ public enum TypeMapper {
             return .string(value)
         case .boolean(let value):
             return .boolean(value)
-        case .date(let value):
-            guard let timestamp = Calendar.current.date(from: value) else {
-                throw OpenFeatureError.parseError(message: "Error converting date data")
-            }
-            return .date(timestamp)
-        case .timestamp(let value):
-            return .date(value)
         case .structure(let mapValue):
             guard case .structSchema(let structSchema) = fieldType else {
                 throw OpenFeatureError.parseError(message: "Field is struct in schema but something else in value")
@@ -93,7 +89,6 @@ public enum TypeMapper {
             guard case .listSchema(let listSchema) = fieldType else {
                 throw OpenFeatureError.parseError(message: "Field is list in schema but something else in value")
             }
-
             return .list(
                 try listValue.map { fieldValue in
                     try convertStructValueToValue(fieldValue, schema: listSchema)

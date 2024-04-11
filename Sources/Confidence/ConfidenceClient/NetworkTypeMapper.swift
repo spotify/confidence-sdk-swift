@@ -2,12 +2,12 @@ import Foundation
 import Common
 
 public enum NetworkTypeMapper {
-    public static func from(value: ConfidenceStruct) -> NetworkStruct {
-        NetworkStruct(fields: value.compactMapValues(convertValue))
+    public static func from(value: ConfidenceStruct) throws -> NetworkStruct {
+        NetworkStruct(fields: try value.compactMapValues(convertValue))
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    public static func convertValue(_ value: ConfidenceValue) -> NetworkStructValue? {
+    public static func convertValue(_ value: ConfidenceValue) throws -> NetworkStructValue? {
         switch value.type() {
         case .boolean:
             guard let value = value.asBoolean() else {
@@ -30,25 +30,31 @@ public enum NetworkTypeMapper {
             }
             return NetworkStructValue.number(value)
         case .date:
-            guard let value = value.asDateComponents() else {
-                return nil
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.timeZone = TimeZone.current
+            dateFormatter.formatOptions = [.withFullDate]
+            guard let value = value.asDateComponents(), let dateString = Calendar.current.date(from: value) else {
+                throw ConfidenceError.internalError(message: "Could not create date from components")
             }
-            return NetworkStructValue.date(value)
+            return NetworkStructValue.string(dateFormatter.string(from: dateString))
         case .timestamp:
             guard let value = value.asDate() else {
                 return nil
             }
-            return NetworkStructValue.timestamp(value)
+            let timestampFormatter = ISO8601DateFormatter()
+            timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
+            let timestamp = timestampFormatter.string(from: value)
+            return NetworkStructValue.string(timestamp)
         case .list:
             guard let value = value.asList() else {
                 return nil
             }
-            return NetworkStructValue.list(value.compactMap(convertValue))
+            return try NetworkStructValue.list(value.compactMap(convertValue))
         case .structure:
             guard let value = value.asStructure() else {
                 return nil
             }
-            return NetworkStructValue.structure(NetworkStruct(fields: value.compactMapValues(convertValue)))
+            return try NetworkStructValue.structure(NetworkStruct(fields: value.compactMapValues(convertValue)))
         case .null:
             return nil
         }

@@ -12,8 +12,6 @@ public enum NetworkStructValue: Equatable {
     case string(String)
     case number(Double)
     case boolean(Bool)
-    case date(DateComponents)
-    case timestamp(Date)
     case structure(NetworkStruct)
     case list([NetworkStructValue])
 }
@@ -31,20 +29,6 @@ extension NetworkStructValue: Codable {
             try container.encode(string)
         case .boolean(let boolean):
             try container.encode(boolean)
-        case .date(let dateComponents):
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.timeZone = TimeZone.current
-            dateFormatter.formatOptions = [.withFullDate]
-            if let date = Calendar.current.date(from: dateComponents) {
-                try container.encode(dateFormatter.string(from: date))
-            } else {
-                throw ConfidenceError.internalError(message: "Could not create date from components")
-            }
-        case .timestamp(let date):
-            let timestampFormatter = ISO8601DateFormatter()
-            timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
-            let timestamp = timestampFormatter.string(from: date)
-            try container.encode(timestamp)
         case .structure(let structure):
             try container.encode(structure)
         case .list(let list):
@@ -62,8 +46,6 @@ extension NetworkStructValue: Codable {
             self = .string(string)
         } else if let bool = try? container.decode(Bool.self) {
             self = .boolean(bool)
-        } else if let date = try? container.decode(Date.self) {
-            self = .timestamp(date)
         } else if let object = try? container.decode(NetworkStruct.self) {
             self = .structure(object)
         } else if let list = try? container.decode([NetworkStructValue].self) {
