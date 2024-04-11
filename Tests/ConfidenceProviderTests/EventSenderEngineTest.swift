@@ -41,8 +41,7 @@ final class EventSenderEngineTest: XCTestCase {
 
         let expectedRequest = EventBatchRequest(clientSecret: "CLIENT_SECRET", sendTime: Date(), events: events)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest.clientSecret == expectedRequest.clientSecret)
-        XCTAssertTrue(uploadRequest.events == expectedRequest.events)
+        XCTAssertTrue(uploadRequest == expectedRequest.events)
 
         uploader.reset()
         eventSenderEngine.send(name: "Hello", message: [:])

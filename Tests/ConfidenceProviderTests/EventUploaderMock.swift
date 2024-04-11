@@ -2,8 +2,8 @@ import Foundation
 @testable import Confidence
 
 final class EventUploaderMock: EventsUploader {
-    var calledRequest: EventBatchRequest? = nil
-    func upload(request: EventBatchRequest) -> Bool {
+    var calledRequest: [Event]? = nil
+    func upload(request: [Event]) -> Bool {
         calledRequest = request
         return true
     }

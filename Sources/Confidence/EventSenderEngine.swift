@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 protocol EventsUploader {
-    func upload(request: EventBatchRequest) -> Bool
+    func upload(request: [Event]) async -> Bool
 }
 
 struct Event: Encodable, Equatable {
@@ -74,9 +74,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
                 let ids = storage.batchReadyIds()
                 for id in ids {
                     let events = try self.storage.eventsFrom(id: id)
-                    let batchRequest = EventBatchRequest(
-                        clientSecret: clientSecret, sendTime: clock.now(), events: events)
-                    let shouldCleanup = self.uploader.upload(request: batchRequest)
+                    let shouldCleanup = await self.uploader.upload(request: events)
                     if shouldCleanup {
                         try storage.remove(id: id)
                     }
@@ -94,4 +92,14 @@ final class EventSenderEngineImpl: EventSenderEngine {
     func shutdown() {
         cancellables.removeAll()
     }
+}
+
+private extension Publisher where Self.Failure == Never {
+  func sink(receiveValue: @escaping ((Self.Output) async -> Void)) -> AnyCancellable {
+    sink { value in
+      Task {
+        await receiveValue(value)
+      }
+    }
+  }
 }
