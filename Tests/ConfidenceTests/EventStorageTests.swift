@@ -11,6 +11,13 @@ class EventStorageTest: XCTestCase {
         }
     }
 
+    override func setUp() async throws {
+        let folderURL = try! EventStorageImpl.getFolderURL()
+        if FileManager.default.fileExists(atPath: folderURL.path) {
+            try! FileManager.default.removeItem(at: folderURL)
+        }
+    }
+
     func testCreateNewBatch() throws {
         let eventStorage = try EventStorageImpl()
         try eventStorage.writeEvent(event: Event(name: "some event", payload: ["pants": ConfidenceValue(string: "green")], eventTime: Date().self))
