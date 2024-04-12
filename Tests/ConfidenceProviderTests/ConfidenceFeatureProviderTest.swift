@@ -18,14 +18,14 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     override func setUp() {
         try? storage.clear()
 
-        MockedConfidenceClientURLProtocol.reset()
+        MockedResolveClientURLProtocol.reset()
         flagApplier = FlagApplierMock()
 
         super.setUp()
     }
 
     func testRefresh() throws {
-        var session = MockedConfidenceClientURLProtocol.mockedSession(flags: [:])
+        var session = MockedResolveClientURLProtocol.mockedSession(flags: [:])
         let provider =
         builder
             .with(session: session)
@@ -53,16 +53,16 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                     OpenFeatureError.flagNotFoundError(key: "flag"))
             }
 
-            let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+            let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
                 "user2": .init(variant: "control", value: .structure(["size": .integer(3)]))
             ]
 
-            let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+            let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
                 "flags/flag": .init(resolve: resolve)
             ]
 
             readyExpectation = XCTestExpectation(description: "Ready (2)")
-            session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+            session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
             provider.onContextSet(
                 oldContext: MutableContext(targetingKey: "user1"), newContext: MutableContext(targetingKey: "user2"))
             wait(for: [readyExpectation], timeout: 5)
@@ -79,21 +79,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 2)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 2)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveIntegerFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -123,21 +123,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveAndApplyIntegerFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -166,21 +166,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveAndApplyIntegerFlagNoSegmentMatch() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -210,21 +210,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, nil)
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveAndApplyIntegerFlagTwice() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -257,22 +257,22 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 2)
         }
     }
 
     func testResolveAndApplyIntegerFlagError() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        MockedConfidenceClientURLProtocol.failFirstApply = true
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        MockedResolveClientURLProtocol.failFirstApply = true
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -305,21 +305,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 2)
         }
     }
 
     func testStaleEvaluationContextInCache() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         // Simulating a cache with an old evaluation context
 
         let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
@@ -352,7 +352,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertNil(evaluation.variant)
             XCTAssertEqual(evaluation.errorCode, ErrorCode.providerNotReady)
             XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
 
             // TODO: Check this - how do we check for something not called?
             XCTAssertEqual(flagApplier.applyCallCount, 0)
@@ -360,15 +360,15 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     }
 
     func testResolveDoubleFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .double(3.1)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -396,21 +396,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveBooleanFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["visible": .boolean(false)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -438,21 +438,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveObjectFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -480,13 +480,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testResolveNullValues() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .null]))
         ]
 
@@ -494,11 +494,11 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             "user1": .init(schema: ["size": .intSchema])
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve, schemas: schemas)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -526,13 +526,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.variant, "control")
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
         }
     }
 
     func testProviderThrowsFlagNotFound() throws {
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: [:])
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: [:])
         let provider =
         builder
             .with(session: session)
@@ -561,13 +561,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             }
 
             // TODO: Check this - how do we check for something not called?
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 0)
         }
     }
 
     func testProviderNoTargetingKey() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .null]))
         ]
 
@@ -575,11 +575,11 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             "user1": .init(schema: ["size": .intSchema])
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve, schemas: schemas)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -598,20 +598,20 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         // TODO: Check this - how do we check for something not called?
-        XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 0)
+        XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 0)
         XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testProviderTargetingKeyError() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -644,21 +644,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
 
             // TODO: Check this - how do we check for something not called?
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 0)
         }
     }
 
     func testProviderCannotParse() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)
@@ -685,21 +685,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             }
 
             // TODO: Check this - how do we check for something not called?
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             XCTAssertEqual(flagApplier.applyCallCount, 0)
         }
     }
 
     func testLocalOverrideReplacesFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
             .with(cache: AlwaysFailCache())
@@ -724,20 +724,20 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
             XCTAssertEqual(evaluation.value, 4)
 
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
         }
     }
 
     func testLocalOverridePartiallyReplacesFlag() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3), "color": .string("green")]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
             .overrides(.field(path: "flag.size", variant: "treatment", value: .integer(4)))
@@ -769,7 +769,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(colorEvaluation.variant, "control")
             XCTAssertEqual(colorEvaluation.reason, Reason.targetingMatch.rawValue)
             XCTAssertEqual(colorEvaluation.value, "green")
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
 
             wait(for: [flagApplier.applyExpectation], timeout: 5)
             XCTAssertEqual(flagApplier.applyCallCount, 1)
@@ -777,15 +777,15 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     }
 
     func testLocalOverrideNoEvaluationContext() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3), "color": .string("green")]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
             .with(cache: AlwaysFailCache())
@@ -818,20 +818,20 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(sizeEvaluation2.variant, "treatment")
             XCTAssertEqual(sizeEvaluation2.reason, Reason.staticReason.rawValue)
             XCTAssertEqual(sizeEvaluation2.value, 4)
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
         }
     }
 
     func testLocalOverrideTwiceTakesSecondOverride() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider = builder.with(session: session)
             .with(flagApplier: flagApplier)
             .with(cache: AlwaysFailCache())
@@ -857,20 +857,20 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(evaluation.reason, Reason.staticReason.rawValue)
             XCTAssertEqual(evaluation.value, 5)
 
-            XCTAssertEqual(MockedConfidenceClientURLProtocol.resolveStats, 1)
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
         }
     }
 
     func testOverridingInProvider() throws {
-        let resolve: [String: MockedConfidenceClientURLProtocol.ResolvedTestFlag] = [
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
-        let flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
             "flags/flag": .init(resolve: resolve)
         ]
 
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let provider =
         builder
             .with(session: session)

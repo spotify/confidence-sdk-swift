@@ -1,9 +1,9 @@
 import Foundation
 
-struct GrpcStatusCode {
+public struct GrpcStatusCode {
     private let _rawValue: UInt8
 
-    var rawValue: Int {
+    public var rawValue: Int {
         return Int(self._rawValue)
     }
 
