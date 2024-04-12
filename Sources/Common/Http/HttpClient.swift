@@ -34,7 +34,7 @@ public enum HttpClientError: Error {
 }
 
 extension HTTPURLResponse {
-    public func mapStatusToError(error: HttpError?) -> Error {
+    public func mapStatusToError(error: HttpError?) -> ConfidenceError {
         let defaultError = ConfidenceError.internalError(
             message: "General error: \(error?.message ?? "Unknown error")")
 

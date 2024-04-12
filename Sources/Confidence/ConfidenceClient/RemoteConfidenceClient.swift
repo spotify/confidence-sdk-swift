@@ -65,7 +65,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         if error is ConfidenceError {
             return error
         } else {
-            return ConfidenceError.grpcError(message: "\(error)")
+            return ConfidenceError.internalError(message: "\(error)")
         }
     }
 }

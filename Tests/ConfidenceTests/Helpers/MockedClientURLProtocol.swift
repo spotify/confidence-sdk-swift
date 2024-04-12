@@ -5,7 +5,14 @@ import XCTest
 @testable import Confidence
 
 class MockedClientURLProtocol: URLProtocol {
-    public static var firstEventFails = false
+    public static var mockedOperation = MockedOperation.success
+
+    enum MockedOperation {
+        case firstEventFails
+        case malformedResponse
+        case badRequest
+        case success
+    }
 
     override class func canInit(with request: URLRequest) -> Bool {
         return true
@@ -41,7 +48,7 @@ class MockedClientURLProtocol: URLProtocol {
     }
 
     static func reset() {
-        MockedClientURLProtocol.firstEventFails = false
+        MockedClientURLProtocol.mockedOperation = MockedOperation.success
     }
 
     private func upload() {
@@ -55,13 +62,25 @@ class MockedClientURLProtocol: URLProtocol {
         XCTAssertNotNil(request.sendTime)
         XCTAssertNotEqual(request.sendTime, "")
 
-        if MockedClientURLProtocol.firstEventFails {
+        switch MockedClientURLProtocol.mockedOperation {
+        case .badRequest:
+            respondWithError(statusCode: 400, code: 0, message: "explanation about malformed request")
+        case .malformedResponse:
+            malformedResponse()
+        case .firstEventFails:
             respondWithSuccess(response: PublishEventResponse(errors: [
                 EventError.init(index: 0, reason: .eventDefinitionNotFound, message: "")
             ]))
-        } else {
+        case .success:
             respondWithSuccess(response: PublishEventResponse(errors: []))
         }
+    }
+
+    private func malformedResponse() {
+        let response = URLResponse() // Malformed/Incomplete
+
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocolDidFinishLoading(self)
     }
 
     private func respondWithError(statusCode: Int, code: Int, message: String) {
