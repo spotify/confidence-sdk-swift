@@ -4,7 +4,6 @@ import XCTest
 @testable import Confidence
 
 class EventStorageTest: XCTestCase {
-
     override func setUp() async throws {
         let folderURL = try! EventStorageImpl.getFolderURL()
         if FileManager.default.fileExists(atPath: folderURL.path) {
