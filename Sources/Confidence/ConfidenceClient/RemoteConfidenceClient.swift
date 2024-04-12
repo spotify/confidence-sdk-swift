@@ -70,29 +70,29 @@ public class RemoteConfidenceClient: ConfidenceClient {
     }
 }
 
-struct PublishEventRequest: Encodable {
+struct PublishEventRequest: Codable {
     var events: [Event]
     var clientSecret: String
     var sendTime: String
     var sdk: Sdk
 }
 
-struct Event: Encodable {
+struct Event: Codable {
     var eventDefinition: String
     var payload: NetworkStruct
     var eventTime: String
 }
 
-struct PublishEventResponse: Decodable {
+struct PublishEventResponse: Codable {
     var errors: [EventError]
 }
 
-struct EventError: Decodable {
+struct EventError: Codable {
     var index: Int
     var reason: Reason
     var message: String
 
-    enum Reason: String, Decodable, CaseIterableDefaultsLast {
+    enum Reason: String, Codable, CaseIterableDefaultsLast {
         case unspecified = "REASON_UNSPECIFIED"
         case eventDefinitionNotFound = "EVENT_DEFINITION_NOT_FOUND"
         case eventSchemaValidationFailed = "EVENT_SCHEMA_VALIDATION_FAILED"
