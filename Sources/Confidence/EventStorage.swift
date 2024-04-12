@@ -13,12 +13,12 @@ internal class EventStorageImpl: EventStorage {
     private let READYTOSENDEXTENSION = "READY"
     private let storageQueue = DispatchQueue(label: "com.confidence.events.storage")
     private var folderURL: URL
-    private var currentFileUrl: URL? = nil
-    private var currentFileHandle: FileHandle? = nil
+    private var currentFileUrl: URL?
+    private var currentFileHandle: FileHandle?
 
     init() throws {
         self.folderURL = try EventStorageImpl.getFolderURL()
-        if(!FileManager.default.fileExists(atPath: folderURL.backport.path)) {
+        if !FileManager.default.fileExists(atPath: folderURL.backport.path) {
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
         }
         try resetCurrentFile()
@@ -34,7 +34,7 @@ internal class EventStorageImpl: EventStorage {
             try resetCurrentFile()
         }
     }
-    
+
     func writeEvent(event: Event) throws {
         try storageQueue.sync {
             guard let currentFileHandle = currentFileHandle else {
@@ -56,10 +56,10 @@ internal class EventStorageImpl: EventStorage {
     func batchReadyIds() throws -> [String] {
         try storageQueue.sync {
             let fileUrls = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-            return fileUrls.filter({ url in url.pathExtension ==  READYTOSENDEXTENSION }).map({ url in url.lastPathComponent })
+            return fileUrls.filter({ url in url.pathExtension == READYTOSENDEXTENSION }).map({ url in url.lastPathComponent })
         }
     }
-    
+
     func eventsFrom(id: String) throws -> [Event] {
         try storageQueue.sync {
             let decoder = JSONDecoder()
@@ -68,7 +68,7 @@ internal class EventStorageImpl: EventStorage {
             let dataString = String(data: data, encoding: .utf8)
             return try dataString?.components(separatedBy: "\n")
                 .filter({ events in !events.isEmpty })
-                .map({ eventString in try decoder.decode(Event.self, from: eventString.data(using: .utf8)!)}) ?? []
+                .map({ eventString in try decoder.decode(Event.self, from: eventString.data(using: .utf8)!) }) ?? []
         }
     }
 
