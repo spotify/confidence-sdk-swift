@@ -976,3 +976,4 @@ final class DispatchQueueFakeSlow: DispatchQueueType {
         }
     }
 }
+// swiftlint:enable type_body_length
