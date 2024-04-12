@@ -1,22 +1,22 @@
 import Foundation
 
 public struct NetworkStruct: Equatable {
-    public init(fields: [String: NetworkStructValue]) {
+    public init(fields: [String: NetworkValue]) {
         self.fields = fields
     }
-    public var fields: [String: NetworkStructValue]
+    public var fields: [String: NetworkValue]
 }
 
-public enum NetworkStructValue: Equatable {
+public enum NetworkValue: Equatable {
     case null
     case string(String)
     case number(Double)
     case boolean(Bool)
     case structure(NetworkStruct)
-    case list([NetworkStructValue])
+    case list([NetworkValue])
 }
 
-extension NetworkStructValue: Codable {
+extension NetworkValue: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
 
@@ -48,7 +48,7 @@ extension NetworkStructValue: Codable {
             self = .boolean(bool)
         } else if let object = try? container.decode(NetworkStruct.self) {
             self = .structure(object)
-        } else if let list = try? container.decode([NetworkStructValue].self) {
+        } else if let list = try? container.decode([NetworkValue].self) {
             self = .list(list)
         } else {
             throw DecodingError.dataCorrupted(
@@ -65,6 +65,6 @@ extension NetworkStruct: Codable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        self.fields = try container.decode([String: NetworkStructValue].self)
+        self.fields = try container.decode([String: NetworkValue].self)
     }
 }

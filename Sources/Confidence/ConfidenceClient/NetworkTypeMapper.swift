@@ -7,28 +7,28 @@ public enum NetworkTypeMapper {
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    public static func convertValue(_ value: ConfidenceValue) throws -> NetworkStructValue? {
+    public static func convertValue(_ value: ConfidenceValue) throws -> NetworkValue? {
         switch value.type() {
         case .boolean:
             guard let value = value.asBoolean() else {
                 return nil
             }
-            return NetworkStructValue.boolean(value)
+            return NetworkValue.boolean(value)
         case .string:
             guard let value = value.asString() else {
                 return nil
             }
-            return NetworkStructValue.string(value)
+            return NetworkValue.string(value)
         case .integer:
             guard let value = value.asInteger() else {
                 return nil
             }
-            return NetworkStructValue.number(Double(value))
+            return NetworkValue.number(Double(value))
         case .double:
             guard let value = value.asDouble() else {
                 return nil
             }
-            return NetworkStructValue.number(value)
+            return NetworkValue.number(value)
         case .date:
             let dateFormatter = ISO8601DateFormatter()
             dateFormatter.timeZone = TimeZone.current
@@ -36,7 +36,7 @@ public enum NetworkTypeMapper {
             guard let value = value.asDateComponents(), let dateString = Calendar.current.date(from: value) else {
                 throw ConfidenceError.internalError(message: "Could not create date from components")
             }
-            return NetworkStructValue.string(dateFormatter.string(from: dateString))
+            return NetworkValue.string(dateFormatter.string(from: dateString))
         case .timestamp:
             guard let value = value.asDate() else {
                 return nil
@@ -44,17 +44,17 @@ public enum NetworkTypeMapper {
             let timestampFormatter = ISO8601DateFormatter()
             timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
             let timestamp = timestampFormatter.string(from: value)
-            return NetworkStructValue.string(timestamp)
+            return NetworkValue.string(timestamp)
         case .list:
             guard let value = value.asList() else {
                 return nil
             }
-            return try NetworkStructValue.list(value.compactMap(convertValue))
+            return try NetworkValue.list(value.compactMap(convertValue))
         case .structure:
             guard let value = value.asStructure() else {
                 return nil
             }
-            return try NetworkStructValue.structure(NetworkStruct(fields: value.compactMapValues(convertValue)))
+            return try NetworkValue.structure(NetworkStruct(fields: value.compactMapValues(convertValue)))
         case .null:
             return nil
         }

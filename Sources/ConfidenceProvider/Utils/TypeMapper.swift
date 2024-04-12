@@ -28,33 +28,33 @@ public enum TypeMapper {
                 }))
     }
 
-    static private func convertValueToStructValue(_ value: Value) -> NetworkStructValue? {
+    static private func convertValueToStructValue(_ value: Value) -> NetworkValue? {
         switch value {
         case .boolean(let value):
-            return NetworkStructValue.boolean(value)
+            return NetworkValue.boolean(value)
         case .string(let value):
-            return NetworkStructValue.string(value)
+            return NetworkValue.string(value)
         case .integer(let value):
-            return NetworkStructValue.number(Double(value))
+            return NetworkValue.number(Double(value))
         case .double(let value):
-            return NetworkStructValue.number(value)
+            return NetworkValue.number(value)
         case .date(let value):
             let timestampFormatter = ISO8601DateFormatter()
             timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
             let timestamp = timestampFormatter.string(from: value)
-            return NetworkStructValue.string(timestamp)
+            return NetworkValue.string(timestamp)
         case .list(let values):
             return .list(values.compactMap(convertValueToStructValue))
         case .structure(let values):
             return .structure(NetworkStruct(fields: values.compactMapValues(convertValueToStructValue)))
         case .null:
-            return NetworkStructValue.null
+            return NetworkValue.null
         }
     }
 
     // swiftlint:disable:next cyclomatic_complexity
     static private func convertStructValueToValue(
-        _ structValue: NetworkStructValue, schema: FlagSchema?
+        _ structValue: NetworkValue, schema: FlagSchema?
     ) throws -> Value {
         guard let fieldType = schema else {
             throw OpenFeatureError.parseError(message: "Mismatch between schema and value")
