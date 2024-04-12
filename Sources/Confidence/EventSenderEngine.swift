@@ -40,25 +40,24 @@ final class EventSenderEngineImpl: EventSenderEngine {
         self.storage = storage
         self.flushPolicies = flushPolicies
 
-        writeReqChannel.sink(receiveValue: { [weak self] event in
+        writeReqChannel.sink { [weak self] event in
             guard let self = self else { return }
             do {
                 try self.storage.writeEvent(event: event)
             } catch {
-
             }
 
-            self.flushPolicies.forEach({ policy in policy.hit(event: event) })
-            let shouldFlush = self.flushPolicies.contains(where: { policy in policy.shouldFlush() })
+            self.flushPolicies.forEach { policy in policy.hit(event: event) }
+            let shouldFlush = self.flushPolicies.contains { policy in policy.shouldFlush() }
 
             if shouldFlush {
                 self.uploadReqChannel.send(EventSenderEngineImpl.sendSignalName)
-                self.flushPolicies.forEach({ policy in policy.reset() })
+                self.flushPolicies.forEach { policy in policy.reset() }
             }
+        }
+        .store(in: &cancellables)
 
-        }).store(in: &cancellables)
-
-        uploadReqChannel.sink(receiveValue: { [weak self] _ in
+        uploadReqChannel.sink { [weak self] _ in
             do {
                 guard let self = self else { return }
                 try self.storage.startNewBatch()
@@ -71,12 +70,12 @@ final class EventSenderEngineImpl: EventSenderEngine {
                     }
                 }
             } catch {
-
             }
-        }).store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 
-    func send(name: String, message: [String : ConfidenceValue]) throws {
+    func send(name: String, message: [String: ConfidenceValue]) throws {
         writeReqChannel.send(ConfidenceEvent(
             definition: name,
             payload: try NetworkTypeMapper.from(value: message),
@@ -90,11 +89,11 @@ final class EventSenderEngineImpl: EventSenderEngine {
 }
 
 private extension Publisher where Self.Failure == Never {
-  func sink(receiveValue: @escaping ((Self.Output) async -> Void)) -> AnyCancellable {
-    sink { value in
-      Task {
-        await receiveValue(value)
-      }
+    func sink(receiveValue: @escaping ((Self.Output) async -> Void)) -> AnyCancellable {
+        sink { value in
+            Task {
+                await receiveValue(value)
+            }
+        }
     }
-  }
 }

@@ -10,16 +10,14 @@ final class MinSizeFlushPolicy: FlushPolicy {
     func reset() {
         size = 0
     }
-    
+
     func hit(event: ConfidenceEvent) {
         size += 1
     }
-    
+
     func shouldFlush() -> Bool {
         return size >= maxSize
     }
-    
-
 }
 
 final class EventSenderEngineTest: XCTestCase {
@@ -35,13 +33,17 @@ final class EventSenderEngineTest: XCTestCase {
         )
 
         let expectation = XCTestExpectation(description: "Upload finished")
-        let cancellable = uploader.subject.sink { value in
+        let cancellable = uploader.subject.sink { _ in
             expectation.fulfill()
         }
 
         var events: [ConfidenceEvent] = []
         for i in 0..<5 {
-            events.append(ConfidenceEvent(definition: "\(i)", payload: NetworkStruct.init(fields: [:]), eventTime: Date.backport.nowISOString))
+            events.append(ConfidenceEvent(
+                definition: "\(i)",
+                payload: NetworkStruct.init(fields: [:]),
+                eventTime: Date.backport.nowISOString)
+            )
             try eventSenderEngine.send(name: "\(i)", message: ConfidenceStruct())
         }
 
@@ -55,4 +57,3 @@ final class EventSenderEngineTest: XCTestCase {
         cancellable.cancel()
     }
 }
-

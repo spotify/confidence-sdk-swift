@@ -3,7 +3,7 @@ import Combine
 @testable import Confidence
 
 final class EventUploaderMock: ConfidenceClient {
-    var calledRequest: [ConfidenceEvent]? = nil
+    var calledRequest: [ConfidenceEvent]?
     let subject: PassthroughSubject<Int, Never> = PassthroughSubject()
 
     func upload(batch: [ConfidenceEvent]) async throws -> Bool {
@@ -30,21 +30,21 @@ final class EventStorageMock: EventStorage {
         batches[("\(batches.count)")] = events
         events.removeAll()
     }
-    
+
     func writeEvent(event: ConfidenceEvent) throws {
         events.append(event)
     }
-    
+
     func batchReadyIds() -> [String] {
-        return batches.map({ batch in batch.0})
+        return batches.map { batch in batch.0 }
     }
-    
+
     func eventsFrom(id: String) throws -> [ConfidenceEvent] {
+        // swiftlint:disable:next force_unwrapping
         return batches[id]!
     }
-    
+
     func remove(id: String) throws {
         batches.removeValue(forKey: id)
     }
-
 }

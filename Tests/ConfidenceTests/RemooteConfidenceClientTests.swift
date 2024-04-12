@@ -67,7 +67,7 @@ class RemoteConfidenceClientTest: XCTestCase {
 
         var caughtError: ConfidenceError?
         do {
-            let _ = try await client.upload(batch: [
+            _ = try await client.upload(batch: [
                 ConfidenceEvent(
                     definition: "testEvent",
                     payload: NetworkStruct.init(fields: [:]),
@@ -91,7 +91,7 @@ class RemoteConfidenceClientTest: XCTestCase {
 
         var caughtError: ConfidenceError?
         do {
-            let _ = try await client.upload(batch: [
+            _ = try await client.upload(batch: [
                 ConfidenceEvent(
                     definition: "testEvent",
                     payload: NetworkStruct.init(fields: [:]),
