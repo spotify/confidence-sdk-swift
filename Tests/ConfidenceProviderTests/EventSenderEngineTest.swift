@@ -1,4 +1,5 @@
 import Foundation
+import Common
 import XCTest
 
 @testable import Confidence
@@ -10,7 +11,7 @@ final class MinSizeFlushPolicy: FlushPolicy {
         size = 0
     }
     
-    func hit(event: Event) {
+    func hit(event: ConfidenceEvent) {
         size += 1
     }
     
@@ -38,18 +39,18 @@ final class EventSenderEngineTest: XCTestCase {
             expectation.fulfill()
         }
 
-        var events: [Event] = []
+        var events: [ConfidenceEvent] = []
         for i in 0..<5 {
-            events.append(Event(name: "\(i)", payload: [:], eventTime: Date()))
-            eventSenderEngine.send(name: "\(i)", message: [:])
+            events.append(ConfidenceEvent(definition: "\(i)", payload: NetworkStruct.init(fields: [:]), eventTime: Date.backport.nowISOString))
+            try eventSenderEngine.send(name: "\(i)", message: ConfidenceStruct())
         }
 
         wait(for: [expectation], timeout: 5)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest.map { $0.name } == events.map { $0.name })
+        XCTAssertTrue(uploadRequest.map { $0.definition } == events.map { $0.definition })
 
         uploader.reset()
-        eventSenderEngine.send(name: "Hello", message: [:])
+        try eventSenderEngine.send(name: "Hello", message: [:])
         XCTAssertNil(uploader.calledRequest)
         cancellable.cancel()
     }

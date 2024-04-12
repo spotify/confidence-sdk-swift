@@ -1,13 +1,9 @@
 import Combine
 import Foundation
 
-protocol EventsUploader {
-    func upload(request: [Event]) async -> Bool
-}
-
 protocol FlushPolicy {
     func reset()
-    func hit(event: Event)
+    func hit(event: ConfidenceEvent)
     func shouldFlush() -> Bool
 }
 
@@ -16,24 +12,24 @@ protocol Clock {
 }
 
 protocol EventSenderEngine {
-    func send(name: String, message: [String: ConfidenceValue])
+    func send(name: String, message: ConfidenceStruct) throws
     func shutdown()
 }
 
 final class EventSenderEngineImpl: EventSenderEngine {
     private static let sendSignalName: String = "FLUSH"
     private let storage: any EventStorage
-    private let writeReqChannel = PassthroughSubject<Event, Never>()
+    private let writeReqChannel = PassthroughSubject<ConfidenceEvent, Never>()
     private let uploadReqChannel = PassthroughSubject<String, Never>()
     private var cancellables = Set<AnyCancellable>()
     private let flushPolicies: [FlushPolicy]
-    private let uploader: EventsUploader
+    private let uploader: ConfidenceClient
     private let clientSecret: String
     private let clock: Clock
 
     init(
         clientSecret: String,
-        uploader: EventsUploader,
+        uploader: ConfidenceClient,
         clock: Clock,
         storage: EventStorage,
         flushPolicies: [FlushPolicy]
@@ -69,7 +65,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
                 let ids = try storage.batchReadyIds()
                 for id in ids {
                     let events = try self.storage.eventsFrom(id: id)
-                    let shouldCleanup = await self.uploader.upload(request: events)
+                    let shouldCleanup = try await self.uploader.upload(batch: events)
                     if shouldCleanup {
                         try storage.remove(id: id)
                     }
@@ -80,8 +76,12 @@ final class EventSenderEngineImpl: EventSenderEngine {
         }).store(in: &cancellables)
     }
 
-    func send(name: String, message: [String: ConfidenceValue]) {
-        writeReqChannel.send(Event(name: name, payload: message, eventTime: Date()))
+    func send(name: String, message: [String : ConfidenceValue]) throws {
+        writeReqChannel.send(ConfidenceEvent(
+            definition: name,
+            payload: try NetworkTypeMapper.from(value: message),
+            eventTime: Date.backport.nowISOString)
+        )
     }
 
     func shutdown() {

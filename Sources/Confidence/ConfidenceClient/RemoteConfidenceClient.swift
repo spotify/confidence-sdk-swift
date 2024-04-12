@@ -26,7 +26,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         self.metadata = metadata
     }
 
-    public func upload(batch: [ConfidenceClientEvent]) async throws {
+    public func upload(batch: [ConfidenceEvent]) async throws -> Bool {
         let timeString = Date.backport.nowISOString
         let request = PublishEventRequest(
             events: batch.map { event in
@@ -54,7 +54,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
                     Logger(subsystem: "com.confidence.client", category: "network").error(
                         "Backend reported errors for \(indexedErrorsCount) event(s) in batch")
                 }
-                return
+                return true
             case .failure(let errorData):
                 throw handleError(error: errorData)
             }

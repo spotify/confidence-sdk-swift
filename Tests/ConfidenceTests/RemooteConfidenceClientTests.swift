@@ -18,9 +18,14 @@ class RemoteConfidenceClientTest: XCTestCase {
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
-        try await client.upload(batch: [
-            ConfidenceClientEvent(definition: "testEvent", payload: NetworkStruct.init(fields: [:]))
+        let processed = try await client.upload(batch: [
+            ConfidenceEvent(
+                definition: "testEvent",
+                payload: NetworkStruct.init(fields: [:]),
+                eventTime: Date.backport.nowISOString
+            )
         ])
+        XCTAssertTrue(processed)
     }
 
     func testUploadEmptyBatchDoesntThrow() async throws {
@@ -30,7 +35,8 @@ class RemoteConfidenceClientTest: XCTestCase {
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
-        try await client.upload(batch: [])
+        let processed = try await client.upload(batch: [])
+        XCTAssertTrue(processed)
     }
 
     func testUploadFirstEventFailsDoesntThrow() async throws {
@@ -41,9 +47,14 @@ class RemoteConfidenceClientTest: XCTestCase {
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
-        try await client.upload(batch: [
-            ConfidenceClientEvent(definition: "testEvent", payload: NetworkStruct.init(fields: [:]))
+        let processed = try await client.upload(batch: [
+            ConfidenceEvent(
+                definition: "testEvent",
+                payload: NetworkStruct.init(fields: [:]),
+                eventTime: Date.backport.nowISOString
+            )
         ])
+        XCTAssertTrue(processed)
     }
 
     func testBadRequestThrows() async throws {
@@ -56,8 +67,12 @@ class RemoteConfidenceClientTest: XCTestCase {
 
         var caughtError: ConfidenceError?
         do {
-            try await client.upload(batch: [
-                ConfidenceClientEvent(definition: "testEvent", payload: NetworkStruct.init(fields: [:]))
+            let _ = try await client.upload(batch: [
+                ConfidenceEvent(
+                    definition: "testEvent",
+                    payload: NetworkStruct.init(fields: [:]),
+                    eventTime: Date.backport.nowISOString
+                )
             ])
         } catch {
             caughtError = error as! ConfidenceError?
@@ -76,8 +91,12 @@ class RemoteConfidenceClientTest: XCTestCase {
 
         var caughtError: ConfidenceError?
         do {
-            try await client.upload(batch: [
-                ConfidenceClientEvent(definition: "testEvent", payload: NetworkStruct.init(fields: [:]))
+            let _ = try await client.upload(batch: [
+                ConfidenceEvent(
+                    definition: "testEvent",
+                    payload: NetworkStruct.init(fields: [:]),
+                    eventTime: Date.backport.nowISOString
+                )
             ])
         } catch {
             caughtError = error as! ConfidenceError?

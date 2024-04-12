@@ -3,7 +3,7 @@ import Foundation
 @testable import Confidence
 
 class ConfidenceClientMock: ConfidenceClient {
-    func upload(batch: [ConfidenceClientEvent]) async throws {
-        // NO-OP
+    func upload(batch: [ConfidenceEvent]) async throws -> Bool {
+        return true
     }
 }
