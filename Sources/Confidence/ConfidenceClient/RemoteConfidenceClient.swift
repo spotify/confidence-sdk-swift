@@ -29,7 +29,10 @@ public class RemoteConfidenceClient: ConfidenceClient {
     func upload(events: [NetworkEvent]) async throws -> Bool {
         let timeString = Date.backport.nowISOString
         let request = PublishEventRequest(
-            events: events,
+            events: events.map { event in NetworkEvent(
+                eventDefinition: "eventDefinitions/\(event.eventDefinition)",
+                payload: event.payload,
+                eventTime: event.eventTime) },
             clientSecret: options.credentials.getSecret(),
             sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)
