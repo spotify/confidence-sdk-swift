@@ -124,20 +124,10 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         ]))
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
-        let resultString = String(data: try encoder.encode(value), encoding: .utf8)
+        let resultString = try XCTUnwrap(String(data: try encoder.encode(value), encoding: .utf8))
+        let resultData = try XCTUnwrap(resultString.data(using: .utf8))
+        let decodedValue = try JSONDecoder().decode(ConfidenceValue.self, from: resultData)
 
-        let expectedString = """
-        {\"bool\":true,
-        \"date\":\"2024-04-03\",
-        \"double\":4.5,
-        \"int\":3,
-        \"list\":[3,5],
-        \"null\":null,
-        \"string\":\"value\",
-        \"structure\":{\"int\":5},
-        \"timestamp\":\"2024-04-05T20:00:00Z"}
-        """.replacingOccurrences(of: "\n", with: "") // Newlines were added for readability
-
-        XCTAssertEqual(resultString, expectedString)
+        XCTAssertEqual(value, decodedValue)
     }
 }

@@ -2,10 +2,15 @@ import Foundation
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
-public class ConfidenceValue: Equatable, Encodable, CustomStringConvertible {
+public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
     private let value: ConfidenceValueInternal
     public var description: String {
         return value.description
+    }
+
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self.value = try container.decode(ConfidenceValueInternal.self)
     }
 
     public init(boolean: Bool) {
@@ -181,8 +186,7 @@ public class ConfidenceValue: Equatable, Encodable, CustomStringConvertible {
 
 extension ConfidenceValue {
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(value)
+        try value.encode(to: encoder)
     }
 }
 
@@ -200,7 +204,7 @@ public enum ConfidenceValueType: CaseIterable {
 
 
 /// Serializable data structure meant for event sending via Confidence
-private enum ConfidenceValueInternal: Equatable, Encodable {
+private enum ConfidenceValueInternal: Equatable, Codable {
     case boolean(Bool)
     case string(String)
     case integer(Int64)
@@ -233,43 +237,6 @@ extension ConfidenceValueInternal: CustomStringConvertible {
             return "\(values.mapValues { value in value.description })"
         case .null:
             return "null"
-        }
-    }
-}
-
-extension ConfidenceValueInternal {
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-
-        switch self {
-        case .null:
-            try container.encodeNil()
-        case .integer(let integer):
-            try container.encode(integer)
-        case .double(let double):
-            try container.encode(double)
-        case .string(let string):
-            try container.encode(string)
-        case .boolean(let boolean):
-            try container.encode(boolean)
-        case .date(let dateComponents):
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.timeZone = TimeZone.current
-            dateFormatter.formatOptions = [.withFullDate]
-            if let date = Calendar.current.date(from: dateComponents) {
-                try container.encode(dateFormatter.string(from: date))
-            } else {
-                throw ConfidenceError.internalError(message: "Could not create date from components")
-            }
-        case .timestamp(let date):
-            let timestampFormatter = ISO8601DateFormatter()
-            timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
-            let timestamp = timestampFormatter.string(from: date)
-            try container.encode(timestamp)
-        case .structure(let structure):
-            try container.encode(structure)
-        case .list(let list):
-            try container.encode(list)
         }
     }
 }
