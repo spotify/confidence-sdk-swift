@@ -1,4 +1,5 @@
 import Combine
+import Common
 import Foundation
 
 protocol FlushPolicy {
@@ -7,12 +8,8 @@ protocol FlushPolicy {
     func shouldFlush() -> Bool
 }
 
-protocol Clock {
-    func now() -> Date
-}
-
 protocol EventSenderEngine {
-    func send(name: String, message: ConfidenceStruct) throws
+    func send(name: String, message: ConfidenceStruct)
     func shutdown()
 }
 
@@ -25,16 +22,13 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let flushPolicies: [FlushPolicy]
     private let uploader: ConfidenceClient
     private let clientSecret: String
-    private let clock: Clock
 
     init(
         clientSecret: String,
         uploader: ConfidenceClient,
-        clock: Clock,
         storage: EventStorage,
         flushPolicies: [FlushPolicy]
     ) {
-        self.clock = clock
         self.uploader = uploader
         self.clientSecret = clientSecret
         self.storage = storage
@@ -63,8 +57,17 @@ final class EventSenderEngineImpl: EventSenderEngine {
                 try self.storage.startNewBatch()
                 let ids = try storage.batchReadyIds()
                 for id in ids {
-                    let events = try self.storage.eventsFrom(id: id)
-                    let shouldCleanup = try await self.uploader.upload(batch: events)
+                    let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
+                        .compactMap { event in
+                            let networkPayload = event.payload.compactMapValues { payloadValue in
+                                try? NetworkTypeMapper.convertValue(payloadValue)
+                            }
+                            return NetworkEvent(
+                                eventDefinition: event.name,
+                                payload: NetworkStruct(fields: networkPayload),
+                                eventTime: Date.backport.toISOString(date: event.eventTime))
+                        }
+                    let shouldCleanup = try await self.uploader.upload(events: events)
                     if shouldCleanup {
                         try storage.remove(id: id)
                     }
@@ -75,11 +78,11 @@ final class EventSenderEngineImpl: EventSenderEngine {
         .store(in: &cancellables)
     }
 
-    func send(name: String, message: [String: ConfidenceValue]) throws {
+    func send(name: String, message: [String: ConfidenceValue]) {
         writeReqChannel.send(ConfidenceEvent(
             name: name,
-            payload: try NetworkTypeMapper.from(value: message),
-            time: Date.backport.nowISOString)
+            payload: message,
+            eventTime: Date.backport.now)
         )
     }
 

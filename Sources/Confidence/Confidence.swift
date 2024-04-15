@@ -6,64 +6,30 @@ public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
+    let eventSenderEngine: EventSenderEngine
     public var initializationStrategy: InitializationStrategy
     private var removedContextKeys: Set<String> = Set()
-    private var client: ConfidenceClient
 
     required init(
         clientSecret: String,
         timeout: TimeInterval,
         region: ConfidenceRegion,
+        eventSenderEngine: EventSenderEngine,
         initializationStrategy: InitializationStrategy,
         context: ConfidenceStruct = [:],
-        client: ConfidenceClient,
         parent: ConfidenceEventSender? = nil
     ) {
+        self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
         self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
         self.context = context
-        self.client = client
         self.parent = parent
     }
 
-    public convenience init(
-        clientSecret: String,
-        timeout: TimeInterval,
-        region: ConfidenceRegion,
-        initializationStrategy: InitializationStrategy,
-        context: ConfidenceStruct = [:],
-        parent: ConfidenceEventSender? = nil
-    ) {
-        self.init(
-            clientSecret: clientSecret,
-            timeout: timeout,
-            region: region,
-            initializationStrategy: initializationStrategy,
-            client: RemoteConfidenceClient(
-            options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                timeout: timeout,
-                region: region),
-            metadata: ConfidenceMetadata(
-                name: "SDK_ID_SWIFT_CONFIDENCE",
-                version: "0.1.4") // x-release-please-version)
-            )
-        )
-    }
-
     public func send(name: String, payload: ConfidenceStruct) {
-        print("Sending: \"\(name)\".\nMessage: \(payload)\nContext: \(context)")
-        Task {
-            // TODO: This will be called inside the EventSenderEngine once implemented
-            try? await client.upload(batch: [
-                ConfidenceEvent(
-                    name: name,
-                    payload: NetworkTypeMapper.from(value: payload),
-                    time: Date.backport.nowISOString)
-            ])
-        }
+        eventSenderEngine.send(name: name, message: payload)
     }
 
 
@@ -92,9 +58,9 @@ public class Confidence: ConfidenceEventSender {
             clientSecret: clientSecret,
             timeout: timeout,
             region: region,
+            eventSenderEngine: eventSenderEngine,
             initializationStrategy: initializationStrategy,
             context: context,
-            client: client,
             parent: self)
     }
 }
@@ -105,9 +71,15 @@ extension Confidence {
         var timeout: TimeInterval = 10.0
         var region: ConfidenceRegion = .global
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
+        let eventStorage: EventStorage
 
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
+            do {
+                eventStorage = try EventStorageImpl()
+            } catch {
+                eventStorage = EventStorageInMemory()
+            }
         }
 
         public func withTimeout(timeout: TimeInterval) -> Builder {
@@ -127,20 +99,28 @@ extension Confidence {
         }
 
         public func build() -> Confidence {
+            let uploader = RemoteConfidenceClient(
+                options: ConfidenceClientOptions(
+                    credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
+                    timeout: timeout,
+                    region: region),
+                metadata: ConfidenceMetadata(
+                    name: "SDK_ID_SWIFT_CONFIDENCE",
+                    version: "0.1.4") // x-release-please-version
+            )
+            let eventSenderEngine = EventSenderEngineImpl(
+                clientSecret: clientSecret,
+                uploader: uploader,
+                storage: eventStorage,
+                flushPolicies: [])
             return Confidence(
                 clientSecret: clientSecret,
                 timeout: timeout,
                 region: region,
+                eventSenderEngine: eventSenderEngine,
                 initializationStrategy: initializationStrategy,
-                client: RemoteConfidenceClient(
-                    options: ConfidenceClientOptions(
-                        credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                        timeout: timeout,
-                        region: region),
-                    metadata: ConfidenceMetadata(
-                        name: "SDK_ID_SWIFT_CONFIDENCE",
-                        version: "0.1.4") // x-release-please-version
-                )
+                context: [:],
+                parent: nil
             )
         }
     }

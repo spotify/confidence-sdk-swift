@@ -27,7 +27,6 @@ final class EventSenderEngineTest: XCTestCase {
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
             uploader: uploader,
-            clock: ClockMock(),
             storage: EventStorageMock(),
             flushPolicies: flushPolicies
         )
@@ -41,18 +40,18 @@ final class EventSenderEngineTest: XCTestCase {
         for i in 0..<5 {
             events.append(ConfidenceEvent(
                 name: "\(i)",
-                payload: NetworkStruct.init(fields: [:]),
-                time: Date.backport.nowISOString)
+                payload: [:],
+                eventTime: Date.backport.now)
             )
-            try eventSenderEngine.send(name: "\(i)", message: ConfidenceStruct())
+            eventSenderEngine.send(name: "\(i)", message: ConfidenceStruct())
         }
 
         wait(for: [expectation], timeout: 5)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest.map { $0.name } == events.map { $0.name })
+        XCTAssertTrue(uploadRequest.map { $0.eventDefinition } == events.map { $0.name })
 
         uploader.reset()
-        try eventSenderEngine.send(name: "Hello", message: [:])
+        eventSenderEngine.send(name: "Hello", message: [:])
         XCTAssertNil(uploader.calledRequest)
         cancellable.cancel()
     }

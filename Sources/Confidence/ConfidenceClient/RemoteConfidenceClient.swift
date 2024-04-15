@@ -26,16 +26,10 @@ public class RemoteConfidenceClient: ConfidenceClient {
         self.metadata = metadata
     }
 
-    func upload(batch: [ConfidenceEvent]) async throws -> Bool {
+    func upload(events: [NetworkEvent]) async throws -> Bool {
         let timeString = Date.backport.nowISOString
         let request = PublishEventRequest(
-            events: batch.map { event in
-                Event(
-                    eventDefinition: "eventDefinitions/\(event.name)",
-                    payload: event.payload,
-                    time: timeString
-                )
-            },
+            events: events,
             clientSecret: options.credentials.getSecret(),
             sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)
@@ -71,16 +65,16 @@ public class RemoteConfidenceClient: ConfidenceClient {
 }
 
 struct PublishEventRequest: Codable {
-    var events: [Event]
+    var events: [NetworkEvent]
     var clientSecret: String
     var sendTime: String
     var sdk: Sdk
 }
 
-struct Event: Codable {
+struct NetworkEvent: Codable {
     var eventDefinition: String
     var payload: NetworkStruct
-    var time: String
+    var eventTime: String
 }
 
 struct PublishEventResponse: Codable {

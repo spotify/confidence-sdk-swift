@@ -7,9 +7,9 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
-            context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            context: ["k1": ConfidenceValue(string: "v1")]
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -26,9 +26,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -49,9 +50,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         confidence.updateContextEntry(
             key: "k1",
@@ -67,9 +69,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -89,9 +92,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -111,12 +115,13 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: [
                 "k1": ConfidenceValue(string: "v1"),
                 "k2": ConfidenceValue(string: "v2")
             ],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         confidence.removeContextEntry(key: "k2")
         let expected = [
@@ -130,9 +135,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -149,9 +155,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             [
@@ -171,9 +178,10 @@ final class ConfidenceTests: XCTestCase {
             clientSecret: "",
             timeout: TimeInterval(),
             region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
-            client: ConfidenceClientMock()
+            parent: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             [
