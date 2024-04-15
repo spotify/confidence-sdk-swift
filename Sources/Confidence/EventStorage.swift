@@ -95,7 +95,6 @@ internal class EventStorageImpl: EventStorage {
             self.currentFileUrl = currentFile
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
-            // Create a brand new file
             let fileUrl = folderURL.appendingPathComponent(String(Date().timeIntervalSince1970))
             FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
             self.currentFileUrl = fileUrl
@@ -120,10 +119,8 @@ internal class EventStorageImpl: EventStorage {
     }
 }
 
-struct Event: Codable {
-    let eventDefinition: String
+struct Event: Encodable, Equatable, Decodable {
+    let name: String
+    let payload: [String: ConfidenceValue]
     let eventTime: Date
-    // TODO: fix this to be ConfidenceValue
-    let payload: [String]
-    let context: [String]
 }

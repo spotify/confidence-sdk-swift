@@ -5,12 +5,6 @@ protocol EventsUploader {
     func upload(request: [Event]) async -> Bool
 }
 
-struct Event: Encodable, Equatable {
-    let name: String
-    let payload: [String: ConfidenceValue]
-    let eventTime: Date
-}
-
 protocol FlushPolicy {
     func reset()
     func hit(event: Event)
@@ -72,7 +66,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
             do {
                 guard let self = self else { return }
                 try self.storage.startNewBatch()
-                let ids = storage.batchReadyIds()
+                let ids = try storage.batchReadyIds()
                 for id in ids {
                     let events = try self.storage.eventsFrom(id: id)
                     let shouldCleanup = await self.uploader.upload(request: events)
