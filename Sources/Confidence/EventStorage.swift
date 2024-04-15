@@ -90,10 +90,12 @@ internal class EventStorageImpl: EventStorage {
     }
 
     private func resetCurrentFile() throws {
+        // Handling already existing file from previous session
         if let currentFile = try getLastWritingFile() {
             self.currentFileUrl = currentFile
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
+            // Create a brand new file
             let fileUrl = folderURL.appendingPathComponent(String(Date().timeIntervalSince1970))
             FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
             self.currentFileUrl = fileUrl
@@ -114,7 +116,7 @@ internal class EventStorageImpl: EventStorage {
         }
 
         return applicationSupportUrl.backport.appending(
-            components: "com.confidence.cache", "\(bundleIdentifier)", "events")
+            components: "com.confidence.events.storage", "\(bundleIdentifier)", "events")
     }
 }
 
