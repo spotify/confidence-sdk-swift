@@ -32,7 +32,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
             events: events.map { event in NetworkEvent(
                 eventDefinition: "eventDefinitions/\(event.eventDefinition)",
                 payload: event.payload,
-                eventTime: event.eventTime) },
+                eventTime: event.eventTime)
+            },
             clientSecret: options.credentials.getSecret(),
             sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)

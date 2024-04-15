@@ -112,7 +112,7 @@ extension Confidence {
                 clientSecret: clientSecret,
                 uploader: uploader,
                 storage: eventStorage,
-                flushPolicies: [SizeFlushPolicy(batchSize: 5)])
+                flushPolicies: [SizeFlushPolicy(batchSize: 1)])
             return Confidence(
                 clientSecret: clientSecret,
                 timeout: timeout,
