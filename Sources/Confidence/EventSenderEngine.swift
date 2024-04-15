@@ -77,9 +77,9 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
     func send(name: String, message: [String: ConfidenceValue]) throws {
         writeReqChannel.send(ConfidenceEvent(
-            definition: name,
+            name: name,
             payload: try NetworkTypeMapper.from(value: message),
-            eventTime: Date.backport.nowISOString)
+            time: Date.backport.nowISOString)
         )
     }
 

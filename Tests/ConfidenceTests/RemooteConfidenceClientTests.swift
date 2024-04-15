@@ -20,9 +20,9 @@ class RemoteConfidenceClientTest: XCTestCase {
 
         let processed = try await client.upload(batch: [
             ConfidenceEvent(
-                definition: "testEvent",
+                name: "testEvent",
                 payload: NetworkStruct.init(fields: [:]),
-                eventTime: Date.backport.nowISOString
+                time: Date.backport.nowISOString
             )
         ])
         XCTAssertTrue(processed)
@@ -49,9 +49,9 @@ class RemoteConfidenceClientTest: XCTestCase {
 
         let processed = try await client.upload(batch: [
             ConfidenceEvent(
-                definition: "testEvent",
+                name: "testEvent",
                 payload: NetworkStruct.init(fields: [:]),
-                eventTime: Date.backport.nowISOString
+                time: Date.backport.nowISOString
             )
         ])
         XCTAssertTrue(processed)
@@ -69,9 +69,9 @@ class RemoteConfidenceClientTest: XCTestCase {
         do {
             _ = try await client.upload(batch: [
                 ConfidenceEvent(
-                    definition: "testEvent",
+                    name: "testEvent",
                     payload: NetworkStruct.init(fields: [:]),
-                    eventTime: Date.backport.nowISOString
+                    time: Date.backport.nowISOString
                 )
             ])
         } catch {
@@ -93,9 +93,9 @@ class RemoteConfidenceClientTest: XCTestCase {
         do {
             _ = try await client.upload(batch: [
                 ConfidenceEvent(
-                    definition: "testEvent",
+                    name: "testEvent",
                     payload: NetworkStruct.init(fields: [:]),
-                    eventTime: Date.backport.nowISOString
+                    time: Date.backport.nowISOString
                 )
             ])
         } catch {

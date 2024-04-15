@@ -1,5 +1,5 @@
-import Confidence
 import XCTest
+@testable import Confidence
 
 final class ConfidenceTests: XCTestCase {
     func testWithContext() {

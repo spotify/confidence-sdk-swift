@@ -1,13 +1,13 @@
 import Foundation
 import Common
 
-public protocol ConfidenceClient {
+protocol ConfidenceClient {
     // Returns true if the batch has been correctly processed by the backend
     func upload(batch: [ConfidenceEvent]) async throws -> Bool
 }
 
-public struct ConfidenceEvent: Codable {
-    var definition: String
+struct ConfidenceEvent: Codable {
+    var name: String
     var payload: NetworkStruct
-    var eventTime: String
+    var time: String
 }

@@ -40,16 +40,16 @@ final class EventSenderEngineTest: XCTestCase {
         var events: [ConfidenceEvent] = []
         for i in 0..<5 {
             events.append(ConfidenceEvent(
-                definition: "\(i)",
+                name: "\(i)",
                 payload: NetworkStruct.init(fields: [:]),
-                eventTime: Date.backport.nowISOString)
+                time: Date.backport.nowISOString)
             )
             try eventSenderEngine.send(name: "\(i)", message: ConfidenceStruct())
         }
 
         wait(for: [expectation], timeout: 5)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest.map { $0.definition } == events.map { $0.definition })
+        XCTAssertTrue(uploadRequest.map { $0.name } == events.map { $0.name })
 
         uploader.reset()
         try eventSenderEngine.send(name: "Hello", message: [:])

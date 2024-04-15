@@ -10,7 +10,7 @@ public class Confidence: ConfidenceEventSender {
     private var removedContextKeys: Set<String> = Set()
     private var client: ConfidenceClient
 
-    required public init(
+    required init(
         clientSecret: String,
         timeout: TimeInterval,
         region: ConfidenceRegion,
@@ -28,15 +28,40 @@ public class Confidence: ConfidenceEventSender {
         self.parent = parent
     }
 
-    public func send(definition: String, payload: ConfidenceStruct) {
-        print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
+    public convenience init(
+        clientSecret: String,
+        timeout: TimeInterval,
+        region: ConfidenceRegion,
+        initializationStrategy: InitializationStrategy,
+        context: ConfidenceStruct = [:],
+        parent: ConfidenceEventSender? = nil
+    ) {
+        self.init(
+            clientSecret: clientSecret,
+            timeout: timeout,
+            region: region,
+            initializationStrategy: initializationStrategy,
+            client: RemoteConfidenceClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
+                timeout: timeout,
+                region: region),
+            metadata: ConfidenceMetadata(
+                name: "SDK_ID_SWIFT_CONFIDENCE",
+                version: "0.1.4") // x-release-please-version)
+            )
+        )
+    }
+
+    public func send(name: String, payload: ConfidenceStruct) {
+        print("Sending: \"\(name)\".\nMessage: \(payload)\nContext: \(context)")
         Task {
             // TODO: This will be called inside the EventSenderEngine once implemented
             try? await client.upload(batch: [
                 ConfidenceEvent(
-                    definition: definition,
+                    name: name,
                     payload: NetworkTypeMapper.from(value: payload),
-                    eventTime: Date.backport.nowISOString)
+                    time: Date.backport.nowISOString)
             ])
         }
     }
