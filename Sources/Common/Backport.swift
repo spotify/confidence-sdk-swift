@@ -1,21 +1,21 @@
 import Foundation
 
-public extension URL {
-    struct Backport {
+extension URL {
+    public struct Backport {
         var base: URL
 
-        public init(base: URL) {
+        init(base: URL) {
             self.base = base
         }
     }
 
-    var backport: Backport {
+    public var backport: Backport {
         Backport(base: self)
     }
 }
 
-public extension URL.Backport {
-    var path: String {
+extension URL.Backport {
+    public var path: String {
         if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
             return self.base.path(percentEncoded: false)
         } else {
@@ -23,7 +23,7 @@ public extension URL.Backport {
         }
     }
 
-    func appending<S>(components: S...) -> URL where S: StringProtocol {
+    public func appending<S>(components: S...) -> URL where S: StringProtocol {
         if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
             return components.reduce(self.base) { acc, cur in
                 return acc.appending(component: cur)
@@ -36,15 +36,15 @@ public extension URL.Backport {
     }
 }
 
-public extension Date {
-    struct Backport {
+extension Date {
+    public struct Backport {
     }
 
-    static var backport: Backport.Type { Backport.self }
+    static public var backport: Backport.Type { Backport.self }
 }
 
-public extension Date.Backport {
-    static var now: Date {
+extension Date.Backport {
+    static public var now: Date {
         if #available(macOS 12, iOS 15, tvOS 15, watchOS 8, *) {
             return Date.now
         } else {
@@ -52,7 +52,7 @@ public extension Date.Backport {
         }
     }
 
-    static var nowISOString: String {
+    static public var nowISOString: String {
         if #available(macOS 12, iOS 15, tvOS 15, watchOS 8, *) {
             return toISOString(date: Date.now)
         } else {
@@ -60,7 +60,7 @@ public extension Date.Backport {
         }
     }
 
-    static func toISOString(date: Date) -> String {
+    static public func toISOString(date: Date) -> String {
         if #available(macOS 12, iOS 15, tvOS 15, watchOS 8, *) {
             return date.ISO8601Format()
         } else {

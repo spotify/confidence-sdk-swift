@@ -1,9 +1,9 @@
 import Foundation
+import Common
 import Confidence
 import OpenFeature
 
-
-public class RemoteConfidenceClient: ConfidenceClient {
+public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private let flagApplier: FlagApplier
     private var options: ConfidenceClientOptions
@@ -20,10 +20,12 @@ public class RemoteConfidenceClient: ConfidenceClient {
         metadata: ConfidenceMetadata
     ) {
         self.options = options
-        self.httpClient = NetworkClient(session: session, region: options.region)
         self.flagApplier = flagApplier
         self.applyOnResolve = applyOnResolve
         self.metadata = metadata
+        self.httpClient = NetworkClient(
+            session: session,
+            baseUrl: BaseUrlMapper.from(region: options.region))
     }
 
     // MARK: Resolver
@@ -85,7 +87,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
             resolveReason: convert(resolveReason: resolvedFlag.reason))
     }
 
-    private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> Struct {
+    private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> NetworkStruct {
         var evaluationContext = TypeMapper.from(value: ctx)
         evaluationContext.fields[targetingKey] = .string(ctx.getTargetingKey())
         return evaluationContext
@@ -112,7 +114,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
 
 struct ResolveFlagsRequest: Codable {
     var flags: [String]
-    var evaluationContext: Struct
+    var evaluationContext: NetworkStruct
     var clientSecret: String
     var apply: Bool
     var sdk: Sdk
@@ -125,7 +127,7 @@ struct ResolveFlagsResponse: Codable {
 
 struct ResolvedFlag: Codable {
     var flag: String
-    var value: Struct? = Struct(fields: [:])
+    var value: NetworkStruct? = NetworkStruct(fields: [:])
     var variant: String = ""
     var flagSchema: StructFlagSchema? = StructFlagSchema(schema: [:])
     var reason: ResolveReason
@@ -161,16 +163,6 @@ struct ApplyFlagsRequest: Codable {
 }
 
 struct ApplyFlagsResponse: Codable {
-}
-
-struct Sdk: Codable {
-    init(id: String?, version: String?) {
-        self.id = id ?? "SDK_ID_SWIFT_PROVIDER"
-        self.version = version ?? "unknown"
-    }
-
-    var id: String
-    var version: String
 }
 
 private func displayName(resolvedFlag: ResolvedFlag) throws -> String {

@@ -1,23 +1,6 @@
 import Foundation
-import Combine
-@testable import Confidence
 
-final class EventUploaderMock: ConfidenceClient {
-    var calledRequest: [NetworkEvent]?
-    let subject: PassthroughSubject<Int, Never> = PassthroughSubject()
-
-    func upload(events: [NetworkEvent]) async throws -> Bool {
-        calledRequest = events
-        subject.send(1)
-        return true
-    }
-
-    func reset() {
-        calledRequest = nil
-    }
-}
-
-final class EventStorageMock: EventStorage {
+final class EventStorageInMemory: EventStorage {
     private var events: [ConfidenceEvent] = []
     private var batches: [String: [ConfidenceEvent]] = [:]
     func startNewBatch() throws {

@@ -1,4 +1,5 @@
 import Foundation
+import Common
 import Confidence
 
 public class DefaultStorage: Storage {
@@ -84,7 +85,9 @@ public class DefaultStorage: Storage {
 
     func getConfigUrl() throws -> URL {
         guard
-            let applicationSupportUrl: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+            let applicationSupportUrl: URL = FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask)
                 .last
         else {
             throw ConfidenceError.cacheError(message: "Could not get URL for application directory")

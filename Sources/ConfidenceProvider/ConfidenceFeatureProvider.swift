@@ -1,7 +1,8 @@
 import Foundation
+import Combine
+import Common
 import Confidence
 import OpenFeature
-import Combine
 import os
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
@@ -15,7 +16,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private var resolver: Resolver
-    private let client: ConfidenceClient
+    private let client: ConfidenceResolveClient
     private var cache: ProviderCache
     private var overrides: [String: LocalOverride]
     private let flagApplier: FlagApplier
@@ -27,7 +28,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder`or init with `Confidence` instead.
     init(
         metadata: ProviderMetadata,
-        client: RemoteConfidenceClient,
+        client: RemoteConfidenceResolveClient,
         cache: ProviderCache,
         storage: Storage,
         overrides: [String: LocalOverride] = [:],
@@ -58,11 +59,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.storage = DefaultStorage.resolverFlagsCache()
         self.resolver = LocalStorageResolver(cache: cache)
         self.flagApplier = FlagApplierWithRetries(
-            httpClient: NetworkClient(region: options.region),
+            httpClient: NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region)),
             storage: DefaultStorage.applierFlagsCache(),
             options: options,
             metadata: metadata)
-        self.client = RemoteConfidenceClient(
+        self.client = RemoteConfidenceResolveClient(
             options: options,
             applyOnResolve: false,
             flagApplier: flagApplier,
@@ -611,7 +612,7 @@ extension ConfidenceFeatureProvider {
             let flagApplier =
             flagApplier
             ?? FlagApplierWithRetries(
-                httpClient: NetworkClient(region: options.region),
+                httpClient: NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region)),
                 storage: DefaultStorage.applierFlagsCache(),
                 options: options,
                 metadata: metadata
@@ -619,7 +620,7 @@ extension ConfidenceFeatureProvider {
 
             let cache = cache ?? InMemoryProviderCache.from(storage: storage)
 
-            let client = RemoteConfidenceClient(
+            let client = RemoteConfidenceResolveClient(
                 options: options,
                 session: self.session,
                 applyOnResolve: false,

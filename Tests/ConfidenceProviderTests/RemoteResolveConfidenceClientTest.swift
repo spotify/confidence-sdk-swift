@@ -4,11 +4,11 @@ import XCTest
 
 @testable import ConfidenceProvider
 
-class RemoteConfidenceClientTest: XCTestCase {
-    var flags: [String: MockedConfidenceClientURLProtocol.TestFlag] = [:]
-    let resolvedFlag1 = MockedConfidenceClientURLProtocol.ResolvedTestFlag(
+class RemoteResolveConfidenceClientTest: XCTestCase {
+    var flags: [String: MockedResolveClientURLProtocol.TestFlag] = [:]
+    let resolvedFlag1 = MockedResolveClientURLProtocol.ResolvedTestFlag(
         variant: "control", value: .structure(["size": .integer(3)]))
-    let resolvedFlag2 = MockedConfidenceClientURLProtocol.ResolvedTestFlag(
+    let resolvedFlag2 = MockedResolveClientURLProtocol.ResolvedTestFlag(
         variant: "treatment", value: .structure(["size": .integer(2)]))
 
     override func setUp() {
@@ -17,16 +17,16 @@ class RemoteConfidenceClientTest: XCTestCase {
             "flags/flag2": .init(resolve: ["user1": resolvedFlag2]),
         ]
 
-        MockedConfidenceClientURLProtocol.reset()
+        MockedResolveClientURLProtocol.reset()
 
         super.setUp()
     }
 
     func testResolveMultipleFlagsSucceeds() async throws {
-        let session = MockedConfidenceClientURLProtocol.mockedSession(flags: flags)
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         let flagApplier = FlagApplierMock()
 
-        let client = RemoteConfidenceClient(
+        let client = RemoteConfidenceResolveClient(
             options: .init(credentials: .clientSecret(secret: "test")),
             session: session,
             applyOnResolve: true,

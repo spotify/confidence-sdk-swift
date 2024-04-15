@@ -1,87 +1,91 @@
 import Combine
+import Common
 import Foundation
-
-protocol EventsUploader {
-    func upload(request: [Event]) async -> Bool
-}
 
 protocol FlushPolicy {
     func reset()
-    func hit(event: Event)
+    func hit(event: ConfidenceEvent)
     func shouldFlush() -> Bool
 }
 
-protocol Clock {
-    func now() -> Date
-}
-
 protocol EventSenderEngine {
-    func send(name: String, message: [String: ConfidenceValue])
+    func emit(definition: String, payload: ConfidenceStruct, context: ConfidenceStruct)
     func shutdown()
 }
 
 final class EventSenderEngineImpl: EventSenderEngine {
     private static let sendSignalName: String = "FLUSH"
     private let storage: any EventStorage
-    private let writeReqChannel = PassthroughSubject<Event, Never>()
+    private let writeReqChannel = PassthroughSubject<ConfidenceEvent, Never>()
     private let uploadReqChannel = PassthroughSubject<String, Never>()
     private var cancellables = Set<AnyCancellable>()
     private let flushPolicies: [FlushPolicy]
-    private let uploader: EventsUploader
+    private let uploader: ConfidenceClient
     private let clientSecret: String
-    private let clock: Clock
 
     init(
         clientSecret: String,
-        uploader: EventsUploader,
-        clock: Clock,
+        uploader: ConfidenceClient,
         storage: EventStorage,
         flushPolicies: [FlushPolicy]
     ) {
-        self.clock = clock
         self.uploader = uploader
         self.clientSecret = clientSecret
         self.storage = storage
         self.flushPolicies = flushPolicies
 
-        writeReqChannel.sink(receiveValue: { [weak self] event in
+        writeReqChannel.sink { [weak self] event in
             guard let self = self else { return }
             do {
                 try self.storage.writeEvent(event: event)
             } catch {
-
             }
 
-            self.flushPolicies.forEach({ policy in policy.hit(event: event) })
-            let shouldFlush = self.flushPolicies.contains(where: { policy in policy.shouldFlush() })
+            self.flushPolicies.forEach { policy in policy.hit(event: event) }
+            let shouldFlush = self.flushPolicies.contains { policy in policy.shouldFlush() }
 
             if shouldFlush {
                 self.uploadReqChannel.send(EventSenderEngineImpl.sendSignalName)
-                self.flushPolicies.forEach({ policy in policy.reset() })
+                self.flushPolicies.forEach { policy in policy.reset() }
             }
+        }
+        .store(in: &cancellables)
 
-        }).store(in: &cancellables)
-
-        uploadReqChannel.sink(receiveValue: { [weak self] _ in
+        uploadReqChannel.sink { [weak self] _ in
             do {
                 guard let self = self else { return }
                 try self.storage.startNewBatch()
                 let ids = try storage.batchReadyIds()
                 for id in ids {
-                    let events = try self.storage.eventsFrom(id: id)
-                    let shouldCleanup = await self.uploader.upload(request: events)
+                    let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
+                        .compactMap { event in
+                            let networkPayload = event.payload.compactMapValues { payloadValue in
+                                try? NetworkTypeMapper.convertValue(payloadValue)
+                            }
+                            return NetworkEvent(
+                                eventDefinition: event.name,
+                                payload: NetworkStruct(fields: networkPayload),
+                                eventTime: Date.backport.toISOString(date: event.eventTime))
+                        }
+                    let shouldCleanup = try await self.uploader.upload(events: events)
                     if shouldCleanup {
                         try storage.remove(id: id)
                     }
                 }
             } catch {
-
             }
-        }).store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 
-    func send(name: String, message: [String: ConfidenceValue]) {
-        writeReqChannel.send(Event(name: name, payload: message, eventTime: Date()))
+    func emit(definition: String, payload: ConfidenceStruct, context: ConfidenceStruct) {
+        writeReqChannel.send(ConfidenceEvent(
+            name: definition,
+            payload: context.merging(payload) { _, new in
+                new
+            },
+            eventTime: Date.backport.now)
+        )
     }
 
     func shutdown() {
@@ -90,11 +94,11 @@ final class EventSenderEngineImpl: EventSenderEngine {
 }
 
 private extension Publisher where Self.Failure == Never {
-  func sink(receiveValue: @escaping ((Self.Output) async -> Void)) -> AnyCancellable {
-    sink { value in
-      Task {
-        await receiveValue(value)
-      }
+    func sink(receiveValue: @escaping ((Self.Output) async -> Void)) -> AnyCancellable {
+        sink { value in
+            Task {
+                await receiveValue(value)
+            }
+        }
     }
-  }
 }

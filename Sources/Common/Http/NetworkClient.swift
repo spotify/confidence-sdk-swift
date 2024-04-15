@@ -1,27 +1,15 @@
 import Foundation
-import Confidence
 
-final class NetworkClient: HttpClient {
+final public class NetworkClient: HttpClient {
     private let headers: [String: String]
     private let retry: Retry
     private let timeout: TimeInterval
     private let session: URLSession
-    private let region: ConfidenceRegion
+    private let baseUrl: String
 
-    private var baseUrl: String {
-        switch region {
-        case .global:
-            return "https://resolver.confidence.dev/v1/flags"
-        case .europe:
-            return "https://resolver.eu.confidence.dev/v1/flags"
-        case .usa:
-            return "https://resolver.us.confidence.dev/v1/flags"
-        }
-    }
-
-    init(
+    public init(
         session: URLSession? = nil,
-        region: ConfidenceRegion,
+        baseUrl: String,
         defaultHeaders: [String: String] = [:],
         timeout: TimeInterval = 30.0,
         retry: Retry = .none
@@ -39,12 +27,12 @@ final class NetworkClient: HttpClient {
         self.headers = defaultHeaders
         self.retry = retry
         self.timeout = timeout
-        self.region = region
+        self.baseUrl = baseUrl
     }
 
-    func post<T: Decodable>(
+    public func post<T: Decodable>(
         path: String,
-        data: Codable
+        data: Encodable
     ) async throws -> HttpClientResult<T> {
         let request = try buildRequest(path: path, data: data)
         let requestResult = await perform(request: request, retry: self.retry)
@@ -109,7 +97,7 @@ extension NetworkClient {
         return URL(string: "\(normalisedBase)\(normalisedPath)")
     }
 
-    private func buildRequest(path: String, data: Codable) throws -> URLRequest {
+    private func buildRequest(path: String, data: Encodable) throws -> URLRequest {
         guard let url = constructURL(base: baseUrl, path: path) else {
             throw ConfidenceError.internalError(message: "Could not create service url")
         }

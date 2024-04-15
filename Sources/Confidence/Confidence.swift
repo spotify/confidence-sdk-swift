@@ -6,17 +6,20 @@ public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
+    let eventSenderEngine: EventSenderEngine
     public var initializationStrategy: InitializationStrategy
     private var removedContextKeys: Set<String> = Set()
 
-    required public init(
+    required init(
         clientSecret: String,
         timeout: TimeInterval,
         region: ConfidenceRegion,
+        eventSenderEngine: EventSenderEngine,
         initializationStrategy: InitializationStrategy,
         context: ConfidenceStruct = [:],
         parent: ConfidenceEventSender? = nil
     ) {
+        self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
         self.timeout = timeout
         self.region = region
@@ -25,9 +28,8 @@ public class Confidence: ConfidenceEventSender {
         self.parent = parent
     }
 
-    // TODO: Implement actual event uploading to the backend
     public func send(definition: String, payload: ConfidenceStruct) {
-        print("Sending: \"\(definition)\".\nMessage: \(payload)\nContext: \(context)")
+        eventSenderEngine.emit(definition: definition, payload: payload, context: getContext())
     }
 
 
@@ -56,6 +58,7 @@ public class Confidence: ConfidenceEventSender {
             clientSecret: clientSecret,
             timeout: timeout,
             region: region,
+            eventSenderEngine: eventSenderEngine,
             initializationStrategy: initializationStrategy,
             context: context,
             parent: self)
@@ -68,9 +71,15 @@ extension Confidence {
         var timeout: TimeInterval = 10.0
         var region: ConfidenceRegion = .global
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
+        let eventStorage: EventStorage
 
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
+            do {
+                eventStorage = try EventStorageImpl()
+            } catch {
+                eventStorage = EventStorageInMemory()
+            }
         }
 
         public func withTimeout(timeout: TimeInterval) -> Builder {
@@ -90,11 +99,28 @@ extension Confidence {
         }
 
         public func build() -> Confidence {
+            let uploader = RemoteConfidenceClient(
+                options: ConfidenceClientOptions(
+                    credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
+                    timeout: timeout,
+                    region: region),
+                metadata: ConfidenceMetadata(
+                    name: "SDK_ID_SWIFT_CONFIDENCE",
+                    version: "0.1.4") // x-release-please-version
+            )
+            let eventSenderEngine = EventSenderEngineImpl(
+                clientSecret: clientSecret,
+                uploader: uploader,
+                storage: eventStorage,
+                flushPolicies: [SizeFlushPolicy(batchSize: 1)])
             return Confidence(
                 clientSecret: clientSecret,
                 timeout: timeout,
                 region: region,
-                initializationStrategy: initializationStrategy
+                eventSenderEngine: eventSenderEngine,
+                initializationStrategy: initializationStrategy,
+                context: [:],
+                parent: nil
             )
         }
     }

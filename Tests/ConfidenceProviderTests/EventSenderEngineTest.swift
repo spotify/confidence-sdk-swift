@@ -1,4 +1,5 @@
 import Foundation
+import Common
 import XCTest
 
 @testable import Confidence
@@ -9,16 +10,14 @@ final class MinSizeFlushPolicy: FlushPolicy {
     func reset() {
         size = 0
     }
-    
-    func hit(event: Event) {
+
+    func hit(event: ConfidenceEvent) {
         size += 1
     }
-    
+
     func shouldFlush() -> Bool {
         return size >= maxSize
     }
-    
-
 }
 
 final class EventSenderEngineTest: XCTestCase {
@@ -28,30 +27,32 @@ final class EventSenderEngineTest: XCTestCase {
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
             uploader: uploader,
-            clock: ClockMock(),
             storage: EventStorageMock(),
             flushPolicies: flushPolicies
         )
 
         let expectation = XCTestExpectation(description: "Upload finished")
-        let cancellable = uploader.subject.sink { value in
+        let cancellable = uploader.subject.sink { _ in
             expectation.fulfill()
         }
 
-        var events: [Event] = []
+        var events: [ConfidenceEvent] = []
         for i in 0..<5 {
-            events.append(Event(name: "\(i)", payload: [:], eventTime: Date()))
-            eventSenderEngine.send(name: "\(i)", message: [:])
+            events.append(ConfidenceEvent(
+                name: "\(i)",
+                payload: [:],
+                eventTime: Date.backport.now)
+            )
+            eventSenderEngine.emit(definition: "\(i)", payload: [:], context: [:])
         }
 
         wait(for: [expectation], timeout: 5)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest.map { $0.name } == events.map { $0.name })
+        XCTAssertTrue(uploadRequest.map { $0.eventDefinition } == events.map { $0.name })
 
         uploader.reset()
-        eventSenderEngine.send(name: "Hello", message: [:])
+        eventSenderEngine.emit(definition: "Hello", payload: [:], context: [:])
         XCTAssertNil(uploader.calledRequest)
         cancellable.cancel()
     }
 }
-

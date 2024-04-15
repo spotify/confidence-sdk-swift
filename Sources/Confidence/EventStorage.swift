@@ -1,11 +1,18 @@
 import Foundation
+import Common
 import os
+
+struct ConfidenceEvent: Codable {
+    let name: String
+    let payload: [String: ConfidenceValue]
+    let eventTime: Date
+}
 
 internal protocol EventStorage {
     func startNewBatch() throws
-    func writeEvent(event: Event) throws
+    func writeEvent(event: ConfidenceEvent) throws
     func batchReadyIds() throws -> [String]
-    func eventsFrom(id: String) throws -> [Event]
+    func eventsFrom(id: String) throws -> [ConfidenceEvent]
     func remove(id: String) throws
 }
 
@@ -30,12 +37,14 @@ internal class EventStorageImpl: EventStorage {
                 return
             }
             try currentFileHandle?.close()
-            try FileManager.default.moveItem(at: currentFileName, to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
+            try FileManager.default.moveItem(
+                at: currentFileName,
+                to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
             try resetCurrentFile()
         }
     }
 
-    func writeEvent(event: Event) throws {
+    func writeEvent(event: ConfidenceEvent) throws {
         try storageQueue.sync {
             guard let currentFileHandle = currentFileHandle else {
                 return
@@ -56,35 +65,45 @@ internal class EventStorageImpl: EventStorage {
     func batchReadyIds() throws -> [String] {
         try storageQueue.sync {
             let fileUrls = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-            return fileUrls.filter({ url in url.pathExtension == READYTOSENDEXTENSION }).map({ url in url.lastPathComponent })
+            return fileUrls.filter { url in
+                url.pathExtension == READYTOSENDEXTENSION
+            }
+            .map { url in
+                url.lastPathComponent
+            }
         }
     }
 
-    func eventsFrom(id: String) throws -> [Event] {
+    func eventsFrom(id: String) throws -> [ConfidenceEvent] {
         try storageQueue.sync {
             let decoder = JSONDecoder()
             let fileUrl = folderURL.appendingPathComponent(id)
             let data = try Data(contentsOf: fileUrl)
             let dataString = String(data: data, encoding: .utf8)
             return try dataString?.components(separatedBy: "\n")
-                .filter({ events in !events.isEmpty })
-                .map({ eventString in try decoder.decode(Event.self, from: eventString.data(using: .utf8)!) }) ?? []
+                .filter { events in
+                    !events.isEmpty
+                }
+                .compactMap { eventString in
+                    guard let stringData = eventString.data(using: .utf8) else {
+                        return nil
+                    }
+                    return try decoder.decode(ConfidenceEvent.self, from: stringData)
+                } ?? []
         }
     }
 
     func remove(id: String) throws {
         try storageQueue.sync {
-                let fileUrl = folderURL.appendingPathComponent(id)
-                try FileManager.default.removeItem(at: fileUrl)
+            let fileUrl = folderURL.appendingPathComponent(id)
+            try FileManager.default.removeItem(at: fileUrl)
         }
     }
 
     private func getLastWritingFile() throws -> URL? {
         let files = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-        for fileUrl in files {
-            if fileUrl.pathExtension != READYTOSENDEXTENSION {
-                return fileUrl
-            }
+        for fileUrl in files where fileUrl.pathExtension != READYTOSENDEXTENSION {
+            return fileUrl
         }
         return nil
     }
@@ -95,6 +114,7 @@ internal class EventStorageImpl: EventStorage {
             self.currentFileUrl = currentFile
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
+            // Create a brand new file
             let fileUrl = folderURL.appendingPathComponent(String(Date().timeIntervalSince1970))
             FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
             self.currentFileUrl = fileUrl
@@ -117,10 +137,4 @@ internal class EventStorageImpl: EventStorage {
         return applicationSupportUrl.backport.appending(
             components: "com.confidence.events.storage", "\(bundleIdentifier)", "events")
     }
-}
-
-struct Event: Encodable, Equatable, Decodable {
-    let name: String
-    let payload: [String: ConfidenceValue]
-    let eventTime: Date
 }

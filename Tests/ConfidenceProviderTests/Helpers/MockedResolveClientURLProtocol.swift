@@ -1,31 +1,33 @@
 import Foundation
+import Common
+import Confidence
 import OpenFeature
 
 @testable import ConfidenceProvider
 
-class MockedConfidenceClientURLProtocol: URLProtocol {
+class MockedResolveClientURLProtocol: URLProtocol {
     public static var callStats = 0
     public static var resolveStats = 0
     public static var flags: [String: TestFlag] = [:]
     public static var failFirstApply = false
 
     static func set(flags: [String: TestFlag]) {
-        MockedConfidenceClientURLProtocol.flags = flags
+        MockedResolveClientURLProtocol.flags = flags
     }
 
     static func mockedSession(flags: [String: TestFlag]) -> URLSession {
-        MockedConfidenceClientURLProtocol.set(flags: flags)
+        MockedResolveClientURLProtocol.set(flags: flags)
         let config = URLSessionConfiguration.default
-        config.protocolClasses = [MockedConfidenceClientURLProtocol.self]
+        config.protocolClasses = [MockedResolveClientURLProtocol.self]
 
         return URLSession(configuration: config)
     }
 
     static func reset() {
-        MockedConfidenceClientURLProtocol.flags = [:]
-        MockedConfidenceClientURLProtocol.callStats = 0
-        MockedConfidenceClientURLProtocol.resolveStats = 0
-        MockedConfidenceClientURLProtocol.failFirstApply = false
+        MockedResolveClientURLProtocol.flags = [:]
+        MockedResolveClientURLProtocol.callStats = 0
+        MockedResolveClientURLProtocol.resolveStats = 0
+        MockedResolveClientURLProtocol.failFirstApply = false
     }
 
     override class func canInit(with request: URLRequest) -> Bool {
@@ -56,8 +58,8 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
     }
 
     private func resolve() {
-        MockedConfidenceClientURLProtocol.callStats += 1
-        MockedConfidenceClientURLProtocol.resolveStats += 1
+        MockedResolveClientURLProtocol.callStats += 1
+        MockedResolveClientURLProtocol.resolveStats += 1
         guard let request = request.decodeBody(type: ResolveFlagsRequest.self) else {
             client?.urlProtocol(
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
@@ -72,7 +74,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
             return
         }
 
-        let flags = MockedConfidenceClientURLProtocol.flags
+        let flags = MockedResolveClientURLProtocol.flags
             .filter { _, flag in
                 flag.isArchived == false
             }
@@ -86,7 +88,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
                     return ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
                 }
-                var responseValue: Struct?
+                var responseValue: NetworkStruct?
                 do {
                     responseValue = try TypeMapper.from(value: resolved.value)
                 } catch {
@@ -143,7 +145,7 @@ class MockedConfidenceClientURLProtocol: URLProtocol {
     }
 }
 
-extension MockedConfidenceClientURLProtocol {
+extension MockedResolveClientURLProtocol {
     struct ResolvedTestFlag {
         var variant: String
         var value: Value
@@ -217,36 +219,6 @@ extension MockedConfidenceClientURLProtocol {
             case .null:
                 return nil
             }
-        }
-    }
-}
-
-extension URLRequest {
-    func decodeBody<T: Codable>(type: T.Type) -> T? {
-        guard let bodyStream = self.httpBodyStream else { return nil }
-
-        bodyStream.open()
-
-        let bufferSize: Int = 128
-        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
-
-        var data = Data()
-        while bodyStream.hasBytesAvailable {
-            let readBytes = bodyStream.read(buffer, maxLength: bufferSize)
-            data.append(buffer, count: readBytes)
-        }
-
-        buffer.deallocate()
-
-        bodyStream.close()
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-
-        do {
-            return try decoder.decode(type, from: data)
-        } catch {
-            return nil
         }
     }
 }
