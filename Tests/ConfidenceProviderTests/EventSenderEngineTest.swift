@@ -43,7 +43,7 @@ final class EventSenderEngineTest: XCTestCase {
                 payload: [:],
                 eventTime: Date.backport.now)
             )
-            eventSenderEngine.send(name: "\(i)", message: ConfidenceStruct())
+            eventSenderEngine.emit(definition: "\(i)", payload: [:], context: [:])
         }
 
         wait(for: [expectation], timeout: 5)
@@ -51,7 +51,7 @@ final class EventSenderEngineTest: XCTestCase {
         XCTAssertTrue(uploadRequest.map { $0.eventDefinition } == events.map { $0.name })
 
         uploader.reset()
-        eventSenderEngine.send(name: "Hello", message: [:])
+        eventSenderEngine.emit(definition: "Hello", payload: [:], context: [:])
         XCTAssertNil(uploader.calledRequest)
         cancellable.cancel()
     }
