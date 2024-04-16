@@ -37,7 +37,7 @@ func hashValue(value: ConfidenceValue, hasher: inout some HashFunction) {
             hashValue(value: listValue, hasher: &hasher)
         }
     case .timestamp:
-        hasher.update(data: value.asDateComponents()!.date!.data)
+        hasher.update(data: value.asDate()!.data)
     case .structure:
         value.asStructure()!.sorted { $0.key < $1.key }.forEach { key, structureValue in
             hasher.update(data: key.data)
