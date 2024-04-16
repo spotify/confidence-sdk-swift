@@ -85,11 +85,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
         Task {
             do {
-                let resolveResult = try await resolve(context: initialContext)
+                let context = confidence?.getContext().flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: initialContext)
+                let resolveResult = try await resolve(context: context)
 
                 // update cache with stored values
                 try await store(
-                    with: initialContext,
+                    with: context,
                     resolveResult: resolveResult,
                     refreshCache: self.initializationStrategy == .fetchAndActivate
                 )
@@ -106,7 +107,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func store(
-        with context: OpenFeature.EvaluationContext,
+        with context: ConfidenceStruct,
         resolveResult result: ResolvesResult,
         refreshCache: Bool
     ) async throws {
@@ -133,10 +134,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.updateConfidenceContext(context: newContext)
         Task {
             do {
-                let resolveResult = try await resolve(context: newContext)
+                let context = confidence?.getContext().flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: newContext)
+                let resolveResult = try await resolve(context: context)
 
                 // update the storage
-                try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
+                try await store(with: context, resolveResult: resolveResult, refreshCache: true)
 
                 eventHandler.send(ProviderEvent.ready)
             } catch {
@@ -220,7 +222,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func resolve(context: OpenFeature.EvaluationContext) async throws -> ResolvesResult {
+    private func resolve(context: ConfidenceStruct) async throws -> ResolvesResult {
         do {
             let resolveResult = try await client.resolve(ctx: context)
             return resolveResult

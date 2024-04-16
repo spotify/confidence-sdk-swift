@@ -1,5 +1,6 @@
 import Foundation
 import OpenFeature
+import Confidence
 import XCTest
 
 @testable import ConfidenceProvider
@@ -34,7 +35,7 @@ class RemoteResolveConfidenceClientTest: XCTestCase {
             metadata: ConfidenceMetadata()
         )
 
-        let result = try await client.resolve(ctx: MutableContext(targetingKey: "user1"))
+        let result = try await client.resolve(ctx: ConfidenceTypeMapper.from(ctx: MutableContext(targetingKey: "user1")))
         XCTAssertEqual(result.resolvedValues.count, 2)
         let sortedResultValues = result.resolvedValues.sorted { resolvedValue1, resolvedValue2 in
             resolvedValue1.flag < resolvedValue2.flag
