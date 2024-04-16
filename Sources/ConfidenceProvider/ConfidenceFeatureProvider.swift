@@ -262,16 +262,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.invalidContextError
         }
 
-        let contextHash = ConfidenceTypeMapper.from(ctx: ctx).flattenOpenFeature().hash()
+        let context = confidence?.getContext().flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: ctx)
 
         do {
-            let resolverResult = try resolver.resolve(flag: path.flag, contextHash: contextHash)
+            let resolverResult = try resolver.resolve(flag: path.flag, contextHash: context.hash())
 
             guard let value = resolverResult.resolvedValue.value else {
                 return resolveFlagNoValue(
                     defaultValue: defaultValue,
                     resolverResult: resolverResult,
-                    ctx: ctx
+                    ctx: context
                 )
             }
 
@@ -288,7 +288,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
             processResultForApply(
                 resolverResult: resolverResult,
-                ctx: ctx,
                 applyTime: Date.backport.now
             )
             return evaluationResult
@@ -303,14 +302,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: EvaluationContext)
+    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: ConfidenceStruct)
     -> ProviderEvaluation<T>
     {
         switch resolverResult.resolvedValue.resolveReason {
         case .noMatch:
             processResultForApply(
                 resolverResult: resolverResult,
-                ctx: ctx,
                 applyTime: Date.backport.now)
             return ProviderEvaluation(
                 value: defaultValue,
@@ -403,7 +401,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     private func processResultForApply(
         resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
         guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken else {
