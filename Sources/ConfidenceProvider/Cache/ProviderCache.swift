@@ -2,7 +2,7 @@ import Foundation
 import OpenFeature
 
 public protocol ProviderCache {
-    func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult?
+    func getValue(flag: String, contextHash: String) throws -> CacheGetValueResult?
 }
 
 public struct CacheGetValueResult {

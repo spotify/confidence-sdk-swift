@@ -262,8 +262,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.invalidContextError
         }
 
+        let contextHash = ConfidenceTypeMapper.from(ctx: ctx).hash()
+
         do {
-            let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
+            let resolverResult = try resolver.resolve(flag: path.flag, contextHash: contextHash)
 
             guard let value = resolverResult.resolvedValue.value else {
                 return resolveFlagNoValue(
