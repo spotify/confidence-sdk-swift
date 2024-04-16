@@ -55,4 +55,30 @@ final class EventSenderEngineTest: XCTestCase {
         XCTAssertNil(uploader.calledRequest)
         cancellable.cancel()
     }
+
+    func testRemoveEventsFromStorageOnBadRequest() async throws {
+        MockedClientURLProtocol.mockedOperation = .badRequest
+        let client = RemoteConfidenceClient(
+            options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
+        let flushPolicies = [MinSizeFlushPolicy()]
+        let storage = EventStorageMock()
+        let eventSenderEngine = EventSenderEngineImpl(
+            clientSecret: "CLIENT_SECRET",
+            uploader: client,
+            storage: storage,
+            flushPolicies: flushPolicies
+        )
+        _ = try await client.upload(events: [
+            NetworkEvent(
+                eventDefinition: "testEvent",
+                payload: NetworkStruct.init(fields: [:]),
+                eventTime: Date.backport.nowISOString
+            )
+        ])
+
+        XCTAssertEqual(try storage.isEmpty(), true)
+    }
 }

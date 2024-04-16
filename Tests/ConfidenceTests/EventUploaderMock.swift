@@ -43,4 +43,12 @@ final class EventStorageMock: EventStorage {
     func remove(id: String) throws {
         batches.removeValue(forKey: id)
     }
+
+    internal func isEmpty() throws -> Bool {
+        if self.events.count == 0 {
+            return true
+        } else {
+            return false
+        }
+    }
 }
