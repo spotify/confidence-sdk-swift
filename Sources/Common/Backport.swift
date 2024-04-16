@@ -3,10 +3,6 @@ import Foundation
 extension URL {
     public struct Backport {
         var base: URL
-
-        init(base: URL) {
-            self.base = base
-        }
     }
 
     public var backport: Backport {

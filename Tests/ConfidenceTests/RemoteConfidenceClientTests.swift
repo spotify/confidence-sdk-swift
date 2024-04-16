@@ -4,7 +4,6 @@ import XCTest
 
 @testable import Confidence
 
-// swiftlint:enable:next force_cast
 class RemoteConfidenceClientTest: XCTestCase {
     override func setUp() {
         MockedClientURLProtocol.reset()
@@ -75,6 +74,7 @@ class RemoteConfidenceClientTest: XCTestCase {
                 )
             ])
         } catch {
+            // swiftlint:disable:next force_cast 
             caughtError = error as! ConfidenceError?
         }
         let expectedError = ConfidenceError.badRequest(message: "explanation about malformed request")
@@ -99,6 +99,7 @@ class RemoteConfidenceClientTest: XCTestCase {
                 )
             ])
         } catch {
+            // swiftlint:disable:next force_cast 
             caughtError = error as! ConfidenceError?
         }
         let expectedError = ConfidenceError.internalError(message: "invalidResponse")

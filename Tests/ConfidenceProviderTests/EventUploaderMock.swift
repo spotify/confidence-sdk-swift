@@ -34,8 +34,10 @@ final class EventStorageMock: EventStorage {
     }
 
     func eventsFrom(id: String) throws -> [ConfidenceEvent] {
-        // swiftlint:disable:next force_unwrapping
-        return batches[id]!
+        guard let events = batches[id] else {
+            fatalError("id \(id) not found in batches")
+        }
+        return events
     }
 
     func remove(id: String) throws {
