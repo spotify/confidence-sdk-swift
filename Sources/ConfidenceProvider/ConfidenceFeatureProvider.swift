@@ -85,7 +85,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
         Task {
             do {
-                let context = confidence?.getContext().flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: initialContext)
+                let context = confidence?.getContext()
+                    .flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: initialContext)
                 let resolveResult = try await resolve(context: context)
 
                 // update cache with stored values
@@ -134,7 +135,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.updateConfidenceContext(context: newContext)
         Task {
             do {
-                let context = confidence?.getContext().flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: newContext)
+                let context = confidence?.getContext()
+                    .flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: newContext)
                 let resolveResult = try await resolve(context: context)
 
                 // update the storage

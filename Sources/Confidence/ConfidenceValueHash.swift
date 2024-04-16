@@ -20,29 +20,50 @@ func hashConfidenceValue(context: ConfidenceStruct) -> String {
     return digest.map { String(format: "%02hhx", $0) }.joined()
 }
 
+// swiftlint:disable:next cyclomatic_complexity
 func hashValue(value: ConfidenceValue, hasher: inout some HashFunction) {
     switch value.type() {
     case .boolean:
-        hasher.update(data: value.asBoolean()!.data)
+        if let booleanData = value.asBoolean()?.data {
+            hasher.update(data: booleanData)
+        }
+
     case .string:
-        hasher.update(data: value.asString()!.data)
+        if let stringData = value.asString()?.data {
+            hasher.update(data: stringData)
+        }
+
     case .integer:
-        hasher.update(data: value.asInteger()!.data)
+        if let integerData = value.asInteger()?.data {
+            hasher.update(data: integerData)
+        }
+
     case .double:
-        hasher.update(data: value.asDouble()!.data)
+        if let doubleData = value.asDouble()?.data {
+            hasher.update(data: doubleData)
+        }
+
     case .date:
-        hasher.update(data: value.asDate()!.data)
+        if let dateData = value.asDateComponents()?.date?.data {
+            hasher.update(data: dateData)
+        }
+
     case .list:
-        value.asList()!.forEach { listValue in
+        value.asList()?.forEach { listValue in
             hashValue(value: listValue, hasher: &hasher)
         }
+
     case .timestamp:
-        hasher.update(data: value.asDate()!.data)
+        if let timestampData = value.asDate()?.data {
+            hasher.update(data: timestampData)
+        }
+
     case .structure:
-        value.asStructure()!.sorted { $0.key < $1.key }.forEach { key, structureValue in
+        value.asStructure()?.sorted { $0.key < $1.key }.forEach { key, structureValue in
             hasher.update(data: key.data)
             hashValue(value: structureValue, hasher: &hasher)
         }
+
     case .null:
         hasher.update(data: UInt8(0).data)
     }
