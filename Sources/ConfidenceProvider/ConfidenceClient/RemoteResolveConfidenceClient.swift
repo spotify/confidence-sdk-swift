@@ -30,10 +30,10 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
 
     // MARK: Resolver
 
-    public func resolve(flags: [String], ctx: EvaluationContext) async throws -> ResolvesResult {
+    public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
-            evaluationContext: try getEvaluationContextStruct(ctx: ctx),
+            evaluationContext: try NetworkTypeMapper.from(value: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve,
             sdk: Sdk(id: metadata.name, version: metadata.version)
@@ -51,7 +51,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                     throw OpenFeatureError.parseError(message: "Unable to parse request response")
                 }
                 let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                    try convert(resolvedFlag: resolvedFlag, ctx: ctx)
+                    try convert(resolvedFlag: resolvedFlag)
                 }
                 return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
             case .failure(let errorData):
@@ -60,13 +60,13 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         }
     }
 
-    public func resolve(ctx: EvaluationContext) async throws -> ResolvesResult {
+    public func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
         return try await resolve(flags: [], ctx: ctx)
     }
 
     // MARK: Private
 
-    private func convert(resolvedFlag: ResolvedFlag, ctx: EvaluationContext) throws -> ResolvedValue {
+    private func convert(resolvedFlag: ResolvedFlag) throws -> ResolvedValue {
         guard let responseFlagSchema = resolvedFlag.flagSchema,
             let responseValue = resolvedFlag.value,
             !responseValue.fields.isEmpty
@@ -85,12 +85,6 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             value: value,
             flag: try displayName(resolvedFlag: resolvedFlag),
             resolveReason: convert(resolveReason: resolvedFlag.reason))
-    }
-
-    private func getEvaluationContextStruct(ctx: EvaluationContext) throws -> NetworkStruct {
-        var evaluationContext = TypeMapper.from(value: ctx)
-        evaluationContext.fields[targetingKey] = .string(ctx.getTargetingKey())
-        return evaluationContext
     }
 
     private func handleError(error: Error) -> Error {

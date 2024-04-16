@@ -23,7 +23,7 @@ class PersistentProviderCacheTest: XCTestCase {
             flag: flag,
             resolveReason: .match)
 
-        try storage.save(data: [value].toCacheData(context: ctx, resolveToken: resolveToken))
+        try storage.save(data: [value].toCacheData(context: ConfidenceTypeMapper.from(ctx: ctx), resolveToken: resolveToken))
         cache = InMemoryProviderCache.from(storage: storage)
 
         let cachedValue = try cache.getValue(flag: flag, ctx: ctx)
@@ -48,7 +48,7 @@ class PersistentProviderCacheTest: XCTestCase {
             resolveReason: .match)
         XCTAssertFalse(try FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path))
 
-        try storage.save(data: [value1, value2].toCacheData(context: ctx, resolveToken: resolveToken))
+        try storage.save(data: [value1, value2].toCacheData(context: ConfidenceTypeMapper.from(ctx: ctx), resolveToken: resolveToken))
         cache = InMemoryProviderCache.from(storage: storage)
 
         expectToEventually(
@@ -85,7 +85,7 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
-        try storage.save(data: [value].toCacheData(context: ctx1, resolveToken: resolveToken))
+        try storage.save(data: [value].toCacheData(context: ConfidenceTypeMapper.from(ctx: ctx1), resolveToken: resolveToken))
         cache = InMemoryProviderCache.from(storage: storage)
 
         let cachedValue = try cache.getValue(flag: flag, ctx: ctx2)

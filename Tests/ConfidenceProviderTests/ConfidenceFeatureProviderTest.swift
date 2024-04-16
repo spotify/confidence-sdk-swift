@@ -323,7 +323,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         // Simulating a cache with an old evaluation context
 
         let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
-            .toCacheData(context: MutableContext(targetingKey: "user0"), resolveToken: "token0")
+            .toCacheData(context: ConfidenceTypeMapper.from(ctx: MutableContext(targetingKey: "user0")), resolveToken: "token0")
 
         let storage = try StorageMock(data: data)
 
