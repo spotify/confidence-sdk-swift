@@ -48,7 +48,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     /// Initialize the Provider via a `Confidence` object.
-    public init(confidence: Confidence) {
+    public init(confidence: Confidence, session: URLSession? = nil) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
@@ -65,6 +65,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             metadata: metadata)
         self.client = RemoteConfidenceResolveClient(
             options: options,
+            session: session,
             applyOnResolve: false,
             flagApplier: flagApplier,
             metadata: metadata)

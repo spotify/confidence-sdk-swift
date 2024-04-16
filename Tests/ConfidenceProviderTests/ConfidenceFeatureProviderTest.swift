@@ -310,6 +310,66 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
     }
 
+    func testCreateProviderUsingConfidenceContextResolvesCorrectly() throws {
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
+            "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
+        ]
+
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
+            "flags/flag": .init(resolve: resolve)
+        ]
+
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
+
+        let confidence = Confidence
+            .Builder(clientSecret: "")
+            .build()
+            .withContext(["my_string": ConfidenceValue(string: "my_value")])
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: session)
+
+        try withExtendedLifetime(
+            provider.observe().sink { event in
+                if event == .ready {
+                    self.readyExpectation.fulfill()
+                }
+            })
+        {
+            provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+            wait(for: [readyExpectation], timeout: 5)
+
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
+            XCTAssertTrue(MockedResolveClientURLProtocol
+                .resolveRequestFields.fields.contains { $0.key == "my_string" && $0.value == .string("my_value") }
+            )
+
+            XCTAssertTrue(MockedResolveClientURLProtocol
+                .resolveRequestFields.fields.contains { $0.key == "targeting_key" }
+            )
+
+            let requestTargetingKey = MockedResolveClientURLProtocol
+                .resolveRequestFields
+                .fields["targeting_key"]
+
+            if case .string(let targetingKey) = requestTargetingKey {
+                XCTAssertTrue(!targetingKey.isEmpty)
+            } else {
+                XCTFail("targeting key could not be found")
+            }
+
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
+
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+    }
+
     func testStaleEvaluationContextInCache() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
@@ -322,8 +382,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
         // Simulating a cache with an old evaluation context
 
+        let context = ConfidenceTypeMapper.from(ctx: MutableContext(targetingKey: "user0"))
+
         let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
-            .toCacheData(context: ConfidenceTypeMapper.from(ctx: MutableContext(targetingKey: "user0")), resolveToken: "token0")
+            .toCacheData(context: context, resolveToken: "token0")
 
         let storage = try StorageMock(data: data)
 
