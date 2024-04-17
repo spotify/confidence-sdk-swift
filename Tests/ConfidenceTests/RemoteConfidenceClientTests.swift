@@ -56,31 +56,6 @@ class RemoteConfidenceClientTest: XCTestCase {
         XCTAssertTrue(processed)
     }
 
-    func testBadRequestThrows() async throws {
-        MockedClientURLProtocol.mockedOperation = .badRequest
-        let client = RemoteConfidenceClient(
-            options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
-            session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
-
-        var caughtError: ConfidenceError?
-        do {
-            _ = try await client.upload(events: [
-                NetworkEvent(
-                    eventDefinition: "testEvent",
-                    payload: NetworkStruct.init(fields: [:]),
-                    eventTime: Date.backport.nowISOString
-                )
-            ])
-        } catch {
-            // swiftlint:disable:next force_cast 
-            caughtError = error as! ConfidenceError?
-        }
-        let expectedError = ConfidenceError.badRequest(message: "explanation about malformed request")
-        XCTAssertEqual(caughtError, expectedError)
-    }
-
     func testNMalformedResponseThrows() async throws {
         MockedClientURLProtocol.mockedOperation = .malformedResponse
         let client = RemoteConfidenceClient(

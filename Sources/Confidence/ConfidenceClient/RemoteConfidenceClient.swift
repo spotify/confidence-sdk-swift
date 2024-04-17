@@ -38,21 +38,25 @@ public class RemoteConfidenceClient: ConfidenceClient {
             sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
-
         do {
             let result: HttpClientResult<PublishEventResponse> =
             try await self.httpClient.post(path: ":publish", data: request)
             switch result {
             case .success(let successData):
-                guard successData.response.status == .ok else {
-                    throw successData.response.mapStatusToError(error: successData.decodedError)
+                let status = successData.response.statusCode
+                switch status {
+                case 200:
+                    // clean up in case of success
+                    return true
+                case 429:
+                    // we shouldn't clean up for rate limiting
+                    return false
+                case 400...499:
+                    // if batch couldn't be processed, we should clean it up
+                    return true
+                default:
+                    return false
                 }
-                let indexedErrorsCount = successData.decodedData?.errors.count ?? 0
-                if indexedErrorsCount > 0 {
-                    Logger(subsystem: "com.confidence.client", category: "network").error(
-                        "Backend reported errors for \(indexedErrorsCount) event(s) in batch")
-                }
-                return true
             case .failure(let errorData):
                 throw handleError(error: errorData)
             }

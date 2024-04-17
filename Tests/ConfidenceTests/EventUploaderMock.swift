@@ -20,6 +20,8 @@ final class EventUploaderMock: ConfidenceClient {
 final class EventStorageMock: EventStorage {
     private var events: [ConfidenceEvent] = []
     private var batches: [String: [ConfidenceEvent]] = [:]
+    var removeCallback: () -> Void = {}
+
     func startNewBatch() throws {
         batches[("\(batches.count)")] = events
         events.removeAll()
@@ -42,5 +44,14 @@ final class EventStorageMock: EventStorage {
 
     func remove(id: String) throws {
         batches.removeValue(forKey: id)
+        removeCallback()
+    }
+
+    internal func isEmpty() -> Bool {
+        return self.events.isEmpty && self.batches.isEmpty
+    }
+
+    internal func eventsRemoved(callback: @escaping () -> Void) {
+        removeCallback = callback
     }
 }
