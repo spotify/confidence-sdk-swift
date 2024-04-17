@@ -53,6 +53,24 @@ final public class NetworkClient: HttpClient {
         }
     }
 
+    func prettyPrintJsonString(from data: Data) -> String? {
+      guard let jsonString = String(data: data, encoding: .utf8) else {
+        return nil
+      }
+
+      do {
+        if let jsonData = jsonString.data(using: .utf8) {
+          let json = try JSONSerialization.jsonObject(with: jsonData, options: .mutableContainers)
+          let prettyData = try JSONSerialization.data(withJSONObject: json, options: .prettyPrinted)
+        print(String(decoding: prettyData, as: UTF8.self))
+        }
+      } catch {
+        print("Error decoding JSON data: \(error)")
+      }
+      return nil
+    }
+
+
     private func perform(
         request: URLRequest,
         retry: Retry
@@ -61,6 +79,7 @@ final public class NetworkClient: HttpClient {
         let retryWait: TimeInterval? = retryHandler.retryIn()
 
         do {
+            prettyPrintJsonString(from: request.httpBody!)
             let (data, response) = try await self.session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
                 return RequestResult(httpResponse: nil, data: nil, error: HttpClientError.invalidResponse)
