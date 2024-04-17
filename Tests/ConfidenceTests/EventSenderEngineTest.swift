@@ -20,6 +20,22 @@ final class MinSizeFlushPolicy: FlushPolicy {
     }
 }
 
+final class ImmidiateFlushPolicy: FlushPolicy {
+    private var size = 0
+
+    func reset() {
+        size = 0
+    }
+
+    func hit(event: ConfidenceEvent) {
+        size+=1
+    }
+
+    func shouldFlush() -> Bool {
+        return size>0
+    }
+}
+
 final class EventSenderEngineTest: XCTestCase {
     func testAddingEventsWithSizeFlushPolicyWorks() throws {
         let flushPolicies = [MinSizeFlushPolicy()]
@@ -56,14 +72,14 @@ final class EventSenderEngineTest: XCTestCase {
         cancellable.cancel()
     }
 
-    func testRemoveEventsFromStorageOnBadRequest() async throws {
+    func testRemoveEventsFromStorageOnBadRequest() throws {
         MockedClientURLProtocol.mockedOperation = .badRequest
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
-        let flushPolicies = [MinSizeFlushPolicy()]
+        let flushPolicies = [ImmidiateFlushPolicy()]
         let storage = EventStorageMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
@@ -71,14 +87,36 @@ final class EventSenderEngineTest: XCTestCase {
             storage: storage,
             flushPolicies: flushPolicies
         )
-        _ = try await client.upload(events: [
-            NetworkEvent(
-                eventDefinition: "testEvent",
-                payload: NetworkStruct.init(fields: [:]),
-                eventTime: Date.backport.nowISOString
-            )
-        ])
+        
+        eventSenderEngine.emit(definition: "testEvent", payload: ConfidenceStruct(), context: ConfidenceStruct())
+        
+        let expectation = expectation(description: "events batched")
+        storage.eventsRemoved{
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 2)
 
-        XCTAssertEqual(try storage.isEmpty(), true)
+        XCTAssertEqual(storage.isEmpty(), true)
+    }
+
+    func testKeepEventsInStorageForRetry() throws {
+        MockedClientURLProtocol.mockedOperation = .needRetryLater
+        let client = RemoteConfidenceClient(
+            options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
+        let flushPolicies = [ImmidiateFlushPolicy()]
+        let storage = EventStorageMock()
+        let eventSenderEngine = EventSenderEngineImpl(
+            clientSecret: "CLIENT_SECRET",
+            uploader: client,
+            storage: storage,
+            flushPolicies: flushPolicies
+        )
+
+        eventSenderEngine.emit(definition: "testEvent", payload: ConfidenceStruct(), context: ConfidenceStruct())
+
+        XCTAssertEqual(storage.isEmpty(), false)
     }
 }

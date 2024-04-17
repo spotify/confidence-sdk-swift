@@ -43,10 +43,8 @@ public class RemoteConfidenceClient: ConfidenceClient {
             try await self.httpClient.post(path: ":publish", data: request)
             switch result {
             case .success(let successData):
-                guard let status = successData.response.status else {
-                    throw successData.response.mapStatusToError(error: successData.decodedError)
-                }
-                switch status.rawValue {
+                let status = successData.response.statusCode
+                switch status {
                 case 200:
                     //clean up in case of success
                     return true

@@ -12,6 +12,7 @@ class MockedClientURLProtocol: URLProtocol {
         case malformedResponse
         case badRequest
         case success
+        case needRetryLater
     }
 
     override class func canInit(with request: URLRequest) -> Bool {
@@ -65,6 +66,8 @@ class MockedClientURLProtocol: URLProtocol {
         switch MockedClientURLProtocol.mockedOperation {
         case .badRequest:
             respondWithError(statusCode: 400, code: 0, message: "explanation about malformed request")
+        case .needRetryLater:
+            respondWithError(statusCode: 502, code: 0, message: "service unavailable")
         case .malformedResponse:
             malformedResponse()
         case .firstEventFails:
