@@ -28,11 +28,11 @@ final class ImmidiateFlushPolicy: FlushPolicy {
     }
 
     func hit(event: ConfidenceEvent) {
-        size+=1
+        size += 1
     }
 
     func shouldFlush() -> Bool {
-        return size>0
+        return size > 0
     }
 }
 
@@ -87,9 +87,7 @@ final class EventSenderEngineTest: XCTestCase {
             storage: storage,
             flushPolicies: flushPolicies
         )
-        
         eventSenderEngine.emit(definition: "testEvent", payload: ConfidenceStruct(), context: ConfidenceStruct())
-        
         let expectation = expectation(description: "events batched")
         storage.eventsRemoved{
             expectation.fulfill()

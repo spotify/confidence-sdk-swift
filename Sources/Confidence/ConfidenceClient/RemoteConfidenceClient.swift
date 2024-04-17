@@ -46,13 +46,13 @@ public class RemoteConfidenceClient: ConfidenceClient {
                 let status = successData.response.statusCode
                 switch status {
                 case 200:
-                    //clean up in case of success
+                    // clean up in case of success
                     return true
                 case 429:
-                    //we shouldn't clean up for rate limiting
+                    // we shouldn't clean up for rate limiting
                     return false
                 case 400...499:
-                    //if batch couldn't be processed, we should clean it up
+                    // if batch couldn't be processed, we should clean it up
                     return true
                 default:
                     return false
