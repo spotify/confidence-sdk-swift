@@ -129,7 +129,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        guard oldContext?.hash() != newContext.hash() else {
+        var oldConfidenceContext: ConfidenceStruct = [:]
+        if let context = oldContext {
+            oldConfidenceContext = ConfidenceTypeMapper.from(ctx: context)
+        }
+        guard oldConfidenceContext.hash() != ConfidenceTypeMapper.from(ctx: newContext).hash() else {
             return
         }
 
