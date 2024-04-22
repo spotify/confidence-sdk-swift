@@ -24,6 +24,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let storage: Storage
     private let eventHandler = EventHandler(ProviderEvent.notReady)
     private let confidence: Confidence?
+    private var cancellables = Set<AnyCancellable>()
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder`or init with `Confidence` instead.
     init(
@@ -48,7 +49,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     /// Initialize the Provider via a `Confidence` object.
-    public init(confidence: Confidence) {
+    public init(confidence: Confidence, client: ConfidenceResolveClient? = nil) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
@@ -63,7 +64,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             storage: DefaultStorage.applierFlagsCache(),
             options: options,
             metadata: metadata)
-        self.client = RemoteConfidenceResolveClient(
+        self.client = client ?? RemoteConfidenceResolveClient(
             options: options,
             applyOnResolve: false,
             flagApplier: flagApplier,
@@ -83,13 +84,18 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             eventHandler.send(.ready)
         }
 
+        resolve(strategy: initializationStrategy, context: initialContext)
+        self.startListentingForContextChanges()
+    }
+
+    private func resolve(strategy: InitializationStrategy, context: EvaluationContext) {
         Task {
             do {
-                let resolveResult = try await resolve(context: initialContext)
+                let resolveResult = try await resolve(context: context)
 
                 // update cache with stored values
                 try await store(
-                    with: initialContext,
+                    with: context,
                     resolveResult: resolveResult,
                     refreshCache: self.initializationStrategy == .fetchAndActivate
                 )
@@ -103,6 +109,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 eventHandler.send(.ready)
             }
         }
+    }
+
+    func shutdown() {
+        for cancellable in cancellables {
+            cancellable.cancel()
+        }
+        cancellables.removeAll()
     }
 
     private func store(
@@ -126,24 +139,22 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        guard oldContext?.hash() != newContext.hash() else {
+        self.updateConfidenceContext(context: newContext)
+    }
+
+    private func startListentingForContextChanges() {
+        guard let confidence = confidence else {
             return
         }
-
-        self.updateConfidenceContext(context: newContext)
-        Task {
-            do {
-                let resolveResult = try await resolve(context: newContext)
-
-                // update the storage
-                try await store(with: newContext, resolveResult: resolveResult, refreshCache: true)
-
-                eventHandler.send(ProviderEvent.ready)
-            } catch {
-                eventHandler.send(ProviderEvent.ready)
-                // do nothing
+        confidence.contextChanges()
+            .sink { [weak self] _ in
+                guard let self = self else {
+                    return
+                }
+                let context = MutableContext(attributes: [:])
+                self.resolve(strategy: self.initializationStrategy, context: context)
             }
-        }
+            .store(in: &cancellables)
     }
 
     private func updateConfidenceContext(context: EvaluationContext) {

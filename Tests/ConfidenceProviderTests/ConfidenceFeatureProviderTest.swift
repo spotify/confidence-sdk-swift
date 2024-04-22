@@ -952,6 +952,37 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             XCTAssertEqual(context, expected)
         }
     }
+
+    func testConfidenceContextOnContextChangeThroughConfidence() throws {
+        class FakeClient: ConfidenceResolveClient {
+            var callCount = 0
+            func resolve(ctx: EvaluationContext) async throws -> ResolvesResult {
+                callCount += 1
+                return .init(resolvedValues: [], resolveToken: "")
+            }
+        }
+
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let client = FakeClient()
+        let provider = ConfidenceFeatureProvider(confidence: confidence, client: client)
+
+        let readyExpectation = self.expectation(description: "Waiting for init and ctx change to complete")
+        readyExpectation.expectedFulfillmentCount = 2
+
+        withExtendedLifetime(
+            provider.observe().sink { event in
+                if event == .ready {
+                    readyExpectation.fulfill()
+                }
+            })
+        {
+            let ctx1 = MutableContext(targetingKey: "user1")
+            provider.initialize(initialContext: ctx1)
+            confidence.updateContextEntry(key: "active", value: ConfidenceValue.init(boolean: true))
+            wait(for: [readyExpectation], timeout: 5)
+            XCTAssertEqual(client.callCount, 2)
+        }
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {
