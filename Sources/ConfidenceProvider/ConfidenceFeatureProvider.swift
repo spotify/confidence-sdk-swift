@@ -289,11 +289,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             )
             return evaluationResult
         } catch ConfidenceError.cachedValueExpired {
-            return ProviderEvaluation(
-                value: defaultValue,
-                variant: nil,
-                reason: Reason.error.rawValue,
-                errorCode: ErrorCode.providerNotReady)
+            return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
         } catch {
             throw error
         }
