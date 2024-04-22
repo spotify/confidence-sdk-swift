@@ -15,7 +15,7 @@ public extension ConfidenceStruct {
             newStruct[entry.key] = entry.value
         }
         // add all the rest keys
-        for entry in self {
+        for entry in self where entry.key != "open_feature" {
             newStruct[entry.key] = entry.value
         }
         return newStruct
