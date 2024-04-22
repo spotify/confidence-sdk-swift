@@ -260,39 +260,41 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.invalidContextError
         }
 
-        do {
-            let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
+        let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
 
-            guard let value = resolverResult.resolvedValue.value else {
-                return resolveFlagNoValue(
-                    defaultValue: defaultValue,
-                    resolverResult: resolverResult,
-                    ctx: ctx
-                )
-            }
+        guard let value = resolverResult.resolvedValue.value else {
+            return resolveFlagNoValue(
+                defaultValue: defaultValue,
+                resolverResult: resolverResult,
+                ctx: ctx
+            )
+        }
 
-            let pathValue: Value = try getValue(path: path.path, value: value)
-            guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
-                throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
-            }
+        let pathValue: Value = try getValue(path: path.path, value: value)
+        guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
+            throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
+        }
 
-            let evaluationResult = ProviderEvaluation(
+        if resolverResult.stale {
+            return ProviderEvaluation(
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
-                reason: Reason.targetingMatch.rawValue
+                reason: Reason.stale.rawValue
             )
-
-            processResultForApply(
-                resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now
-            )
-            return evaluationResult
-        } catch ConfidenceError.cachedValueExpired {
-            return ProviderEvaluation(value: defaultValue, variant: nil, reason: Reason.stale.rawValue)
-        } catch {
-            throw error
         }
+
+        let evaluationResult = ProviderEvaluation(
+            value: typedValue,
+            variant: resolverResult.resolvedValue.variant,
+            reason: Reason.targetingMatch.rawValue
+        )
+
+        processResultForApply(
+            resolverResult: resolverResult,
+            ctx: ctx,
+            applyTime: Date.backport.now
+        )
+        return evaluationResult
     }
 
     private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: EvaluationContext)

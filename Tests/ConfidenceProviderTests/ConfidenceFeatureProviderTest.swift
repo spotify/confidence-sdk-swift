@@ -312,7 +312,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
     func testStaleEvaluationContextInCache() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
-            "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
+            "user0": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
         let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
@@ -320,17 +320,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
-        // Simulating a cache with an old evaluation context
-
-        let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
-            .toCacheData(context: MutableContext(targetingKey: "user0"), resolveToken: "token0")
-
-        let storage = try StorageMock(data: data)
 
         let provider =
         builder
             .with(session: session)
-            .with(storage: storage)
             .build()
         try withExtendedLifetime(
             provider.observe().sink { event in
@@ -347,10 +340,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 defaultValue: 0,
                 context: MutableContext(targetingKey: "user1"))
 
-            XCTAssertEqual(evaluation.value, 0)
+            XCTAssertEqual(evaluation.value, 3)
             XCTAssertNil(evaluation.errorCode)
             XCTAssertNil(evaluation.errorMessage)
-            XCTAssertNil(evaluation.variant)
+            XCTAssertEqual(evaluation.variant, "control")
             XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
             XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
             // TODO: Check this - how do we check for something not called?
