@@ -275,23 +275,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
         }
 
-        if resolverResult.resolvedValue.resolveReason == .stale {
-            processResultForApply(
-                resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now
-            )
-            return ProviderEvaluation(
-                value: typedValue,
-                variant: resolverResult.resolvedValue.variant,
-                reason: Reason.stale.rawValue
-            )
-        }
-
+        let isStale = resolverResult.resolvedValue.resolveReason == .stale
         let evaluationResult = ProviderEvaluation(
             value: typedValue,
             variant: resolverResult.resolvedValue.variant,
-            reason: Reason.targetingMatch.rawValue
+            reason: isStale ? Reason.stale.rawValue : Reason.targetingMatch.rawValue
         )
 
         processResultForApply(
