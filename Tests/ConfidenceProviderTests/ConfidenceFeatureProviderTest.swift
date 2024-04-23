@@ -1005,11 +1005,9 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             provider.onContextSet(oldContext: ctx1, newContext: ctx2)
             wait(for: [readyExpectation], timeout: 5)
             let context = confidence.getContext()
-            let expected = [
-                "open_feature": ConfidenceValue(structure: [
-                    "targeting_key": ConfidenceValue(string: "user1"),
-                    "active": ConfidenceValue(boolean: true)
-                ])
+            let expected: ConfidenceStruct = [
+                "targeting_key": ConfidenceValue(string: "user1"),
+                "active": ConfidenceValue(boolean: true)
             ]
             XCTAssertEqual(context, expected)
         }
