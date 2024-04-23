@@ -2,7 +2,7 @@ import Foundation
 @testable import Confidence
 
 class EventSenderEngineMock: EventSenderEngine {
-    func emit(definition: String, payload: ConfidenceStruct, context: ConfidenceStruct) {
+    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) {
         // NO-OP
     }
 
