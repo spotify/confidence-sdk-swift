@@ -276,6 +276,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
 
         if resolverResult.stale {
+            processResultForApply(
+                resolverResult: resolverResult,
+                ctx: ctx,
+                applyTime: Date.backport.now
+            )
             return ProviderEvaluation(
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
