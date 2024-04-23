@@ -16,8 +16,10 @@ public class LocalStorageResolver: Resolver {
             throw OpenFeatureError.flagNotFoundError(key: flag)
         }
         guard getResult.needsUpdate == false else {
-            return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken, stale: true)
+            var resolveValueStale = getResult.resolvedValue
+            resolveValueStale.resolveReason = .stale
+            return .init(resolvedValue: resolveValueStale, resolveToken: getResult.resolveToken)
         }
-        return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken, stale: false)
+        return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken)
     }
 }

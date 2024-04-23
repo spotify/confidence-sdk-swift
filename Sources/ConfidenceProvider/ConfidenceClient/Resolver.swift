@@ -8,5 +8,4 @@ public protocol Resolver {
 public struct ResolveResult {
     var resolvedValue: ResolvedValue
     var resolveToken: String?
-    var stale: Bool
 }

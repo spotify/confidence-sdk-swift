@@ -275,7 +275,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
         }
 
-        if resolverResult.stale {
+        if resolverResult.resolvedValue.resolveReason == .stale {
             processResultForApply(
                 resolverResult: resolverResult,
                 ctx: ctx,
@@ -341,6 +341,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 reason: Reason.error.rawValue,
                 errorCode: ErrorCode.general,
                 errorMessage: "General error in the Confidence backend")
+        case .stale:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: resolverResult.resolvedValue.variant,
+                reason: Reason.stale.rawValue
+            )
         }
     }
 

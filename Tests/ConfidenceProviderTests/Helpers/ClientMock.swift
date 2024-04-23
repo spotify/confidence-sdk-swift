@@ -50,8 +50,7 @@ class ClientMock: ConfidenceResolveClient {
     func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
         return ResolveResult(
             resolvedValue: ResolvedValue(flag: "flag1", resolveReason: .match),
-            resolveToken: "",
-            stale: false
+            resolveToken: ""
         )
     }
 }
