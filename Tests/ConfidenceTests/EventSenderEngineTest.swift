@@ -58,8 +58,8 @@ final class EventSenderEngineTest: XCTestCase {
         eventSenderEngine.emit(
             eventName: "my_event",
             message: [
-                "a":.init(integer: 0),
-                "message":.init(integer: 1),
+                "a": .init(integer: 0),
+                "message": .init(integer: 1),
             ],
             context: [
                 "a": .init(integer: 2),
@@ -68,15 +68,15 @@ final class EventSenderEngineTest: XCTestCase {
 
 
         wait(for: [expectation], timeout: 5)
-        let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertEqual(uploader.calledRequest![0].eventDefinition, "my_event")
-        XCTAssertEqual(uploader.calledRequest![0].payload, NetworkStruct(fields: [
+        XCTAssertEqual(try XCTUnwrap(uploader.calledRequest)[0].eventDefinition, "my_event")
+        XCTAssertEqual(try XCTUnwrap(uploader.calledRequest)[0].payload, NetworkStruct(fields: [
             "message": .structure(.init(fields: [
-                "a" : .number(0.0),
+                "a": .number(0.0),
                 "message": .number(1.0)
             ])),
             "a": .number(2.0)
         ]))
+        cancellable.cancel()
     }
 
     func testAddingEventsWithSizeFlushPolicyWorks() throws {
