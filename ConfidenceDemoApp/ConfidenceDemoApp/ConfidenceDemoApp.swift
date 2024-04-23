@@ -41,8 +41,8 @@ extension ConfidenceDemoApp {
             await OpenFeatureAPI.shared.setProviderAndWait(provider: provider, initialContext: ctx)
         }
         confidence.send(
-            definition: "all-types",
-            payload: [
+            eventName: "all-types",
+            message: [
                 "my_string": ConfidenceValue(string: "hello_from_world"),
                 "my_timestamp": ConfidenceValue(timestamp: Date()),
                 "my_bool": ConfidenceValue(boolean: true),

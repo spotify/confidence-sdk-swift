@@ -28,8 +28,8 @@ public class Confidence: ConfidenceEventSender {
         self.parent = parent
     }
 
-    public func send(definition: String, payload: ConfidenceStruct) {
-        eventSenderEngine.emit(definition: definition, payload: payload, context: getContext())
+    public func send(eventName: String, message: ConfidenceStruct) {
+        eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
     }
 
 
