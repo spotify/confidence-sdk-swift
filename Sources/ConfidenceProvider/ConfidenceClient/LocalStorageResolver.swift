@@ -16,7 +16,9 @@ public class LocalStorageResolver: Resolver {
             throw OpenFeatureError.flagNotFoundError(key: flag)
         }
         guard getResult.needsUpdate == false else {
-            throw ConfidenceError.cachedValueExpired
+            var resolveValueStale = getResult.resolvedValue
+            resolveValueStale.resolveReason = .stale
+            return .init(resolvedValue: resolveValueStale, resolveToken: getResult.resolveToken)
         }
         return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken)
     }

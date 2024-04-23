@@ -12,12 +12,9 @@ class LocalStorageResolverTest: XCTestCase {
         let resolver = LocalStorageResolver(cache: cache)
 
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
-        XCTAssertThrowsError(
+        XCTAssertNoThrow(
             try resolver.resolve(flag: "test", ctx: ctx)
-        ) { error in
-            XCTAssertEqual(
-                error as? ConfidenceError, ConfidenceError.cachedValueExpired)
-        }
+        )
     }
 
     func testMissingValueFromCache() throws {

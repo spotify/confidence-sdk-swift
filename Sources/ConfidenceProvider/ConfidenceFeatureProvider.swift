@@ -260,43 +260,34 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.invalidContextError
         }
 
-        do {
-            let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
+        let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
 
-            guard let value = resolverResult.resolvedValue.value else {
-                return resolveFlagNoValue(
-                    defaultValue: defaultValue,
-                    resolverResult: resolverResult,
-                    ctx: ctx
-                )
-            }
-
-            let pathValue: Value = try getValue(path: path.path, value: value)
-            guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
-                throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
-            }
-
-            let evaluationResult = ProviderEvaluation(
-                value: typedValue,
-                variant: resolverResult.resolvedValue.variant,
-                reason: Reason.targetingMatch.rawValue
-            )
-
-            processResultForApply(
+        guard let value = resolverResult.resolvedValue.value else {
+            return resolveFlagNoValue(
+                defaultValue: defaultValue,
                 resolverResult: resolverResult,
-                ctx: ctx,
-                applyTime: Date.backport.now
+                ctx: ctx
             )
-            return evaluationResult
-        } catch ConfidenceError.cachedValueExpired {
-            return ProviderEvaluation(
-                value: defaultValue,
-                variant: nil,
-                reason: Reason.error.rawValue,
-                errorCode: ErrorCode.providerNotReady)
-        } catch {
-            throw error
         }
+
+        let pathValue: Value = try getValue(path: path.path, value: value)
+        guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
+            throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
+        }
+
+        let isStale = resolverResult.resolvedValue.resolveReason == .stale
+        let evaluationResult = ProviderEvaluation(
+            value: typedValue,
+            variant: resolverResult.resolvedValue.variant,
+            reason: isStale ? Reason.stale.rawValue : Reason.targetingMatch.rawValue
+        )
+
+        processResultForApply(
+            resolverResult: resolverResult,
+            ctx: ctx,
+            applyTime: Date.backport.now
+        )
+        return evaluationResult
     }
 
     private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: EvaluationContext)
@@ -338,6 +329,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 reason: Reason.error.rawValue,
                 errorCode: ErrorCode.general,
                 errorMessage: "General error in the Confidence backend")
+        case .stale:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: resolverResult.resolvedValue.variant,
+                reason: Reason.stale.rawValue
+            )
         }
     }
 
