@@ -3,25 +3,6 @@ import Common
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
-public extension ConfidenceStruct {
-    func flattenOpenFeature() -> ConfidenceStruct {
-        var newStruct: ConfidenceStruct = [:]
-        let openFeatureStruct: ConfidenceValue? = self["open_feature"]
-        guard let openFeatureStruct: ConfidenceStruct = openFeatureStruct?.asStructure() else {
-            return self
-        }
-        // add open feature struct keys
-        for entry in openFeatureStruct {
-            newStruct[entry.key] = entry.value
-        }
-        // add all the rest keys
-        for entry in self where entry.key != "open_feature" {
-            newStruct[entry.key] = entry.value
-        }
-        return newStruct
-    }
-}
-
 public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
     private let value: ConfidenceValueInternal
     public var description: String {

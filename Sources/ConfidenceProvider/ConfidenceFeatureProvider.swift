@@ -86,8 +86,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
         Task {
             do {
-                let context = confidence?.getContext()
-                    .flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: initialContext)
+                let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: initialContext)
                 let resolveResult = try await resolve(context: context)
 
                 // update cache with stored values
@@ -140,8 +139,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.updateConfidenceContext(context: newContext)
         Task {
             do {
-                let context = confidence?.getContext()
-                    .flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: newContext)
+                let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: newContext)
                 let resolveResult = try await resolve(context: context)
 
                 // update the storage
@@ -156,9 +154,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func updateConfidenceContext(context: EvaluationContext) {
-        confidence?.updateContextEntry(
-            key: "open_feature",
-            value: ConfidenceValue(structure: ConfidenceTypeMapper.from(ctx: context)))
+        for entry in ConfidenceTypeMapper.from(ctx: context) {
+            confidence?.updateContextEntry(
+                key: entry.key,
+                value: entry.value
+            )
+        }
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -269,7 +270,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.invalidContextError
         }
 
-        let context = confidence?.getContext().flattenOpenFeature() ?? ConfidenceTypeMapper.from(ctx: ctx)
+        let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: ctx)
 
         do {
             let resolverResult = try resolver.resolve(flag: path.flag, contextHash: context.hash())
