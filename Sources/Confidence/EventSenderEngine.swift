@@ -9,7 +9,7 @@ protocol FlushPolicy {
 }
 
 protocol EventSenderEngine {
-    func emit(definition: String, payload: ConfidenceStruct, context: ConfidenceStruct)
+    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct)
     func shutdown()
 }
 
@@ -78,10 +78,10 @@ final class EventSenderEngineImpl: EventSenderEngine {
         .store(in: &cancellables)
     }
 
-    func emit(definition: String, payload: ConfidenceStruct, context: ConfidenceStruct) {
+    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) {
         writeReqChannel.send(ConfidenceEvent(
-            name: definition,
-            payload: context.merging(payload) { _, new in
+            name: eventName,
+            payload: context.merging(message) { _, new in
                 new
             },
             eventTime: Date.backport.now)
