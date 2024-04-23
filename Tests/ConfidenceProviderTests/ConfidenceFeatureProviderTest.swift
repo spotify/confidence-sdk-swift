@@ -976,9 +976,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
             wait(for: [readyExpectation], timeout: 5)
             let context = confidence.getContext()
-            let expected = [
-                "open_feature": ConfidenceValue(structure: ["targeting_key": ConfidenceValue(string: "user1")])
-            ]
+            let expected = ["targeting_key": ConfidenceValue(string: "user1")]
             XCTAssertEqual(context, expected)
         }
     }
