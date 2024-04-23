@@ -79,11 +79,11 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) {
+        var mutablePayload = context
+        mutablePayload["message"] = ConfidenceValue(structure: message)
         writeReqChannel.send(ConfidenceEvent(
             name: eventName,
-            payload: context.merging(message) { _, new in
-                new
-            },
+            payload: mutablePayload,
             eventTime: Date.backport.now)
         )
     }

@@ -5,8 +5,12 @@ import XCTest
 @testable import Confidence
 
 final class MinSizeFlushPolicy: FlushPolicy {
-    private var maxSize = 5
+    private var maxSize: Int
     private var size = 0
+
+    init(maxSize: Int) {
+        self.maxSize = maxSize
+    }
     func reset() {
         size = 0
     }
@@ -37,8 +41,8 @@ final class ImmidiateFlushPolicy: FlushPolicy {
 }
 
 final class EventSenderEngineTest: XCTestCase {
-    func testAddingEventsWithSizeFlushPolicyWorks() throws {
-        let flushPolicies = [MinSizeFlushPolicy()]
+    func testPayloadOnEmit() throws {
+        let flushPolicies = [MinSizeFlushPolicy(maxSize: 1)]
         let uploader = EventUploaderMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
@@ -51,25 +55,43 @@ final class EventSenderEngineTest: XCTestCase {
         let cancellable = uploader.subject.sink { _ in
             expectation.fulfill()
         }
+        eventSenderEngine.emit(
+            eventName: "my_event",
+            message: [
+                "a":.init(integer: 0),
+                "message":.init(integer: 1),
+            ],
+            context: [
+                "a": .init(integer: 2),
+                "message": .init(integer: 3) // the root "message" overrides this
+            ])
 
-        var events: [ConfidenceEvent] = []
-        for i in 0..<5 {
-            events.append(ConfidenceEvent(
-                name: "\(i)",
-                payload: [:],
-                eventTime: Date.backport.now)
-            )
-            eventSenderEngine.emit(eventName: "\(i)", message: [:], context: [:])
-        }
 
         wait(for: [expectation], timeout: 5)
         let uploadRequest = try XCTUnwrap(uploader.calledRequest)
-        XCTAssertTrue(uploadRequest.map { $0.eventDefinition } == events.map { $0.name })
+        XCTAssertEqual(uploader.calledRequest![0].eventDefinition, "my_event")
+        XCTAssertEqual(uploader.calledRequest![0].payload, NetworkStruct(fields: [
+            "message": .structure(.init(fields: [
+                "a" : .number(0.0),
+                "message": .number(1.0)
+            ])),
+            "a": .number(2.0)
+        ]))
+    }
 
-        uploader.reset()
+    func testAddingEventsWithSizeFlushPolicyWorks() throws {
+        let flushPolicies = [MinSizeFlushPolicy(maxSize: 5)]
+        let uploader = EventUploaderMock()
+        let eventSenderEngine = EventSenderEngineImpl(
+            clientSecret: "CLIENT_SECRET",
+            uploader: uploader,
+            storage: EventStorageMock(),
+            flushPolicies: flushPolicies
+        )
+
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        // TODO: We need to wait for writeReqChannel to complete to make this test meaningful
         XCTAssertNil(uploader.calledRequest)
-        cancellable.cancel()
     }
 
     func testRemoveEventsFromStorageOnBadRequest() throws {
