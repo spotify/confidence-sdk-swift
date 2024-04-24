@@ -47,8 +47,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.resolver = LocalStorageResolver(cache: cache)
     }
 
+    public convenience init(confidence: Confidence) {
+        self.init(confidence: confidence, session: nil)
+    }
+
     /// Initialize the Provider via a `Confidence` object.
-    public init(confidence: Confidence, session: URLSession? = nil) {
+    internal init(confidence: Confidence, session: URLSession? = nil) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
