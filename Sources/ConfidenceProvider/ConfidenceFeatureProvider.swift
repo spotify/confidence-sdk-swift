@@ -146,12 +146,19 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        if confidence == nil {
+        guard let confidence = confidence else {
             self.resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
             return
         }
 
         self.updateConfidenceContext(context: newContext)
+        guard let oldContext = oldContext else {
+            return
+        }
+        let removedKeys  = oldContext.asMap().filter{ (key, value) in !newContext.asMap().keys.contains(key) }
+        for removedKey in removedKeys.keys {
+            confidence.removeContextEntry(key: removedKey)
+        }
     }
 
     private func startListentingForContextChanges() {

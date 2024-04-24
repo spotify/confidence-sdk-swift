@@ -913,6 +913,21 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
     }
 
+    func testRemovedKeyWillbeRemovedFromConfidenceContext() {
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+        let initialContext = MutableContext(targetingKey: "user1")
+            .add(key: "hello", value: Value.string("world"))
+        provider.initialize(initialContext: initialContext)
+        let expectedInitialContext = ["targeting_key": ConfidenceValue(string: "user1"), "hello": ConfidenceValue(string: "world")]
+        XCTAssertEqual(confidence.getContext(), expectedInitialContext)
+        let expectedNewContext = ["targeting_key": ConfidenceValue(string: "user1"), "new": ConfidenceValue(string: "west world")]
+        let newContext = MutableContext(targetingKey: "user1")
+            .add(key: "new", value: Value.string("west world"))
+        provider.onContextSet(oldContext: initialContext, newContext: newContext)
+        XCTAssertEqual(confidence.getContext(), expectedNewContext)
+    }
+
     func testOverridingInProvider() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
