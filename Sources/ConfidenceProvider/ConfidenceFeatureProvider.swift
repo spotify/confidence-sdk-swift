@@ -53,9 +53,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     /// Initialize the Provider via a `Confidence` object.
-    internal init(confidence: Confidence,
-                  session: URLSession?,
-                  client: ConfidenceResolveClient?) {
+    internal init(confidence: Confidence, session: URLSession?, client: ConfidenceResolveClient?) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
@@ -148,7 +146,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        guard let confidence = confidence else {
+        if confidence == nil {
             self.resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
             return
         }
@@ -166,7 +164,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                     return
                 }
                 self.resolve(strategy: self.initializationStrategy, context: context)
-            }.store(in: &cancellables)
+            }
+            .store(in: &cancellables)
     }
 
     private func updateConfidenceContext(context: EvaluationContext) {
