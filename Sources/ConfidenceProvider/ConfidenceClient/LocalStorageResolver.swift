@@ -10,13 +10,15 @@ public class LocalStorageResolver: Resolver {
         self.cache = cache
     }
 
-    public func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
-        let getResult = try self.cache.getValue(flag: flag, ctx: ctx)
+    public func resolve(flag: String, contextHash: String) throws -> ResolveResult {
+        let getResult = try self.cache.getValue(flag: flag, contextHash: contextHash)
         guard let getResult = getResult else {
             throw OpenFeatureError.flagNotFoundError(key: flag)
         }
         guard getResult.needsUpdate == false else {
-            throw ConfidenceError.cachedValueExpired
+            var resolveValueStale = getResult.resolvedValue
+            resolveValueStale.resolveReason = .stale
+            return .init(resolvedValue: resolveValueStale, resolveToken: getResult.resolveToken)
         }
         return .init(resolvedValue: getResult.resolvedValue, resolveToken: getResult.resolveToken)
     }

@@ -48,8 +48,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.resolver = LocalStorageResolver(cache: cache)
     }
 
+    public convenience init(confidence: Confidence) {
+        self.init(confidence: confidence, session: nil, client: nil)
+    }
+
     /// Initialize the Provider via a `Confidence` object.
-    public init(confidence: Confidence, client: ConfidenceResolveClient? = nil) {
+    internal init(confidence: Confidence,
+                  session: URLSession?,
+                  client: ConfidenceResolveClient?) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
@@ -66,6 +72,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             metadata: metadata)
         self.client = client ?? RemoteConfidenceResolveClient(
             options: options,
+            session: session,
             applyOnResolve: false,
             flagApplier: flagApplier,
             metadata: metadata)
@@ -84,14 +91,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             eventHandler.send(.ready)
         }
 
-        resolve(strategy: initializationStrategy, context: initialContext)
+        let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: initialContext)
+
+        resolve(strategy: initializationStrategy, context: context)
         self.startListentingForContextChanges()
     }
 
-    private func resolve(strategy: InitializationStrategy, context: EvaluationContext) {
+    private func resolve(strategy: InitializationStrategy, context: ConfidenceStruct) {
         Task {
             do {
-                let resolveResult = try await resolve(context: context)
+                let resolveResult = try await client.resolve(ctx: context)
 
                 // update cache with stored values
                 try await store(
@@ -119,7 +128,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func store(
-        with context: OpenFeature.EvaluationContext,
+        with context: ConfidenceStruct,
         resolveResult result: ResolvesResult,
         refreshCache: Bool
     ) async throws {
@@ -139,6 +148,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
+        guard let confidence = confidence else {
+            self.resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
+            return
+        }
+
         self.updateConfidenceContext(context: newContext)
     }
 
@@ -147,20 +161,21 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
         confidence.contextChanges()
-            .sink { [weak self] _ in
+            .sink { [weak self] context in
                 guard let self = self else {
                     return
                 }
-                let context = MutableContext(attributes: [:])
                 self.resolve(strategy: self.initializationStrategy, context: context)
-            }
-            .store(in: &cancellables)
+            }.store(in: &cancellables)
     }
 
     private func updateConfidenceContext(context: EvaluationContext) {
-        confidence?.updateContextEntry(
-            key: "open_feature",
-            value: ConfidenceValue(structure: ConfidenceTypeMapper.from(ctx: context)))
+        for entry in ConfidenceTypeMapper.from(ctx: context) {
+            confidence?.updateContextEntry(
+                key: entry.key,
+                value: entry.value
+            )
+        }
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -231,17 +246,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    private func resolve(context: OpenFeature.EvaluationContext) async throws -> ResolvesResult {
-        do {
-            let resolveResult = try await client.resolve(ctx: context)
-            return resolveResult
-        } catch {
-            Logger(subsystem: "com.confidence.provider", category: "initialize").error(
-                "Error while executing \"initialize\": \(error)")
-            throw error
-        }
-    }
-
     public func errorWrappedResolveFlag<T>(flag: String, defaultValue: T, ctx: EvaluationContext?, errorPrefix: String)
     throws -> ProviderEvaluation<T>
     {
@@ -271,14 +275,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             throw OpenFeatureError.invalidContextError
         }
 
+        let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: ctx)
+
         do {
-            let resolverResult = try resolver.resolve(flag: path.flag, ctx: ctx)
+            let resolverResult = try resolver.resolve(flag: path.flag, contextHash: context.hash())
 
             guard let value = resolverResult.resolvedValue.value else {
                 return resolveFlagNoValue(
                     defaultValue: defaultValue,
                     resolverResult: resolverResult,
-                    ctx: ctx
+                    ctx: context
                 )
             }
 
@@ -287,37 +293,30 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
             }
 
+            let isStale = resolverResult.resolvedValue.resolveReason == .stale
             let evaluationResult = ProviderEvaluation(
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
-                reason: Reason.targetingMatch.rawValue
+                reason: isStale ? Reason.stale.rawValue : Reason.targetingMatch.rawValue
             )
 
             processResultForApply(
                 resolverResult: resolverResult,
-                ctx: ctx,
                 applyTime: Date.backport.now
             )
+
+
             return evaluationResult
-        } catch ConfidenceError.cachedValueExpired {
-            return ProviderEvaluation(
-                value: defaultValue,
-                variant: nil,
-                reason: Reason.error.rawValue,
-                errorCode: ErrorCode.providerNotReady)
-        } catch {
-            throw error
         }
     }
 
-    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: EvaluationContext)
+    private func resolveFlagNoValue<T>(defaultValue: T, resolverResult: ResolveResult, ctx: ConfidenceStruct)
     -> ProviderEvaluation<T>
     {
         switch resolverResult.resolvedValue.resolveReason {
         case .noMatch:
             processResultForApply(
                 resolverResult: resolverResult,
-                ctx: ctx,
                 applyTime: Date.backport.now)
             return ProviderEvaluation(
                 value: defaultValue,
@@ -349,6 +348,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 reason: Reason.error.rawValue,
                 errorCode: ErrorCode.general,
                 errorMessage: "General error in the Confidence backend")
+        case .stale:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: resolverResult.resolvedValue.variant,
+                reason: Reason.stale.rawValue
+            )
         }
     }
 
@@ -410,7 +415,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     private func processResultForApply(
         resolverResult: ResolveResult?,
-        ctx: OpenFeature.EvaluationContext?,
         applyTime: Date
     ) {
         guard let resolverResult = resolverResult, let resolveToken = resolverResult.resolveToken else {

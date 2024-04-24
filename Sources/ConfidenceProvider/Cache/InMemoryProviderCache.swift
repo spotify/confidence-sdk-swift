@@ -21,13 +21,13 @@ public class InMemoryProviderCache: ProviderCache {
         self.curEvalContextHash = curEvalContextHash
     }
 
-    public func getValue(flag: String, ctx: EvaluationContext) throws -> CacheGetValueResult? {
+    public func getValue(flag: String, contextHash: String) throws -> CacheGetValueResult? {
         if let value = self.cache[flag] {
             guard let curResolveToken = curResolveToken else {
                 throw ConfidenceError.noResolveTokenFromCache
             }
             return .init(
-                resolvedValue: value, needsUpdate: curEvalContextHash != ctx.hash(), resolveToken: curResolveToken)
+                resolvedValue: value, needsUpdate: curEvalContextHash != contextHash, resolveToken: curResolveToken)
         } else {
             return nil
         }

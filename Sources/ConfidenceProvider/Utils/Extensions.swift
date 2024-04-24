@@ -1,8 +1,8 @@
 import Foundation
-import OpenFeature
+import Confidence
 
 extension [ResolvedValue] {
-    func toCacheData(context: EvaluationContext, resolveToken: String) -> StoredCacheData {
+    func toCacheData(context: ConfidenceStruct, resolveToken: String) -> StoredCacheData {
         var cacheValues: [String: ResolvedValue] = [:]
 
         forEach { value in

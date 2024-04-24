@@ -12,12 +12,9 @@ class LocalStorageResolverTest: XCTestCase {
         let resolver = LocalStorageResolver(cache: cache)
 
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
-        XCTAssertThrowsError(
-            try resolver.resolve(flag: "test", ctx: ctx)
-        ) { error in
-            XCTAssertEqual(
-                error as? ConfidenceError, ConfidenceError.cachedValueExpired)
-        }
+        XCTAssertNoThrow(
+            try resolver.resolve(flag: "test", contextHash: ConfidenceTypeMapper.from(ctx: ctx).hash())
+        )
     }
 
     func testMissingValueFromCache() throws {
@@ -26,7 +23,7 @@ class LocalStorageResolverTest: XCTestCase {
 
         let ctx = MutableContext(targetingKey: "key", structure: MutableStructure())
         XCTAssertThrowsError(
-            try resolver.resolve(flag: "test", ctx: ctx)
+            try resolver.resolve(flag: "test", contextHash: ConfidenceTypeMapper.from(ctx: ctx).hash())
         ) { error in
             XCTAssertEqual(
                 error as? OpenFeatureError, OpenFeatureError.flagNotFoundError(key: "test"))
@@ -42,7 +39,7 @@ class TestCache: ProviderCache {
         self.returnType = returnType
     }
 
-    func getValue(flag: String, ctx: EvaluationContext) -> ConfidenceProvider.CacheGetValueResult? {
+    func getValue(flag: String, contextHash: String) -> ConfidenceProvider.CacheGetValueResult? {
         switch returnType {
         case .noValue:
             return nil

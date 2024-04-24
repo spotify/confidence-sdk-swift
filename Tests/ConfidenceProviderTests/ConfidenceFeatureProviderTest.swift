@@ -310,7 +310,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
     }
 
-    func testStaleEvaluationContextInCache() throws {
+    func testCreateProviderUsingConfidenceContextResolvesCorrectly() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
@@ -320,17 +320,70 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
-        // Simulating a cache with an old evaluation context
 
-        let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
-            .toCacheData(context: MutableContext(targetingKey: "user0"), resolveToken: "token0")
+        let confidence = Confidence
+            .Builder(clientSecret: "")
+            .build()
+            .withContext(["my_string": ConfidenceValue(string: "my_value")])
 
-        let storage = try StorageMock(data: data)
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: session, client: nil)
+
+        try withExtendedLifetime(
+            provider.observe().sink { event in
+                if event == .ready {
+                    self.readyExpectation.fulfill()
+                }
+            })
+        {
+            provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+            wait(for: [readyExpectation], timeout: 5)
+
+            XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
+            XCTAssertTrue(MockedResolveClientURLProtocol
+                .resolveRequestFields.fields.contains { $0.key == "my_string" && $0.value == .string("my_value") }
+            )
+
+            XCTAssertTrue(MockedResolveClientURLProtocol
+                .resolveRequestFields.fields.contains { $0.key == "targeting_key" }
+            )
+
+            let requestTargetingKey = MockedResolveClientURLProtocol
+                .resolveRequestFields
+                .fields["targeting_key"]
+
+            if case .string(let targetingKey) = requestTargetingKey {
+                XCTAssertTrue(!targetingKey.isEmpty)
+            } else {
+                XCTFail("targeting key could not be found")
+            }
+
+            let evaluation = try provider.getIntegerEvaluation(
+                key: "flag.size",
+                defaultValue: 0,
+                context: MutableContext(targetingKey: "user1"))
+
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
+            XCTAssertNil(evaluation.errorMessage)
+            XCTAssertEqual(evaluation.reason, Reason.targetingMatch.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+        }
+    }
+
+    func testStaleEvaluationContextInCache() throws {
+        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
+            "user0": .init(variant: "control", value: .structure(["size": .integer(3)]))
+        ]
+
+        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
+            "flags/flag": .init(resolve: resolve)
+        ]
+
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
 
         let provider =
         builder
             .with(session: session)
-            .with(storage: storage)
             .build()
         try withExtendedLifetime(
             provider.observe().sink { event in
@@ -347,13 +400,12 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 defaultValue: 0,
                 context: MutableContext(targetingKey: "user1"))
 
-            XCTAssertEqual(evaluation.value, 0)
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
             XCTAssertNil(evaluation.errorMessage)
-            XCTAssertNil(evaluation.variant)
-            XCTAssertEqual(evaluation.errorCode, ErrorCode.providerNotReady)
-            XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
             XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
-
             // TODO: Check this - how do we check for something not called?
             XCTAssertEqual(flagApplier.applyCallCount, 0)
         }
@@ -914,9 +966,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
             wait(for: [readyExpectation], timeout: 5)
             let context = confidence.getContext()
-            let expected = [
-                "open_feature": ConfidenceValue(structure: ["targeting_key": ConfidenceValue(string: "user1")])
-            ]
+            let expected = ["targeting_key": ConfidenceValue(string: "user1")]
             XCTAssertEqual(context, expected)
         }
     }
@@ -943,11 +993,9 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             provider.onContextSet(oldContext: ctx1, newContext: ctx2)
             wait(for: [readyExpectation], timeout: 5)
             let context = confidence.getContext()
-            let expected = [
-                "open_feature": ConfidenceValue(structure: [
-                    "targeting_key": ConfidenceValue(string: "user1"),
-                    "active": ConfidenceValue(boolean: true)
-                ])
+            let expected: ConfidenceStruct = [
+                "targeting_key": ConfidenceValue(string: "user1"),
+                "active": ConfidenceValue(boolean: true)
             ]
             XCTAssertEqual(context, expected)
         }
@@ -956,7 +1004,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     func testConfidenceContextOnContextChangeThroughConfidence() throws {
         class FakeClient: ConfidenceResolveClient {
             var callCount = 0
-            func resolve(ctx: EvaluationContext) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 callCount += 1
                 return .init(resolvedValues: [], resolveToken: "")
             }
@@ -964,7 +1012,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let confidence = Confidence.Builder.init(clientSecret: "").build()
         let client = FakeClient()
-        let provider = ConfidenceFeatureProvider(confidence: confidence, client: client)
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
 
         let readyExpectation = self.expectation(description: "Waiting for init and ctx change to complete")
         readyExpectation.expectedFulfillmentCount = 2

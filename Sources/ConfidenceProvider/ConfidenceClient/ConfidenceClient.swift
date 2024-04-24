@@ -1,9 +1,10 @@
 import Foundation
+import Confidence
 import OpenFeature
 
 public protocol ConfidenceResolveClient {
     // Async
-    func resolve(ctx: EvaluationContext) async throws -> ResolvesResult
+    func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult
 }
 
 public struct ResolvedValue: Codable, Equatable {
@@ -18,6 +19,7 @@ public struct ResolvedValue: Codable, Equatable {
         case targetingKeyError = 2
         case generalError = 3
         case disabled = 4
+        case stale = 5
     }
 }
 

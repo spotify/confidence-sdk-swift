@@ -20,7 +20,7 @@ class ClientMock: ConfidenceResolveClient {
         self.testMode = testMode
     }
 
-    func resolve(ctx: EvaluationContext) throws -> ResolvesResult {
+    func resolve(ctx: ConfidenceStruct) throws -> ResolvesResult {
         return ResolvesResult(resolvedValues: [], resolveToken: "")
     }
 
@@ -48,6 +48,9 @@ class ClientMock: ConfidenceResolveClient {
     }
 
     func resolve(flag: String, ctx: EvaluationContext) throws -> ResolveResult {
-        return ResolveResult(resolvedValue: ResolvedValue(flag: "flag1", resolveReason: .match), resolveToken: "")
+        return ResolveResult(
+            resolvedValue: ResolvedValue(flag: "flag1", resolveReason: .match),
+            resolveToken: ""
+        )
     }
 }
