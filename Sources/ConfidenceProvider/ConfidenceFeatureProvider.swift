@@ -265,16 +265,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 variant: overrideValue.variant,
                 reason: Reason.staticReason.rawValue)
         }
-        
+
         guard let ctx = ctx else {
             throw OpenFeatureError.invalidContextError
         }
-        
+
         let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: ctx)
-        
+
         do {
             let resolverResult = try resolver.resolve(flag: path.flag, contextHash: context.hash())
-            
+
             guard let value = resolverResult.resolvedValue.value else {
                 return resolveFlagNoValue(
                     defaultValue: defaultValue,
@@ -282,25 +282,25 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                     ctx: context
                 )
             }
-            
+
             let pathValue: Value = try getValue(path: path.path, value: value)
             guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
                 throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
             }
-            
+
             let isStale = resolverResult.resolvedValue.resolveReason == .stale
             let evaluationResult = ProviderEvaluation(
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
                 reason: isStale ? Reason.stale.rawValue : Reason.targetingMatch.rawValue
             )
-            
+
             processResultForApply(
                 resolverResult: resolverResult,
                 applyTime: Date.backport.now
             )
-            
-            
+
+
             return evaluationResult
         }
     }
