@@ -380,19 +380,10 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         ]
 
         let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
-        // Simulating a cache with an old evaluation context
-
-        let context = ConfidenceTypeMapper.from(ctx: MutableContext(targetingKey: "user0"))
-
-        let data = [ResolvedValue(flag: "flag", resolveReason: .match)]
-            .toCacheData(context: context, resolveToken: "token0")
-
-        let storage = try StorageMock(data: data)
 
         let provider =
         builder
             .with(session: session)
-            .with(storage: storage)
             .build()
         try withExtendedLifetime(
             provider.observe().sink { event in
