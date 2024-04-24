@@ -28,7 +28,7 @@ class StorageMock: Storage {
             if data.isEmpty {
                 return defaultValue
             }
-            return try JSONDecoder().decode(T.self, from: data.data)
+            return try JSONDecoder().decode(T.self, from: try XCTUnwrap(data.data(using: .utf8)))
         }
     }
 

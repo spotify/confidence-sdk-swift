@@ -23,10 +23,11 @@ class PersistentProviderCacheTest: XCTestCase {
             flag: flag,
             resolveReason: .match)
 
-        try storage.save(data: [value].toCacheData(context: ctx, resolveToken: resolveToken))
+        let context = ConfidenceTypeMapper.from(ctx: ctx)
+        try storage.save(data: [value].toCacheData(context: context, resolveToken: resolveToken))
         cache = InMemoryProviderCache.from(storage: storage)
 
-        let cachedValue = try cache.getValue(flag: flag, ctx: ctx)
+        let cachedValue = try cache.getValue(flag: flag, contextHash: ConfidenceTypeMapper.from(ctx: ctx).hash())
         XCTAssertEqual(cachedValue?.resolvedValue, value)
         XCTAssertFalse(cachedValue?.needsUpdate ?? true)
         XCTAssertFalse(cachedValue?.needsUpdate ?? true)
@@ -48,7 +49,8 @@ class PersistentProviderCacheTest: XCTestCase {
             resolveReason: .match)
         XCTAssertFalse(try FileManager.default.fileExists(atPath: storage.getConfigUrl().backport.path))
 
-        try storage.save(data: [value1, value2].toCacheData(context: ctx, resolveToken: resolveToken))
+        let context = ConfidenceTypeMapper.from(ctx: ctx)
+        try storage.save(data: [value1, value2].toCacheData(context: context, resolveToken: resolveToken))
         cache = InMemoryProviderCache.from(storage: storage)
 
         expectToEventually(
@@ -56,8 +58,9 @@ class PersistentProviderCacheTest: XCTestCase {
 
         let newCache = InMemoryProviderCache.from(
             storage: DefaultStorage(filePath: "resolver.flags.cache"))
-        let cachedValue1 = try newCache.getValue(flag: flag1, ctx: ctx)
-        let cachedValue2 = try newCache.getValue(flag: flag2, ctx: ctx)
+        let contextHash = ConfidenceTypeMapper.from(ctx: ctx).hash()
+        let cachedValue1 = try newCache.getValue(flag: flag1, contextHash: contextHash)
+        let cachedValue2 = try newCache.getValue(flag: flag2, contextHash: contextHash)
         XCTAssertEqual(cachedValue1?.resolvedValue, value1)
         XCTAssertEqual(cachedValue2?.resolvedValue, value2)
         XCTAssertEqual(cachedValue1?.needsUpdate, false)
@@ -71,7 +74,8 @@ class PersistentProviderCacheTest: XCTestCase {
 
         try storage.clear()
 
-        let cachedValue = try cache.getValue(flag: "flag", ctx: ctx)
+        let contextHash = ConfidenceTypeMapper.from(ctx: ctx).hash()
+        let cachedValue = try cache.getValue(flag: "flag", contextHash: contextHash)
         XCTAssertNil(cachedValue?.resolvedValue.value)
     }
 
@@ -85,10 +89,12 @@ class PersistentProviderCacheTest: XCTestCase {
             value: Value.double(3.14),
             flag: flag,
             resolveReason: .match)
-        try storage.save(data: [value].toCacheData(context: ctx1, resolveToken: resolveToken))
+        let context = ConfidenceTypeMapper.from(ctx: ctx1)
+        try storage.save(data: [value].toCacheData(context: context, resolveToken: resolveToken))
         cache = InMemoryProviderCache.from(storage: storage)
 
-        let cachedValue = try cache.getValue(flag: flag, ctx: ctx2)
+        let contextHash = ConfidenceTypeMapper.from(ctx: ctx2).hash()
+        let cachedValue = try cache.getValue(flag: flag, contextHash: contextHash)
         XCTAssertEqual(cachedValue?.resolvedValue, value)
         XCTAssertTrue(cachedValue?.needsUpdate ?? false)
     }

@@ -7,7 +7,7 @@ import OpenFeature
 
 public class AlwaysFailCache: ProviderCache {
     public func getValue(
-        flag: String, ctx: EvaluationContext
+        flag: String, contextHash: String
     ) throws -> CacheGetValueResult? {
         throw ConfidenceError.cacheError(message: "Always Fails (getValue)")
     }

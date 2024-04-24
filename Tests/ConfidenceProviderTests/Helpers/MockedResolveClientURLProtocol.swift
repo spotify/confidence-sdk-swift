@@ -8,6 +8,7 @@ import OpenFeature
 class MockedResolveClientURLProtocol: URLProtocol {
     public static var callStats = 0
     public static var resolveStats = 0
+    public static var resolveRequestFields = NetworkStruct(fields: [:])
     public static var flags: [String: TestFlag] = [:]
     public static var failFirstApply = false
 
@@ -65,6 +66,8 @@ class MockedResolveClientURLProtocol: URLProtocol {
                 self, didFailWithError: NSError(domain: "test", code: URLError.cannotDecodeRawData.rawValue))
             return
         }
+
+        MockedResolveClientURLProtocol.resolveRequestFields = request.evaluationContext
 
         guard case .string(let targetingKey) = request.evaluationContext.fields["targeting_key"] else {
             respondWithError(
