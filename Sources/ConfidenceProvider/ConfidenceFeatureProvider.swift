@@ -265,16 +265,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 variant: overrideValue.variant,
                 reason: Reason.staticReason.rawValue)
         }
-
+        
         guard let ctx = ctx else {
             throw OpenFeatureError.invalidContextError
         }
-
+        
         let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: ctx)
-
+        
         do {
             let resolverResult = try resolver.resolve(flag: path.flag, contextHash: context.hash())
-
+            
             guard let value = resolverResult.resolvedValue.value else {
                 return resolveFlagNoValue(
                     defaultValue: defaultValue,
@@ -282,31 +282,26 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                     ctx: context
                 )
             }
-
+            
             let pathValue: Value = try getValue(path: path.path, value: value)
             guard let typedValue: T = pathValue == .null ? defaultValue : pathValue.getTyped() else {
                 throw OpenFeatureError.parseError(message: "Unable to parse flag value: \(pathValue)")
             }
-
+            
+            let isStale = resolverResult.resolvedValue.resolveReason == .stale
             let evaluationResult = ProviderEvaluation(
                 value: typedValue,
                 variant: resolverResult.resolvedValue.variant,
-                reason: Reason.targetingMatch.rawValue
+                reason: isStale ? Reason.stale.rawValue : Reason.targetingMatch.rawValue
             )
-
+            
             processResultForApply(
                 resolverResult: resolverResult,
                 applyTime: Date.backport.now
             )
+            
+            
             return evaluationResult
-        } catch ConfidenceError.cachedValueExpired {
-            return ProviderEvaluation(
-                value: defaultValue,
-                variant: nil,
-                reason: Reason.error.rawValue,
-                errorCode: ErrorCode.providerNotReady)
-        } catch {
-            throw error
         }
     }
 
@@ -348,6 +343,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 reason: Reason.error.rawValue,
                 errorCode: ErrorCode.general,
                 errorMessage: "General error in the Confidence backend")
+        case .stale:
+            return ProviderEvaluation(
+                value: defaultValue,
+                variant: resolverResult.resolvedValue.variant,
+                reason: Reason.stale.rawValue
+            )
         }
     }
 

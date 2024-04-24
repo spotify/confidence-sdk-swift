@@ -372,7 +372,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
     func testStaleEvaluationContextInCache() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
-            "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
+            "user0": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
 
         let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
@@ -409,13 +409,12 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 defaultValue: 0,
                 context: MutableContext(targetingKey: "user1"))
 
-            XCTAssertEqual(evaluation.value, 0)
+            XCTAssertEqual(evaluation.value, 3)
+            XCTAssertNil(evaluation.errorCode)
             XCTAssertNil(evaluation.errorMessage)
-            XCTAssertNil(evaluation.variant)
-            XCTAssertEqual(evaluation.errorCode, ErrorCode.providerNotReady)
-            XCTAssertEqual(evaluation.reason, Reason.error.rawValue)
+            XCTAssertEqual(evaluation.variant, "control")
+            XCTAssertEqual(evaluation.reason, Reason.stale.rawValue)
             XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 1)
-
             // TODO: Check this - how do we check for something not called?
             XCTAssertEqual(flagApplier.applyCallCount, 0)
         }

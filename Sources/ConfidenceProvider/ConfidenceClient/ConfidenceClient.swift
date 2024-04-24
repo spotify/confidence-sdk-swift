@@ -19,6 +19,7 @@ public struct ResolvedValue: Codable, Equatable {
         case targetingKeyError = 2
         case generalError = 3
         case disabled = 4
+        case stale = 5
     }
 }
 
