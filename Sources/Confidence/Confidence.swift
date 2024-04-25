@@ -40,6 +40,17 @@ public class Confidence: ConfidenceEventSender {
         eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
     }
 
+    private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
+
+    private func withLock(callback: @escaping (Confidence) -> Void) {
+        confidenceQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            callback(self)
+        }
+    }
+
 
     public func getContext() -> ConfidenceStruct {
         let parentContext = parent?.getContext() ?? [:]
@@ -53,35 +64,43 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContext(key: String, value: ConfidenceValue) {
-        var map = contextFlow.value
-        map[key] = value
-        contextFlow.value = map
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            map[key] = value
+            confidence.contextFlow.value = map
+        }
     }
 
     public func putContext(context: ConfidenceStruct) {
-        var map = contextFlow.value
-        for entry in context {
-            map.updateValue(entry.value, forKey: entry.key)
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            confidence.contextFlow.value = map
         }
-        contextFlow.value = map
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
-        var map = contextFlow.value
-        for removedKey in removedKeys {
-            map.removeValue(forKey: removedKey)
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            for removedKey in removedKeys {
+                map.removeValue(forKey: removedKey)
+            }
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            confidence.contextFlow.value = map
         }
-        for entry in context {
-            map.updateValue(entry.value, forKey: entry.key)
-        }
-        contextFlow.value = map
     }
 
     public func removeContextEntry(key: String) {
-        var map = contextFlow.value
-        map.removeValue(forKey: key)
-        contextFlow.value = map
-        removedContextKeys.insert(key)
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            map.removeValue(forKey: key)
+            confidence.contextFlow.value = map
+            confidence.removedContextKeys.insert(key)
+        }
     }
 
     public func withContext(_ context: ConfidenceStruct) -> Self {
