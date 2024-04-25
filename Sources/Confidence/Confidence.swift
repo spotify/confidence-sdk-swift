@@ -10,6 +10,7 @@ public class Confidence: ConfidenceEventSender {
     public var initializationStrategy: InitializationStrategy
     private let contextFlow = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
+    private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
 
     required init(
         clientSecret: String,
@@ -39,8 +40,6 @@ public class Confidence: ConfidenceEventSender {
     public func track(eventName: String, message: ConfidenceStruct) {
         eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
     }
-
-    private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
         confidenceQueue.sync {  [weak self] in
