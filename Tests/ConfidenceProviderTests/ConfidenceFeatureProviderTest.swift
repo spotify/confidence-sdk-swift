@@ -326,7 +326,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
             .withContext(["my_string": ConfidenceValue(string: "my_value")])
 
-        let provider = ConfidenceFeatureProvider(confidence: confidence, session: session)
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: session, client: nil)
 
         try withExtendedLifetime(
             provider.observe().sink { event in
@@ -913,6 +913,54 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
     }
 
+    func testRemovedKeyWillbeRemovedFromConfidenceContext() {
+        let expectationOneCall = expectation(description: "one call is made")
+        let twoCallsExpectation = expectation(description: "two calls is made")
+        class FakeClient: ConfidenceResolveClient {
+            var callCount = 0
+            var oneCallExpectation: XCTestExpectation
+            var twoCallsExpectation: XCTestExpectation
+            init(oneCallExpectation: XCTestExpectation, twoCallsExpectation: XCTestExpectation) {
+                self.oneCallExpectation = oneCallExpectation
+                self.twoCallsExpectation = twoCallsExpectation
+            }
+
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                callCount += 1
+                if callCount == 1 {
+                    self.oneCallExpectation.fulfill()
+                } else if callCount == 2 {
+                    self.twoCallsExpectation.fulfill()
+                }
+                return .init(resolvedValues: [], resolveToken: "")
+            }
+        }
+
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let client = FakeClient(oneCallExpectation: expectationOneCall, twoCallsExpectation: twoCallsExpectation)
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
+        let initialContext = MutableContext(targetingKey: "user1")
+            .add(key: "hello", value: Value.string("world"))
+        provider.initialize(initialContext: initialContext)
+        let expectedInitialContext = [
+            "targeting_key": ConfidenceValue(string: "user1"),
+            "hello": ConfidenceValue(string: "world")
+        ]
+        XCTAssertEqual(confidence.getContext(), expectedInitialContext)
+        let expectedNewContext = [
+            "targeting_key": ConfidenceValue(string: "user1"),
+            "new": ConfidenceValue(string: "west world")
+        ]
+        let newContext = MutableContext(targetingKey: "user1")
+            .add(key: "new", value: Value.string("west world"))
+        wait(for: [expectationOneCall], timeout: 1)
+        XCTAssertEqual(1, client.callCount)
+        provider.onContextSet(oldContext: initialContext, newContext: newContext)
+        XCTAssertEqual(confidence.getContext(), expectedNewContext)
+        wait(for: [twoCallsExpectation], timeout: 1)
+        XCTAssertEqual(2, client.callCount)
+    }
+
     func testOverridingInProvider() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
@@ -998,6 +1046,37 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 "active": ConfidenceValue(boolean: true)
             ]
             XCTAssertEqual(context, expected)
+        }
+    }
+
+    func testConfidenceContextOnContextChangeThroughConfidence() throws {
+        class FakeClient: ConfidenceResolveClient {
+            var callCount = 0
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                callCount += 1
+                return .init(resolvedValues: [], resolveToken: "")
+            }
+        }
+
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let client = FakeClient()
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
+
+        let readyExpectation = self.expectation(description: "Waiting for init and ctx change to complete")
+        readyExpectation.expectedFulfillmentCount = 2
+
+        withExtendedLifetime(
+            provider.observe().sink { event in
+                if event == .ready {
+                    readyExpectation.fulfill()
+                }
+            })
+        {
+            let ctx1 = MutableContext(targetingKey: "user1")
+            provider.initialize(initialContext: ctx1)
+            confidence.putContext(key: "active", value: ConfidenceValue.init(boolean: true))
+            wait(for: [readyExpectation], timeout: 5)
+            XCTAssertEqual(client.callCount, 2)
         }
     }
 }

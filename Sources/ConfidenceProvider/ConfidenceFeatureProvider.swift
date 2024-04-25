@@ -24,6 +24,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let storage: Storage
     private let eventHandler = EventHandler(ProviderEvent.notReady)
     private let confidence: Confidence?
+    private var cancellables = Set<AnyCancellable>()
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder`or init with `Confidence` instead.
     init(
@@ -47,12 +48,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.resolver = LocalStorageResolver(cache: cache)
     }
 
+    /// Initialize the Provider via a `Confidence` object.
     public convenience init(confidence: Confidence) {
-        self.init(confidence: confidence, session: nil)
+        self.init(confidence: confidence, session: nil, client: nil)
     }
 
-    /// Initialize the Provider via a `Confidence` object.
-    internal init(confidence: Confidence, session: URLSession? = nil) {
+    internal init(confidence: Confidence, session: URLSession?, client: ConfidenceResolveClient?) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
@@ -67,7 +68,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             storage: DefaultStorage.applierFlagsCache(),
             options: options,
             metadata: metadata)
-        self.client = RemoteConfidenceResolveClient(
+        self.client = client ?? RemoteConfidenceResolveClient(
             options: options,
             session: session,
             applyOnResolve: false,
@@ -88,10 +89,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             eventHandler.send(.ready)
         }
 
+        let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: initialContext)
+
+        resolve(strategy: initializationStrategy, context: context)
+        self.startListentingForContextChanges()
+    }
+
+    private func resolve(strategy: InitializationStrategy, context: ConfidenceStruct) {
         Task {
             do {
-                let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: initialContext)
-                let resolveResult = try await resolve(context: context)
+                let resolveResult = try await client.resolve(ctx: context)
 
                 // update cache with stored values
                 try await store(
@@ -109,6 +116,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 eventHandler.send(.ready)
             }
         }
+    }
+
+    func shutdown() {
+        for cancellable in cancellables {
+            cancellable.cancel()
+        }
+        cancellables.removeAll()
     }
 
     private func store(
@@ -132,38 +146,35 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        var oldConfidenceContext: ConfidenceStruct = [:]
-        if let context = oldContext {
-            oldConfidenceContext = ConfidenceTypeMapper.from(ctx: context)
-        }
-        guard oldConfidenceContext.hash() != ConfidenceTypeMapper.from(ctx: newContext).hash() else {
+        if confidence == nil {
+            self.resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
             return
         }
 
-        self.updateConfidenceContext(context: newContext)
-        Task {
-            do {
-                let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: newContext)
-                let resolveResult = try await resolve(context: context)
-
-                // update the storage
-                try await store(with: context, resolveResult: resolveResult, refreshCache: true)
-
-                eventHandler.send(ProviderEvent.ready)
-            } catch {
-                eventHandler.send(ProviderEvent.ready)
-                // do nothing
-            }
+        var removedKeys: [String] = []
+        if let oldContext = oldContext {
+            removedKeys = Array(oldContext.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
         }
+
+        self.updateConfidenceContext(context: newContext, removedKeys: removedKeys)
     }
 
-    private func updateConfidenceContext(context: EvaluationContext) {
-        for entry in ConfidenceTypeMapper.from(ctx: context) {
-            confidence?.updateContextEntry(
-                key: entry.key,
-                value: entry.value
-            )
+    private func startListentingForContextChanges() {
+        guard let confidence = confidence else {
+            return
         }
+        confidence.contextChanges()
+            .sink { [weak self] context in
+                guard let self = self else {
+                    return
+                }
+                self.resolve(strategy: self.initializationStrategy, context: context)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateConfidenceContext(context: EvaluationContext, removedKeys: [String] = []) {
+        confidence?.putContext(context: ConfidenceTypeMapper.from(ctx: context), removedKeys: removedKeys)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -231,17 +242,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             overrides.forEach { localOverride in
                 self.overrides[localOverride.key()] = localOverride
             }
-        }
-    }
-
-    private func resolve(context: ConfidenceStruct) async throws -> ResolvesResult {
-        do {
-            let resolveResult = try await client.resolve(ctx: context)
-            return resolveResult
-        } catch {
-            Logger(subsystem: "com.confidence.provider", category: "initialize").error(
-                "Error while executing \"initialize\": \(error)")
-            throw error
         }
     }
 

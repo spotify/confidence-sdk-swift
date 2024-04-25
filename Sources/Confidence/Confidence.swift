@@ -1,14 +1,16 @@
 import Foundation
+import Combine
 
 public class Confidence: ConfidenceEventSender {
     private let parent: ConfidenceContextProvider?
-    private var context: ConfidenceStruct
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
     let eventSenderEngine: EventSenderEngine
     public var initializationStrategy: InitializationStrategy
+    private let contextFlow = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
+    private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
 
     required init(
         clientSecret: String,
@@ -24,12 +26,28 @@ public class Confidence: ConfidenceEventSender {
         self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
-        self.context = context
+        self.contextFlow.value = context
         self.parent = parent
+    }
+
+    public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
+        return contextFlow
+            .dropFirst()
+            .removeDuplicates()
+            .eraseToAnyPublisher()
     }
 
     public func track(eventName: String, message: ConfidenceStruct) {
         eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
+    }
+
+    private func withLock(callback: @escaping (Confidence) -> Void) {
+        confidenceQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            callback(self)
+        }
     }
 
 
@@ -38,19 +56,50 @@ public class Confidence: ConfidenceEventSender {
         var reconciledCtx = parentContext.filter {
             !removedContextKeys.contains($0.key)
         }
-        self.context.forEach { entry in
+        self.contextFlow.value.forEach { entry in
             reconciledCtx.updateValue(entry.value, forKey: entry.key)
         }
         return reconciledCtx
     }
 
-    public func updateContextEntry(key: String, value: ConfidenceValue) {
-        context[key] = value
+    public func putContext(key: String, value: ConfidenceValue) {
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            map[key] = value
+            confidence.contextFlow.value = map
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct) {
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            confidence.contextFlow.value = map
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            for removedKey in removedKeys {
+                map.removeValue(forKey: removedKey)
+            }
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            confidence.contextFlow.value = map
+        }
     }
 
     public func removeContextEntry(key: String) {
-        context.removeValue(forKey: key)
-        removedContextKeys.insert(key)
+        withLock { confidence in
+            var map = confidence.contextFlow.value
+            map.removeValue(forKey: key)
+            confidence.contextFlow.value = map
+            confidence.removedContextKeys.insert(key)
+        }
     }
 
     public func withContext(_ context: ConfidenceStruct) -> Self {

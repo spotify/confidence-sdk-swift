@@ -89,6 +89,9 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func shutdown() {
+        for cancellable in cancellables {
+            cancellable.cancel()
+        }
         cancellables.removeAll()
     }
 }

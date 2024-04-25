@@ -34,7 +34,7 @@ final class ConfidenceTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceParent.updateContextEntry(
+        confidenceParent.putContext(
             key: "k3",
             value: ConfidenceValue(string: "v3"))
         let expected = [
@@ -55,7 +55,7 @@ final class ConfidenceTests: XCTestCase {
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
-        confidence.updateContextEntry(
+        confidence.putContext(
             key: "k1",
             value: ConfidenceValue(string: "v3"))
         let expected = [
@@ -77,7 +77,7 @@ final class ConfidenceTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceChild.updateContextEntry(
+        confidenceChild.putContext(
             key: "k2",
             value: ConfidenceValue(string: "v4"))
         let expected = [
@@ -100,7 +100,7 @@ final class ConfidenceTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceParent.updateContextEntry(
+        confidenceParent.putContext(
             key: "k2",
             value: ConfidenceValue(string: "v4"))
         let expected = [
@@ -190,7 +190,7 @@ final class ConfidenceTests: XCTestCase {
             ]
         )
         confidenceChild.removeContextEntry(key: "k1")
-        confidenceChild.updateContextEntry(key: "k1", value: ConfidenceValue(string: "v4"))
+        confidenceChild.putContext(key: "k1", value: ConfidenceValue(string: "v4"))
         let expected = [
             "k2": ConfidenceValue(string: "v2"),
             "k1": ConfidenceValue(string: "v4"),
