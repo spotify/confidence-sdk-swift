@@ -104,11 +104,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 try await store(
                     with: context,
                     resolveResult: resolveResult,
-                    refreshCache: self.initializationStrategy == .fetchAndActivate
+                    refreshCache: strategy == .fetchAndActivate
                 )
 
                 // signal the provider is ready after the network request is done
-                if self.initializationStrategy == .fetchAndActivate {
+                if strategy == .fetchAndActivate {
                     eventHandler.send(.ready)
                 }
             } catch {
