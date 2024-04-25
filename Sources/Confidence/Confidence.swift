@@ -52,9 +52,28 @@ public class Confidence: ConfidenceEventSender {
         return reconciledCtx
     }
 
-    public func updateContextEntry(key: String, value: ConfidenceValue) {
+    public func putContext(key: String, value: ConfidenceValue) {
         var map = contextFlow.value
         map[key] = value
+        contextFlow.value = map
+    }
+
+    public func putContext(context: ConfidenceStruct) {
+        var map = contextFlow.value
+        for entry in context {
+            map.updateValue(entry.value, forKey: entry.key)
+        }
+        contextFlow.value = map
+    }
+
+    public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
+        var map = contextFlow.value
+        for removedKey in removedKeys {
+            map.removeValue(forKey: removedKey)
+        }
+        for entry in context {
+            map.updateValue(entry.value, forKey: entry.key)
+        }
         contextFlow.value = map
     }
 

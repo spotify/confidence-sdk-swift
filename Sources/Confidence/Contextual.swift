@@ -5,7 +5,7 @@ import Foundation
 /// Each ConfidenceContextProvider returns local data reconciled with parents' data. Local data has precedence
 public protocol Contextual: ConfidenceContextProvider {
     /// Adds/override entry to local data
-    func updateContextEntry(key: String, value: ConfidenceValue)
+    func putContext(key: String, value: ConfidenceValue)
     /// Removes entry from local data
     /// It hides entries with this key from parents' data (without modifying parents' data)
     func removeContextEntry(key: String)

@@ -146,19 +146,17 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        guard let confidence = confidence else {
+        if confidence == nil {
             self.resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
             return
         }
 
-        self.updateConfidenceContext(context: newContext)
-        guard let oldContext = oldContext else {
-            return
+        var removedKeys: [String] = []
+        if let oldContext = oldContext {
+            removedKeys = Array(oldContext.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
         }
-        let removedKeys  = oldContext.asMap().filter{ (key, value) in !newContext.asMap().keys.contains(key) }
-        for removedKey in removedKeys.keys {
-            confidence.removeContextEntry(key: removedKey)
-        }
+
+        self.updateConfidenceContext(context: newContext, removedKeys: removedKeys)
     }
 
     private func startListentingForContextChanges() {
@@ -175,13 +173,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             .store(in: &cancellables)
     }
 
-    private func updateConfidenceContext(context: EvaluationContext) {
-        for entry in ConfidenceTypeMapper.from(ctx: context) {
-            confidence?.updateContextEntry(
-                key: entry.key,
-                value: entry.value
-            )
-        }
+    private func updateConfidenceContext(context: EvaluationContext, removedKeys: [String] = []) {
+        confidence?.putContext(context: ConfidenceTypeMapper.from(ctx: context), removedKeys: removedKeys)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
