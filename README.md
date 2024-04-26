@@ -109,7 +109,7 @@ OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
 **Note:** the initialization strategy is not taken into consideration when calling `setEvaluationContext()`, so it's required to wait for READY before resuming to resolve flags.
 
-**Note:** if you do attempt to resolve a flag before the READY event is emitted, you may receive the default value with reason `STALE`.
+**Note:** if you do attempt to resolve a flag before the READY event is emitted, you may receive the old value with reason `STALE`.
 
 **Note:** a "targeting key" in the evaluation context is expected by the Confidence backend where each key gets assigned a different flag's variant (consistently). The `targetingKey` argument is the default place where to provide a targeting key at runtime (as defined by the OpenFeature APIs), but a different custom field inside the `structure` value can also be configured for this purpose in the Confidence portal (making the `targetingKey` argument redundant, i.e. feel free to set it to empty string).
 
