@@ -26,38 +26,69 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     }
 
     func testSlowFirstResolveWillbeCancelledOnSecondResolve() async throws {
-        class FakeClient: ConfidenceResolveClient {
+        let expectation1 = expectation(description: "First resolve completed")
+        let expectation2 = expectation(description: "Second resolve should never complete")
+        expectation2.isInverted = true
+        let expectation3 = expectation(description: "Third resolve completed")
+        let expectation4 = expectation(description: "Unlock second resolve")
+
+        class FakeClient: XCTestCase, ConfidenceResolveClient {
             var callCount = 0
             var returnCount = 0
+            let expectation1: XCTestExpectation
+            let expectation2: XCTestExpectation
+            let expectation3: XCTestExpectation
+            let expectation4: XCTestExpectation
+
+            init(expectation1: XCTestExpectation,
+                 expectation2: XCTestExpectation,
+                 expectation3: XCTestExpectation,
+                 expectation4: XCTestExpectation) {
+                self.expectation1 = expectation1
+                self.expectation2 = expectation2
+                self.expectation3 = expectation3
+                self.expectation4 = expectation4
+                super.init(invocation: nil) // Workaround to use expectations in test
+            }
 
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 callCount += 1
-                if callCount == 1 {
-                    // wait 2 seconds
-                    try await Task.sleep(nanoseconds: UInt64(1 * Double(NSEC_PER_MSEC)))
-                    returnCount += 1
-                } else {
-                    returnCount += 1
+                switch callCount {
+                case 1:
+                    expectation1.fulfill()
+                case 2:
+                    print(Task.isCancelled)
+                    await fulfillment(of: [expectation4], timeout: 5.0)
+                    print(Task.isCancelled) // It is true but code still runs!
+                    expectation2.fulfill() // Expectation is inverted, should never arrive here
+                case 3:
+                    expectation3.fulfill()
+                default: XCTFail()
                 }
-
+                returnCount += 1
                 return .init(resolvedValues: [], resolveToken: "")
             }
         }
 
         let confidence = Confidence.Builder.init(clientSecret: "").build()
-        let client = FakeClient()
+        let client = FakeClient(
+            expectation1: expectation1,
+            expectation2: expectation2,
+            expectation3: expectation3,
+            expectation4: expectation4
+        )
         let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
-        let initialContext = MutableContext(targetingKey: "user1")
-            .add(key: "hello", value: Value.string("world"))
-        provider.initialize(initialContext: initialContext)
-        try await Task.sleep(nanoseconds: UInt64(2 * Double(NSEC_PER_MSEC)))
-        client.callCount = 0
-        client.returnCount = 0
+        // Initialize allows to start listening for context changes in "confidence"
+        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        // Let the internal "resolve" finish
+        await fulfillment(of: [expectation1], timeout: 5.0)
         confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
         confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
-        try await Task.sleep(nanoseconds: UInt64(2 * Double(NSEC_PER_MSEC)))
-        XCTAssertEqual(2, client.callCount)
-        XCTAssertEqual(1, client.returnCount)
+        await fulfillment(of: [expectation3], timeout: 5.0)
+        expectation4.fulfill()
+        await fulfillment(of: [expectation2], timeout: 1.0)
+        XCTAssertEqual(3, client.callCount)
+        XCTAssertEqual(2, client.returnCount)
     }
 
     func testRefresh() throws {
