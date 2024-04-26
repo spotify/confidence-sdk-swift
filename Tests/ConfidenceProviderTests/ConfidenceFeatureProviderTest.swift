@@ -3,6 +3,7 @@
 import Foundation
 import Confidence
 import OpenFeature
+import Combine
 import XCTest
 
 @testable import ConfidenceProvider
@@ -22,6 +23,41 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         flagApplier = FlagApplierMock()
 
         super.setUp()
+    }
+
+    func testSlowFirstResolveWillbeCancelledOnSecondResolve() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var callCount = 0
+            var returnCount = 0
+
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                callCount += 1
+                if callCount == 1 {
+                    // wait 2 seconds
+                    try await Task.sleep(nanoseconds: UInt64(1 * Double(NSEC_PER_MSEC)))
+                    returnCount += 1
+                } else {
+                    returnCount += 1
+                }
+
+                return .init(resolvedValues: [], resolveToken: "")
+            }
+        }
+
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let client = FakeClient()
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
+        let initialContext = MutableContext(targetingKey: "user1")
+            .add(key: "hello", value: Value.string("world"))
+        provider.initialize(initialContext: initialContext)
+        try await Task.sleep(nanoseconds: UInt64(2 * Double(NSEC_PER_MSEC)))
+        client.callCount = 0
+        client.returnCount = 0
+        confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
+        confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
+        try await Task.sleep(nanoseconds: UInt64(2 * Double(NSEC_PER_MSEC)))
+        XCTAssertEqual(2, client.callCount)
+        XCTAssertEqual(1, client.returnCount)
     }
 
     func testRefresh() throws {
@@ -1087,20 +1123,6 @@ final class DispatchQueueFake: DispatchQueueType {
     func async(execute work: @escaping @convention(block) () -> Void) {
         count += 1
         work()
-    }
-}
-
-final class DispatchQueueFakeSlow: DispatchQueueType {
-    var expectation: XCTestExpectation
-    init(expectation: XCTestExpectation) {
-        self.expectation = expectation
-    }
-    func async(execute work: @escaping @convention(block) () -> Void) {
-        Task {
-            try await Task.sleep(nanoseconds: 1 * 1_000_000_000)
-            work()
-            expectation.fulfill()
-        }
     }
 }
 // swiftlint:enable type_body_length

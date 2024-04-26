@@ -25,6 +25,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let eventHandler = EventHandler(ProviderEvent.notReady)
     private let confidence: Confidence?
     private var cancellables = Set<AnyCancellable>()
+    private var currentResolveTask: Task<Void, Never>?
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder`or init with `Confidence` instead.
     init(
@@ -91,30 +92,30 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
         let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: initialContext)
 
-        resolve(strategy: initializationStrategy, context: context)
+        Task {
+            await resolve(strategy: initializationStrategy, context: context)
+        }
         self.startListentingForContextChanges()
     }
 
-    private func resolve(strategy: InitializationStrategy, context: ConfidenceStruct) {
-        Task {
-            do {
-                let resolveResult = try await client.resolve(ctx: context)
+    private func resolve(strategy: InitializationStrategy, context: ConfidenceStruct) async {
+        do {
+            let resolveResult = try await client.resolve(ctx: context)
 
-                // update cache with stored values
-                try await store(
-                    with: context,
-                    resolveResult: resolveResult,
-                    refreshCache: strategy == .fetchAndActivate
-                )
+            // update cache with stored values
+            try await store(
+                with: context,
+                resolveResult: resolveResult,
+                refreshCache: strategy == .fetchAndActivate
+            )
 
-                // signal the provider is ready after the network request is done
-                if strategy == .fetchAndActivate {
-                    eventHandler.send(.ready)
-                }
-            } catch {
-                // We emit a ready event as the provider is ready, but is using default / cache values.
+            // signal the provider is ready after the network request is done
+            if strategy == .fetchAndActivate {
                 eventHandler.send(.ready)
             }
+        } catch {
+            // We emit a ready event as the provider is ready, but is using default / cache values.
+            eventHandler.send(.ready)
         }
     }
 
@@ -123,6 +124,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             cancellable.cancel()
         }
         cancellables.removeAll()
+        currentResolveTask?.cancel()
     }
 
     private func store(
@@ -147,7 +149,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         newContext: OpenFeature.EvaluationContext
     ) {
         if confidence == nil {
-            self.resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
+            Task {
+                await resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
+            }
             return
         }
 
@@ -163,12 +167,17 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         guard let confidence = confidence else {
             return
         }
+
         confidence.contextChanges()
             .sink { [weak self] context in
                 guard let self = self else {
                     return
                 }
-                self.resolve(strategy: self.initializationStrategy, context: context)
+
+                currentResolveTask?.cancel()
+                currentResolveTask = Task {
+                    await self.resolve(strategy: .fetchAndActivate, context: context)
+                }
             }
             .store(in: &cancellables)
     }
