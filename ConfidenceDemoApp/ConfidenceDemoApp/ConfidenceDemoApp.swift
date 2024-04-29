@@ -40,7 +40,7 @@ extension ConfidenceDemoApp {
         Task {
             await OpenFeatureAPI.shared.setProviderAndWait(provider: provider, initialContext: ctx)
         }
-        confidence.send(
+        confidence.track(
             eventName: "all-types",
             message: [
                 "my_string": ConfidenceValue(string: "hello_from_world"),
