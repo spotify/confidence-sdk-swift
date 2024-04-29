@@ -1,4 +1,5 @@
 import Foundation
+import Common
 import OpenFeature
 import XCTest
 
