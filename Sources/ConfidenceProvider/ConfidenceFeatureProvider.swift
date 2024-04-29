@@ -149,7 +149,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         newContext: OpenFeature.EvaluationContext
     ) {
         if confidence == nil {
-            Task {
+            currentResolveTask = Task {
                 await resolve(strategy: .fetchAndActivate, context: ConfidenceTypeMapper.from(ctx: newContext))
             }
             return

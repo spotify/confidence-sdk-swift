@@ -29,17 +29,18 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var callCount = 0
             var returnCount = 0
+            var resolveContexts: [ConfidenceStruct] = []
 
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 callCount += 1
                 if callCount == 1 {
-                    // wait 2 seconds
                     try await Task.sleep(nanoseconds: UInt64(1 * Double(NSEC_PER_MSEC)))
                     returnCount += 1
                 } else {
                     returnCount += 1
                 }
 
+                resolveContexts.append(ctx)
                 return .init(resolvedValues: [], resolveToken: "")
             }
         }
@@ -58,6 +59,9 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         try await Task.sleep(nanoseconds: UInt64(2 * Double(NSEC_PER_MSEC)))
         XCTAssertEqual(2, client.callCount)
         XCTAssertEqual(1, client.returnCount)
+        XCTAssertEqual(confidence.getContext()["new2"], ConfidenceValue.init(string: "value2"))
+        XCTAssertEqual(2, client.resolveContexts.count)
+        XCTAssertEqual(confidence.getContext(), client.resolveContexts[1])
     }
 
     func testRefresh() throws {
