@@ -3,6 +3,7 @@
 import Foundation
 import Confidence
 import OpenFeature
+import Combine
 import XCTest
 
 @testable import ConfidenceProvider
@@ -22,6 +23,71 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         flagApplier = FlagApplierMock()
 
         super.setUp()
+    }
+
+    func testSlowFirstResolveWillbeCancelledOnSecondResolve() async throws {
+        let expectation1 = expectation(description: "First resolve completed")
+        let expectation2 = expectation(description: "Unlock second resolve")
+        let expectation3 = expectation(description: "Third resolve completed")
+
+        class FakeClient: XCTestCase, ConfidenceResolveClient {
+            var callCount = 0
+            var resolveContexts: [ConfidenceStruct] = []
+            let expectation1: XCTestExpectation
+            let expectation2: XCTestExpectation
+            let expectation3: XCTestExpectation
+
+            init(expectation1: XCTestExpectation, expectation2: XCTestExpectation, expectation3: XCTestExpectation) {
+                self.expectation1 = expectation1
+                self.expectation2 = expectation2
+                self.expectation3 = expectation3
+                super.init(invocation: nil) // Workaround to use expectations in FakeClient
+            }
+
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                callCount += 1
+                switch callCount {
+                case 1:
+                    expectation1.fulfill()
+                    if Task.isCancelled {
+                        return .init(resolvedValues: [], resolveToken: "")
+                    }
+                case 2:
+                    await fulfillment(of: [expectation2], timeout: 5.0)
+                    if Task.isCancelled {
+                        return .init(resolvedValues: [], resolveToken: "")
+                    }
+                    XCTFail("This task should be cancelled and never reach here")
+                case 3:
+                    expectation3.fulfill()
+                    if Task.isCancelled {
+                        return .init(resolvedValues: [], resolveToken: "")
+                    }
+                default: XCTFail("We expect only 3 resolve calls")
+                }
+                resolveContexts.append(ctx)
+                return .init(resolvedValues: [], resolveToken: "")
+            }
+        }
+
+        let confidence = Confidence.Builder.init(clientSecret: "").build()
+        let client = FakeClient(
+            expectation1: expectation1,
+            expectation2: expectation2,
+            expectation3: expectation3
+        )
+        let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
+        // Initialize allows to start listening for context changes in "confidence"
+        provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
+        // Let the internal "resolve" finish
+        await fulfillment(of: [expectation1], timeout: 5.0)
+        confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
+        confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
+        await fulfillment(of: [expectation3], timeout: 5.0)
+        expectation2.fulfill() // Allow second resolve to continue, regardless if cancelled or not
+        XCTAssertEqual(3, client.callCount)
+        XCTAssertEqual(2, client.resolveContexts.count)
+        XCTAssertEqual(confidence.getContext(), client.resolveContexts[1])
     }
 
     func testRefresh() throws {
@@ -1087,20 +1153,6 @@ final class DispatchQueueFake: DispatchQueueType {
     func async(execute work: @escaping @convention(block) () -> Void) {
         count += 1
         work()
-    }
-}
-
-final class DispatchQueueFakeSlow: DispatchQueueType {
-    var expectation: XCTestExpectation
-    init(expectation: XCTestExpectation) {
-        self.expectation = expectation
-    }
-    func async(execute work: @escaping @convention(block) () -> Void) {
-        Task {
-            try await Task.sleep(nanoseconds: 1 * 1_000_000_000)
-            work()
-            expectation.fulfill()
-        }
     }
 }
 // swiftlint:enable type_body_length
