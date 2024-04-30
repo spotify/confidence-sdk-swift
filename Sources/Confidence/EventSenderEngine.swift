@@ -22,6 +22,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let flushPolicies: [FlushPolicy]
     private let uploader: ConfidenceClient
     private let clientSecret: String
+    private let payloadMerger: PayloadMerger = PayloadMergerImpl()
 
     init(
         clientSecret: String,
@@ -79,11 +80,9 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) {
-        var mutablePayload = context
-        mutablePayload["message"] = ConfidenceValue(structure: message)
         writeReqChannel.send(ConfidenceEvent(
             name: eventName,
-            payload: mutablePayload,
+            payload: payloadMerger.merge(context: context, message: message),
             eventTime: Date.backport.now)
         )
     }
