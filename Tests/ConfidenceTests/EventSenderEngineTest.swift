@@ -70,11 +70,8 @@ final class EventSenderEngineTest: XCTestCase {
         wait(for: [expectation], timeout: 5)
         XCTAssertEqual(try XCTUnwrap(uploader.calledRequest)[0].eventDefinition, "my_event")
         XCTAssertEqual(try XCTUnwrap(uploader.calledRequest)[0].payload, NetworkStruct(fields: [
-            "message": .structure(.init(fields: [
-                "a": .number(0.0),
-                "message": .number(1.0)
-            ])),
-            "a": .number(2.0)
+            "a": .number(0.0),
+            "message": .number(1.0)
         ]))
         cancellable.cancel()
     }
