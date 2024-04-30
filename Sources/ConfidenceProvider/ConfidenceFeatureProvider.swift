@@ -26,6 +26,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let confidence: Confidence?
     private var cancellables = Set<AnyCancellable>()
     private var currentResolveTask: Task<Void, Never>?
+    private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
 
     /// Should not be called externally, use `ConfidenceFeatureProvider.Builder`or init with `Confidence` instead.
     init(
@@ -139,8 +140,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         try self.storage.save(data: result.resolvedValues.toCacheData(context: context, resolveToken: resolveToken))
 
         if refreshCache {
-            self.cache = InMemoryProviderCache.from(storage: self.storage)
-            resolver = LocalStorageResolver(cache: cache)
+            withLock { provider in
+                provider.cache = InMemoryProviderCache.from(storage: self.storage)
+                provider.resolver = LocalStorageResolver(cache: provider.cache)
+            }
         }
     }
 
@@ -444,6 +447,15 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         default:
             Logger(subsystem: "com.confidence.provider", category: "apply").error(
                 "Error while executing \"apply\": \(error)")
+        }
+    }
+
+    private func withLock(callback: @escaping (ConfidenceFeatureProvider) -> Void) {
+        confidenceFeatureProviderQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            callback(self)
         }
     }
 }
