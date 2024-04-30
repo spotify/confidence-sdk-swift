@@ -1,13 +1,11 @@
 import Foundation
-import Common
-import Confidence
 
 public class DefaultStorage: Storage {
     private let storageQueue = DispatchQueue(label: "com.confidence.storage")
     private let resolverCacheBundleId = "com.confidence.cache"
     private let filePath: String
 
-    init(filePath: String) {
+    public init(filePath: String) {
         self.filePath = filePath
     }
 
@@ -83,7 +81,7 @@ public class DefaultStorage: Storage {
         }
     }
 
-    func getConfigUrl() throws -> URL {
+    public func getConfigUrl() throws -> URL {
         guard
             let applicationSupportUrl: URL = FileManager.default.urls(
                 for: .applicationSupportDirectory,
@@ -99,19 +97,5 @@ public class DefaultStorage: Storage {
 
         return applicationSupportUrl.backport.appending(
             components: resolverCacheBundleId, "\(bundleIdentifier)", filePath)
-    }
-}
-
-extension DefaultStorage {
-    public static func resolverFlagsCache() -> DefaultStorage {
-        DefaultStorage(filePath: "resolver.flags.cache")
-    }
-
-    public static func resolverApplyCache() -> DefaultStorage {
-        DefaultStorage(filePath: "resolver.apply.cache")
-    }
-
-    public static func applierFlagsCache() -> DefaultStorage {
-        DefaultStorage(filePath: "applier.flags.cache")
     }
 }

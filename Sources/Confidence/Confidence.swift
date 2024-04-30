@@ -2,12 +2,12 @@ import Foundation
 import Combine
 
 public class Confidence: ConfidenceEventSender {
-    private let parent: ConfidenceContextProvider?
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
-    let eventSenderEngine: EventSenderEngine
     public var initializationStrategy: InitializationStrategy
+    private let parent: ConfidenceContextProvider?
+    private let eventSenderEngine: EventSenderEngine
     private let contextFlow = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
@@ -19,7 +19,8 @@ public class Confidence: ConfidenceEventSender {
         eventSenderEngine: EventSenderEngine,
         initializationStrategy: InitializationStrategy,
         context: ConfidenceStruct = [:],
-        parent: ConfidenceEventSender? = nil
+        parent: ConfidenceEventSender? = nil,
+        visitorId: String? = nil
     ) {
         self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
@@ -28,6 +29,9 @@ public class Confidence: ConfidenceEventSender {
         self.initializationStrategy = initializationStrategy
         self.contextFlow.value = context
         self.parent = parent
+        if let visitorId {
+            putContext(context: ["visitorId": ConfidenceValue.init(string: visitorId)])
+        }
     }
 
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
@@ -120,6 +124,7 @@ extension Confidence {
         var region: ConfidenceRegion = .global
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
         let eventStorage: EventStorage
+        var visitorId: String?
 
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
@@ -146,6 +151,11 @@ extension Confidence {
             return self
         }
 
+        public func withVisitorId() -> Builder {
+            self.visitorId = VisitorUtil().getId()
+            return self
+        }
+
         public func build() -> Confidence {
             let uploader = RemoteConfidenceClient(
                 options: ConfidenceClientOptions(
@@ -168,7 +178,8 @@ extension Confidence {
                 eventSenderEngine: eventSenderEngine,
                 initializationStrategy: initializationStrategy,
                 context: [:],
-                parent: nil
+                parent: nil,
+                visitorId: visitorId
             )
         }
     }

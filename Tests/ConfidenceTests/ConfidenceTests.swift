@@ -197,4 +197,52 @@ final class ConfidenceTests: XCTestCase {
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
+
+    func testVisitorId() {
+        let confidence = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")],
+            visitorId: "uuid"
+        )
+        let expected = [
+            "k1": ConfidenceValue(string: "v1"),
+            "visitorId": ConfidenceValue(string: "uuid")
+        ]
+        XCTAssertEqual(confidence.getContext(), expected)
+    }
+
+    func testWithVisitorId() throws {
+        let userDefaults = UserDefaults.standard
+        userDefaults.removeObject(forKey: "confidence.visitor_id")
+        let confidence = Confidence.Builder(clientSecret: "")
+            .withVisitorId()
+            .build()
+        let visitorId = try XCTUnwrap(confidence.getContext()["visitorId"]?.asString())
+        XCTAssertNotEqual(visitorId, "")
+        XCTAssertNotEqual(visitorId, "storage-error")
+        let newConfidence = Confidence.Builder(clientSecret: "")
+            .withVisitorId()
+            .build()
+        XCTAssertEqual(visitorId, try XCTUnwrap(newConfidence.getContext()["visitorId"]?.asString()))
+        userDefaults.removeObject(forKey: "confidence.visitor_id")
+        let veryNewConfidence = Confidence.Builder(clientSecret: "")
+            .withVisitorId()
+            .build()
+        let newVisitorId = try XCTUnwrap(veryNewConfidence.getContext()["visitorId"]?.asString())
+        XCTAssertNotEqual(newVisitorId, "")
+        XCTAssertNotEqual(newVisitorId, "storage-error")
+        XCTAssertNotEqual(newVisitorId, visitorId)
+    }
+
+    func testWithoutVisitorId() throws {
+        let userDefaults = UserDefaults.standard
+        userDefaults.removeObject(forKey: "confidence.visitor_id")
+        let confidence = Confidence.Builder(clientSecret: "")
+            .build()
+        XCTAssertNil(confidence.getContext()["visitorId"])
+    }
 }

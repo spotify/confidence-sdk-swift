@@ -676,5 +676,19 @@ extension ConfidenceFeatureProvider {
         }
     }
 }
+
+extension DefaultStorage {
+    public static func resolverFlagsCache() -> DefaultStorage {
+        DefaultStorage(filePath: "resolver.flags.cache")
+    }
+
+    public static func resolverApplyCache() -> DefaultStorage {
+        DefaultStorage(filePath: "resolver.apply.cache")
+    }
+
+    public static func applierFlagsCache() -> DefaultStorage {
+        DefaultStorage(filePath: "applier.flags.cache")
+    }
+}
 // swiftlint:enable type_body_length
 // swiftlint:enable file_length
