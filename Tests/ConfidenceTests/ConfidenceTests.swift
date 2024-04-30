@@ -217,7 +217,7 @@ final class ConfidenceTests: XCTestCase {
 
     func testWithVisitorId() throws {
         let userDefaults = UserDefaults.standard
-        userDefaults.removeObject(forKey: "visitorId")
+        userDefaults.removeObject(forKey: "confidence.visitor_id")
         let confidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
@@ -228,7 +228,7 @@ final class ConfidenceTests: XCTestCase {
             .withVisitorId()
             .build()
         XCTAssertEqual(visitorId, try XCTUnwrap(newConfidence.getContext()["visitorId"]?.asString()))
-        userDefaults.removeObject(forKey: "visitorId")
+        userDefaults.removeObject(forKey: "confidence.visitor_id")
         let veryNewConfidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
@@ -240,7 +240,7 @@ final class ConfidenceTests: XCTestCase {
 
     func testWithoutVisitorId() throws {
         let userDefaults = UserDefaults.standard
-        userDefaults.removeObject(forKey: "visitorId")
+        userDefaults.removeObject(forKey: "confidence.visitor_id")
         let confidence = Confidence.Builder(clientSecret: "")
             .build()
         XCTAssertNil(confidence.getContext()["visitorId"])

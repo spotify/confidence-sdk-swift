@@ -3,7 +3,7 @@ import Common
 
 class VisitorUtil {
     let defaults = UserDefaults.standard
-    let userDefaultsKey = "visitorId"
+    let userDefaultsKey = "confidence.visitor_id"
     func getId() -> String {
         let id = defaults.string(forKey: userDefaultsKey) ?? ""
         if id.isEmpty {
