@@ -1,14 +1,13 @@
 import Foundation
-import Common
 import Combine
 
 public class Confidence: ConfidenceEventSender {
-    private let parent: ConfidenceContextProvider?
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
-    let eventSenderEngine: EventSenderEngine
     public var initializationStrategy: InitializationStrategy
+    private let parent: ConfidenceContextProvider?
+    private let eventSenderEngine: EventSenderEngine
     private let contextFlow = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
@@ -153,7 +152,7 @@ extension Confidence {
         }
 
         public func withVisitorId() -> Builder {
-            self.visitorId = VisitorUtil(storage: DefaultStorage.visitorIdCache()).getId()
+            self.visitorId = VisitorUtil().getId()
             return self
         }
 
@@ -183,12 +182,5 @@ extension Confidence {
                 visitorId: visitorId
             )
         }
-    }
-}
-
-
-extension DefaultStorage {
-    public static func visitorIdCache() -> DefaultStorage {
-        DefaultStorage(filePath: "confidence.identifiers.cache")
     }
 }

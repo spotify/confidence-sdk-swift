@@ -1,25 +1,7 @@
 import XCTest
-import Common
 @testable import Confidence
 
 final class ConfidenceTests: XCTestCase {
-    func testVisitorId() {
-        let confidence = Confidence.init(
-            clientSecret: "",
-            timeout: TimeInterval(),
-            region: .europe,
-            eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
-            context: ["k1": ConfidenceValue(string: "v1")],
-            visitorId: "uuid"
-        )
-        let expected = [
-            "k1": ConfidenceValue(string: "v1"),
-            "visitorId": ConfidenceValue(string: "uuid")
-        ]
-        XCTAssertEqual(confidence.getContext(), expected)
-    }
-
     func testWithContext() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -216,8 +198,26 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
+    func testVisitorId() {
+        let confidence = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")],
+            visitorId: "uuid"
+        )
+        let expected = [
+            "k1": ConfidenceValue(string: "v1"),
+            "visitorId": ConfidenceValue(string: "uuid")
+        ]
+        XCTAssertEqual(confidence.getContext(), expected)
+    }
+
     func testWithVisitorId() throws {
-        try DefaultStorage.visitorIdCache().clear()
+        let userDefaults = UserDefaults.standard
+        userDefaults.removeObject(forKey: "visitorId")
         let confidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
@@ -228,7 +228,7 @@ final class ConfidenceTests: XCTestCase {
             .withVisitorId()
             .build()
         XCTAssertEqual(visitorId, try XCTUnwrap(newConfidence.getContext()["visitorId"]?.asString()))
-        try DefaultStorage.visitorIdCache().clear()
+        userDefaults.removeObject(forKey: "visitorId")
         let veryNewConfidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
@@ -239,7 +239,8 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testWithoutVisitorId() throws {
-        try DefaultStorage.visitorIdCache().clear()
+        let userDefaults = UserDefaults.standard
+        userDefaults.removeObject(forKey: "visitorId")
         let confidence = Confidence.Builder(clientSecret: "")
             .build()
         XCTAssertNil(confidence.getContext()["visitorId"])

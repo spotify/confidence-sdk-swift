@@ -2,24 +2,17 @@ import Foundation
 import Common
 
 class VisitorUtil {
-    let storage: Storage
-
-    init(storage: Storage) {
-        self.storage = storage
-    }
-
+    let defaults = UserDefaults.standard
+    let userDefaultsKey = "visitorId"
     func getId() -> String {
-        do {
-            let id = try storage.load(defaultValue: "")
-            if id.isEmpty {
-                let newId = UUID.init().uuidString
-                try storage.save(data: newId)
-                return newId
-            } else {
-                return id
-            }
-        } catch {
-            return "storage-error"
+        let id = defaults.string(forKey: userDefaultsKey) ?? ""
+        if id.isEmpty {
+            let newId = UUID.init().uuidString
+            defaults.set(newId, forKey: userDefaultsKey)
+            defaults.synchronize()
+            return newId
+        } else {
+            return id
         }
     }
 }
