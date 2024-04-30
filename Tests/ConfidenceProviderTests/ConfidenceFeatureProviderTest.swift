@@ -340,6 +340,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
     }
 
     func testResolveAndApplyIntegerFlagError() throws {
+        flagApplier = FlagApplierMock(expectedApplies: 2)
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
         ]
