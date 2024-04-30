@@ -50,7 +50,6 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-
     public func getContext() -> ConfidenceStruct {
         let parentContext = parent?.getContext() ?? [:]
         var reconciledCtx = parentContext.filter {

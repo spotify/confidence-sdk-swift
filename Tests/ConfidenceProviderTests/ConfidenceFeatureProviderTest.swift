@@ -25,10 +25,12 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         super.setUp()
     }
 
+    // swiftlint:disable function_body_length
     func testSlowFirstResolveWillbeCancelledOnSecondResolve() async throws {
         let expectation1 = expectation(description: "First resolve completed")
         let expectation2 = expectation(description: "Unlock second resolve")
         let expectation3 = expectation(description: "Third resolve completed")
+        let expectation4 = expectation(description: "Second resolve cancelled")
 
         class FakeClient: XCTestCase, ConfidenceResolveClient {
             var callCount = 0
@@ -36,11 +38,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             let expectation1: XCTestExpectation
             let expectation2: XCTestExpectation
             let expectation3: XCTestExpectation
+            let expectation4: XCTestExpectation
 
-            init(expectation1: XCTestExpectation, expectation2: XCTestExpectation, expectation3: XCTestExpectation) {
+            init(expectation1: XCTestExpectation, expectation2: XCTestExpectation, expectation3: XCTestExpectation, expectation4: XCTestExpectation) {
                 self.expectation1 = expectation1
                 self.expectation2 = expectation2
                 self.expectation3 = expectation3
+                self.expectation4 = expectation4
                 super.init(invocation: nil) // Workaround to use expectations in FakeClient
             }
 
@@ -48,24 +52,28 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 callCount += 1
                 switch callCount {
                 case 1:
-                    expectation1.fulfill()
                     if Task.isCancelled {
-                        return .init(resolvedValues: [], resolveToken: "")
+                        XCTFail("Resolve one was cancelled unexpectedly")
+                    } else {
+                        resolveContexts.append(ctx)
+                        expectation1.fulfill()
                     }
                 case 2:
                     await fulfillment(of: [expectation2], timeout: 5.0)
                     if Task.isCancelled {
+                        expectation4.fulfill()
                         return .init(resolvedValues: [], resolveToken: "")
                     }
                     XCTFail("This task should be cancelled and never reach here")
                 case 3:
-                    expectation3.fulfill()
                     if Task.isCancelled {
-                        return .init(resolvedValues: [], resolveToken: "")
+                        XCTFail("Resolve three was cancelled unexpectedly")
+                    } else {
+                        resolveContexts.append(ctx)
+                        expectation3.fulfill()
                     }
                 default: XCTFail("We expect only 3 resolve calls")
                 }
-                resolveContexts.append(ctx)
                 return .init(resolvedValues: [], resolveToken: "")
             }
         }
@@ -74,7 +82,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let client = FakeClient(
             expectation1: expectation1,
             expectation2: expectation2,
-            expectation3: expectation3
+            expectation3: expectation3,
+            expectation4: expectation4
         )
         let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
         // Initialize allows to start listening for context changes in "confidence"
@@ -85,10 +94,12 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
         await fulfillment(of: [expectation3], timeout: 5.0)
         expectation2.fulfill() // Allow second resolve to continue, regardless if cancelled or not
+        await fulfillment(of: [expectation4], timeout: 5.0) // Second resolve is cancelled
         XCTAssertEqual(3, client.callCount)
         XCTAssertEqual(2, client.resolveContexts.count)
         XCTAssertEqual(confidence.getContext(), client.resolveContexts[1])
     }
+    // swiftlint:enable function_body_length
 
     func testRefresh() throws {
         var session = MockedResolveClientURLProtocol.mockedSession(flags: [:])
