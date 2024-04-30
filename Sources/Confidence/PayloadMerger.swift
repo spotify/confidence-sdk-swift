@@ -13,7 +13,7 @@ internal struct PayloadMergerImpl: PayloadMerger {
 }
 
 extension Dictionary {
-    static func +=(lhs: inout Self, rhs: Self) {
-        lhs.merge(rhs) { _ , new in new }
+    static func += (lhs: inout Self, rhs: Self) {
+        lhs.merge(rhs) { _, new in new }
     }
 }
