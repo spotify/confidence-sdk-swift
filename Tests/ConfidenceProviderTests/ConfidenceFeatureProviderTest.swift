@@ -27,24 +27,33 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
     // swiftlint:disable function_body_length
     func testSlowFirstResolveWillbeCancelledOnSecondResolve() async throws {
-        let expectation1 = expectation(description: "First resolve completed")
-        let expectation2 = expectation(description: "Unlock second resolve")
-        let expectation3 = expectation(description: "Third resolve completed")
-        let expectation4 = expectation(description: "Second resolve cancelled")
+        let resolve1Completed = expectation(description: "First resolve completed")
+        let resolve2Started = expectation(description: "Second resolve has started")
+        let resolve2Continues = expectation(description: "Unlock second resolve")
+        let resolve2Cancelled = expectation(description: "Second resolve cancelled")
+        let resolve3Completed = expectation(description: "Third resolve completed")
 
         class FakeClient: XCTestCase, ConfidenceResolveClient {
             var callCount = 0
             var resolveContexts: [ConfidenceStruct] = []
-            let expectation1: XCTestExpectation
-            let expectation2: XCTestExpectation
-            let expectation3: XCTestExpectation
-            let expectation4: XCTestExpectation
+            let resolve1Completed: XCTestExpectation
+            let resolve2Started: XCTestExpectation
+            let resolve2Continues: XCTestExpectation
+            let resolve2Cancelled: XCTestExpectation
+            let resolve3Completed: XCTestExpectation
 
-            init(expectation1: XCTestExpectation, expectation2: XCTestExpectation, expectation3: XCTestExpectation, expectation4: XCTestExpectation) {
-                self.expectation1 = expectation1
-                self.expectation2 = expectation2
-                self.expectation3 = expectation3
-                self.expectation4 = expectation4
+            init(
+                resolve1Completed: XCTestExpectation,
+                resolve2Started: XCTestExpectation,
+                resolve2Continues: XCTestExpectation,
+                resolve2Cancelled: XCTestExpectation,
+                resolve3Completed: XCTestExpectation
+            ) {
+                self.resolve1Completed = resolve1Completed
+                self.resolve2Started = resolve2Started
+                self.resolve2Continues = resolve2Continues
+                self.resolve2Cancelled = resolve2Cancelled
+                self.resolve3Completed = resolve3Completed
                 super.init(invocation: nil) // Workaround to use expectations in FakeClient
             }
 
@@ -56,12 +65,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                         XCTFail("Resolve one was cancelled unexpectedly")
                     } else {
                         resolveContexts.append(ctx)
-                        expectation1.fulfill()
+                        resolve1Completed.fulfill()
                     }
                 case 2:
-                    await fulfillment(of: [expectation2], timeout: 5.0)
+                    resolve2Started.fulfill()
+                    await fulfillment(of: [resolve2Continues], timeout: 5.0)
                     if Task.isCancelled {
-                        expectation4.fulfill()
+                        resolve2Cancelled.fulfill()
                         return .init(resolvedValues: [], resolveToken: "")
                     }
                     XCTFail("This task should be cancelled and never reach here")
@@ -70,7 +80,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                         XCTFail("Resolve three was cancelled unexpectedly")
                     } else {
                         resolveContexts.append(ctx)
-                        expectation3.fulfill()
+                        resolve3Completed.fulfill()
                     }
                 default: XCTFail("We expect only 3 resolve calls")
                 }
@@ -80,21 +90,23 @@ class ConfidenceFeatureProviderTest: XCTestCase {
 
         let confidence = Confidence.Builder.init(clientSecret: "").build()
         let client = FakeClient(
-            expectation1: expectation1,
-            expectation2: expectation2,
-            expectation3: expectation3,
-            expectation4: expectation4
+            resolve1Completed: resolve1Completed,
+            resolve2Started: resolve2Started,
+            resolve2Continues: resolve2Continues,
+            resolve2Cancelled: resolve2Cancelled,
+            resolve3Completed: resolve3Completed
         )
         let provider = ConfidenceFeatureProvider(confidence: confidence, session: nil, client: client)
         // Initialize allows to start listening for context changes in "confidence"
         provider.initialize(initialContext: MutableContext(targetingKey: "user1"))
         // Let the internal "resolve" finish
-        await fulfillment(of: [expectation1], timeout: 5.0)
+        await fulfillment(of: [resolve1Completed], timeout: 5.0)
         confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
+        await fulfillment(of: [resolve2Started], timeout: 5.0) // Ensure resolve 2 starts before 3
         confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
-        await fulfillment(of: [expectation3], timeout: 5.0)
-        expectation2.fulfill() // Allow second resolve to continue, regardless if cancelled or not
-        await fulfillment(of: [expectation4], timeout: 5.0) // Second resolve is cancelled
+        await fulfillment(of: [resolve3Completed], timeout: 5.0)
+        resolve2Continues.fulfill() // Allow second resolve to continue, regardless if cancelled or not
+        await fulfillment(of: [resolve2Cancelled], timeout: 5.0) // Second resolve is cancelled
         XCTAssertEqual(3, client.callCount)
         XCTAssertEqual(2, client.resolveContexts.count)
         XCTAssertEqual(confidence.getContext(), client.resolveContexts[1])
