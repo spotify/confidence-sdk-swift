@@ -5,7 +5,6 @@ final class ConfidenceTests: XCTestCase {
     func testWithContext() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -24,7 +23,6 @@ final class ConfidenceTests: XCTestCase {
     func testWithContextUpdateParent() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -48,7 +46,6 @@ final class ConfidenceTests: XCTestCase {
     func testUpdateLocalContext() {
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -67,7 +64,6 @@ final class ConfidenceTests: XCTestCase {
     func testUpdateLocalContextWithoutOverride() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -90,7 +86,6 @@ final class ConfidenceTests: XCTestCase {
     func testUpdateParentContextWithOverride() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -113,7 +108,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntry() {
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -133,7 +127,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntryFromParent() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -153,7 +146,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntryFromParentAndChild() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -176,7 +168,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntryFromParentAndChildThenUpdate() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -201,7 +192,6 @@ final class ConfidenceTests: XCTestCase {
     func testVisitorId() {
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,

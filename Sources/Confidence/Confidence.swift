@@ -3,7 +3,6 @@ import Combine
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
-    public var timeout: TimeInterval
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
     private let parent: ConfidenceContextProvider?
@@ -12,9 +11,9 @@ public class Confidence: ConfidenceEventSender {
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
 
+    // Internal, users should use Confidence.Builder instead
     required init(
         clientSecret: String,
-        timeout: TimeInterval,
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
         initializationStrategy: InitializationStrategy,
@@ -24,7 +23,6 @@ public class Confidence: ConfidenceEventSender {
     ) {
         self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
-        self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
         self.contextFlow.value = context
@@ -108,7 +106,6 @@ public class Confidence: ConfidenceEventSender {
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,
-            timeout: timeout,
             region: region,
             eventSenderEngine: eventSenderEngine,
             initializationStrategy: initializationStrategy,
@@ -117,15 +114,17 @@ public class Confidence: ConfidenceEventSender {
     }
 }
 
+// MARK: Builder
+
 extension Confidence {
     public class Builder {
         let clientSecret: String
-        var timeout: TimeInterval = 10.0
         var region: ConfidenceRegion = .global
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
         let eventStorage: EventStorage
         var visitorId: String?
 
+        /// Initializes the builder with the given credentails.
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
             do {
@@ -133,11 +132,6 @@ extension Confidence {
             } catch {
                 eventStorage = EventStorageInMemory()
             }
-        }
-
-        public func withTimeout(timeout: TimeInterval) -> Builder {
-            self.timeout = timeout
-            return self
         }
 
 
@@ -160,7 +154,6 @@ extension Confidence {
             let uploader = RemoteConfidenceClient(
                 options: ConfidenceClientOptions(
                     credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                    timeout: timeout,
                     region: region),
                 metadata: ConfidenceMetadata(
                     name: "SDK_ID_SWIFT_CONFIDENCE",
@@ -173,7 +166,6 @@ extension Confidence {
                 flushPolicies: [SizeFlushPolicy(batchSize: 1)])
             return Confidence(
                 clientSecret: clientSecret,
-                timeout: timeout,
                 region: region,
                 eventSenderEngine: eventSenderEngine,
                 initializationStrategy: initializationStrategy,

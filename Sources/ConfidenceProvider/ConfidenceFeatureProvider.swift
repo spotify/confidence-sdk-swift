@@ -59,7 +59,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         let options = ConfidenceClientOptions(
             credentials: ConfidenceClientCredentials.clientSecret(secret: confidence.clientSecret),
-            timeout: confidence.timeout,
             region: confidence.region)
         self.metadata = metadata
         self.cache = InMemoryProviderCache.from(storage: DefaultStorage.resolverFlagsCache())
@@ -484,7 +483,7 @@ extension ConfidenceFeatureProvider {
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
         var confidence: Confidence?
 
-        /// DEPRECATED
+        /// DEPRECATED: initialise with a `Confidence` object instead.
         /// Initializes the builder with the given credentails.
         ///
         ///     OpenFeatureAPI.shared.setProvider(provider:
