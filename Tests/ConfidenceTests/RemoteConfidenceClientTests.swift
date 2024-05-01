@@ -27,7 +27,7 @@ class RemoteConfidenceClientTest: XCTestCase {
         XCTAssertTrue(processed)
     }
 
-    func testUploadEmptyeventsDoesntThrow() async throws {
+    func testUploadEmptyEventsDoesntThrow() async throws {
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -56,7 +56,7 @@ class RemoteConfidenceClientTest: XCTestCase {
         XCTAssertTrue(processed)
     }
 
-    func testNMalformedResponseThrows() async throws {
+    func testMalformedResponseThrows() async throws {
         MockedClientURLProtocol.mockedOperation = .malformedResponse
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(

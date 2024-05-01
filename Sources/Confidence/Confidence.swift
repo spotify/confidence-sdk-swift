@@ -11,7 +11,7 @@ public class Confidence: ConfidenceEventSender {
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
 
-    // Internal, users should use Confidence.Builder instead
+    /// Internal, the hosting app should use Confidence.Builder instead
     required init(
         clientSecret: String,
         region: ConfidenceRegion,
@@ -32,15 +32,16 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    public func track(eventName: String, message: ConfidenceStruct) {
+        eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
+    }
+
+    /// Allows to observe changes in the Context, not meant to be used directly by the hosting app
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
         return contextFlow
             .dropFirst()
             .removeDuplicates()
             .eraseToAnyPublisher()
-    }
-
-    public func track(eventName: String, message: ConfidenceStruct) {
-        eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
@@ -71,7 +72,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func putContext(context: ConfidenceStruct) {
+    private func putContext(context: ConfidenceStruct) {
         withLock { confidence in
             var map = confidence.contextFlow.value
             for entry in context {
@@ -81,11 +82,12 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
+    public func putContext(context: ConfidenceStruct, removeKeys: [String] = []) {
         withLock { confidence in
             var map = confidence.contextFlow.value
-            for removedKey in removedKeys {
+            for removedKey in removeKeys {
                 map.removeValue(forKey: removedKey)
+                confidence.removedContextKeys.insert(removedKey)
             }
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
@@ -94,7 +96,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func removeContextEntry(key: String) {
+    public func removeKey(key: String) {
         withLock { confidence in
             var map = confidence.contextFlow.value
             map.removeValue(forKey: key)
@@ -134,17 +136,27 @@ extension Confidence {
             }
         }
 
-
+        /**
+        Sets the region for the network request to the Confidence backend.
+        The default is `global` and the requests are automatically routed to the closest server.
+        */
         public func withRegion(region: ConfidenceRegion) -> Builder {
             self.region = region
             return self
         }
 
+        /**
+        Flag resolve configuration related to how to refresh flags at startup
+        */
         public func withInitializationstrategy(initializationStrategy: InitializationStrategy) -> Builder {
             self.initializationStrategy = initializationStrategy
             return self
         }
 
+        /**
+        The SDK attaches a unique identifier to the Context, which is persisted across
+        restarts of the App but re-generated on every new install
+        */
         public func withVisitorId() -> Builder {
             self.visitorId = VisitorUtil().getId()
             return self

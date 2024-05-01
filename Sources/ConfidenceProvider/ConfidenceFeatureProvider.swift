@@ -85,7 +85,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
 
-        self.updateConfidenceContext(context: initialContext)
+        confidence?.putContext(context: ConfidenceTypeMapper.from(ctx: initialContext))
         if self.initializationStrategy == .activateAndFetchAsync {
             eventHandler.send(.ready)
         }
@@ -157,12 +157,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             return
         }
 
-        var removedKeys: [String] = []
+        var removeKeys: [String] = []
         if let oldContext = oldContext {
-            removedKeys = Array(oldContext.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
+            removeKeys = Array(oldContext.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
         }
-
-        self.updateConfidenceContext(context: newContext, removedKeys: removedKeys)
+        confidence?.putContext(
+            context: ConfidenceTypeMapper.from(ctx: newContext),
+            removeKeys: removeKeys)
     }
 
     private func startListentingForContextChanges() {
@@ -182,10 +183,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 }
             }
             .store(in: &cancellables)
-    }
-
-    private func updateConfidenceContext(context: EvaluationContext, removedKeys: [String] = []) {
-        confidence?.putContext(context: ConfidenceTypeMapper.from(ctx: context), removedKeys: removedKeys)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
