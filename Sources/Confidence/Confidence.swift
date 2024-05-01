@@ -88,6 +88,7 @@ public class Confidence: ConfidenceEventSender {
             var map = confidence.contextFlow.value
             for removedKey in removedKeys {
                 map.removeValue(forKey: removedKey)
+                confidence.removedContextKeys.insert(removedKey)
             }
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)

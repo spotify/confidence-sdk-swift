@@ -9,6 +9,7 @@ public protocol Contextual: ConfidenceContextProvider {
     /// Removes entry from local data
     /// It hides entries with this key from parents' data (without modifying parents' data)
     func removeContextEntry(key: String)
+    func putContext(context: ConfidenceStruct, removedKeys: [String])
     /// Creates a child Contextual instance that maintains access to its parent's data
     func withContext(_ context: ConfidenceStruct) -> Self
 }

@@ -1,6 +1,7 @@
 import XCTest
 @testable import Confidence
 
+// swiftlint:disable type_body_length
 final class ConfidenceTests: XCTestCase {
     func testWithContext() {
         let confidenceParent = Confidence.init(
@@ -39,6 +40,30 @@ final class ConfidenceTests: XCTestCase {
             value: ConfidenceValue(string: "v3"))
         let expected = [
             "k1": ConfidenceValue(string: "v1"),
+            "k2": ConfidenceValue(string: "v2"),
+            "k3": ConfidenceValue(string: "v3"),
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
+    }
+
+    func testWithContextUpdateParentRemoveKeys() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            timeout: TimeInterval(),
+            region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")],
+            parent: nil
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            ["k2": ConfidenceValue(string: "v2")]
+        )
+        confidenceChild.putContext(
+            context: ["k3": ConfidenceValue(string: "v3")],
+            removedKeys: ["k1"]
+        )
+        let expected = [
             "k2": ConfidenceValue(string: "v2"),
             "k3": ConfidenceValue(string: "v3"),
         ]
@@ -246,3 +271,4 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertNil(confidence.getContext()["visitorId"])
     }
 }
+// swiftlint:enable type_body_length
