@@ -5,6 +5,10 @@ import Confidence
 import OpenFeature
 import os
 
+struct Metadata: ProviderMetadata {
+    var name: String?
+}
+
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
 ///
 ///
@@ -34,7 +38,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         session: URLSession?
     ) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
-        self.metadata = metadata
+        self.metadata = Metadata(name: metadata.name)
         self.storage = DefaultStorage.resolverFlagsCache()
         self.initializationStrategy = initializationStrategy
         self.confidence = confidence

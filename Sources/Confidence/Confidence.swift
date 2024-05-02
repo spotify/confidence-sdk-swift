@@ -69,8 +69,12 @@ public class Confidence: ConfidenceEventSender {
         try cache.evaluate(flagName: flagName, defaultValue: defaultValue, context: getContext(), flagApplier: flagApplier)
     }
 
-    public func getValue<T>(flagName: String, defaultValue: T) throws -> T {
-        try getFlag(flagName: flagName, defaultValue: defaultValue).value
+    public func getValue<T>(flagName: String, defaultValue: T) -> T {
+        do {
+            return try getFlag(flagName: flagName, defaultValue: defaultValue).value
+        } catch {
+            return defaultValue
+        }
     }
 
     func isStorageEmpty() -> Bool {
@@ -169,6 +173,7 @@ extension Confidence {
         var region: ConfidenceRegion = .global
         let eventStorage: EventStorage
         var visitorId: String?
+        var initialContext: ConfidenceStruct = [:]
 
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
@@ -177,6 +182,11 @@ extension Confidence {
             } catch {
                 eventStorage = EventStorageInMemory()
             }
+        }
+
+        public func withContext(initialContext: ConfidenceStruct) -> Builder {
+            self.initialContext = initialContext
+            return self
         }
 
         public func withTimeout(timeout: TimeInterval) -> Builder {
@@ -223,7 +233,7 @@ extension Confidence {
                 flagApplier: flagApplier,
                 remoteFlagResolver: flagResolver,
                 storage: DefaultStorage(filePath: "confidence.flags.resolve"),
-                context: [:],
+                context: initialContext,
                 parent: nil,
                 visitorId: visitorId
             )

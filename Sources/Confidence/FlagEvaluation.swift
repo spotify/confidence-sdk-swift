@@ -38,7 +38,7 @@ extension FlagResolution {
             throw ConfidenceError.flagNotFoundError(key: parsedKey.flag)
         }
 
-        if (resolvedFlag.resolveReason != .targetingKeyError) {
+        if resolvedFlag.resolveReason != .targetingKeyError {
             Task {
                 await flagApplier.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
             }
@@ -56,7 +56,7 @@ extension FlagResolution {
 
         if resolvedFlag.resolveReason == .match {
             var resolveReason: ResolveReason = .match
-            if (self.context != context) {
+            if self.context != context {
                 resolveReason = .stale
             }
             return Evaluation(value: pathValue, variant: resolvedFlag.variant, reason: resolveReason, errorCode: nil, errorMessage: nil)
