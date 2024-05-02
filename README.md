@@ -1,12 +1,13 @@
-# OpenFeature Swift Confidence Provider
+# Swift Confidence SDK
 
-A Swift implementation of the [Confidence](https://confidence.spotify.com/) Provider, to be used in conjunction with the [OpenFeature SDK](https://openfeature.dev/docs/reference/concepts/provider).
-For documentation related to flags management in Confidence, refer to the [Confidence documentation portal](https://confidence.spotify.com/platform/flags).
+This repo contains the [Confidence](https://confidence.spotify.com/) Provider, to be used in conjunction with the [OpenFeature SDK](https://openfeature.dev/docs/reference/concepts/provider). It also contains the Confidence SDK to be used for event tracking with Confidence.
+For documentation related to flags management and event tracking in Confidence, refer to the [Confidence documentation portal](https://confidence.spotify.com/platform/flags).
 
 Functionalities:
 - Managed integration with the Confidence backend
 - Prefetch and cache flag evaluations, for fast value reads even when the application is offline
 - Automatic data collection (in the backend) about which flags have been accessed by the application
+- Event tracking for instrumenting your enviornment
 
 ## Dependency Setup
 
@@ -54,9 +55,11 @@ import OpenFeature
 
 ### Create and set the Provider
 
-The Confidence Provider instance needs to be created and then set in the global OpenFeatureAPI:
+The Confidence Provider instance needs to be created and then set in the global OpenFeatureAPI.
+The Confidence Provider takes in the configured Confidence instance for its initialization:
 ```swift
-let provider = ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret")).build()
+let confidence = Confidence.Builder(credentials: .clientSecret(secret: "mysecret")).build()
+let provider = ConfidenceFeatureProvider(confidence: confidence)
 let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
 OpenFeatureAPI.shared.setProvider(provider: provider, initialContext:)
 ```
@@ -111,7 +114,7 @@ OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
 **Note:** if you do attempt to resolve a flag before the READY event is emitted, you may receive the old value with reason `STALE`.
 
-**Note:** a "targeting key" in the evaluation context is expected by the Confidence backend where each key gets assigned a different flag's variant (consistently). The `targetingKey` argument is the default place where to provide a targeting key at runtime (as defined by the OpenFeature APIs), but a different custom field inside the `structure` value can also be configured for this purpose in the Confidence portal (making the `targetingKey` argument redundant, i.e. feel free to set it to empty string).
+**Note:** a "targeting key" in the evaluation context is expected by the OpenFeature APIs, but a different custom field inside the `structure` value can also be configured as randomization unit in the Confidence portal. In this case, it's ok to leave `targetingKey` empty.
 
 ### Handling Provider Errors
 
@@ -143,28 +146,6 @@ let result = client.getObjectValue(key: "my-flag", defaultValue: Value.null)
 
 **Note:** if a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI.
 
-
-### Local overrides
-
-Assume that you have a flag `button` with the schema:
-```
-{
-    color: string,
-    size: number
-}
-```
-
-Then you can locally override the size property by
-
-```swift
-OpenFeatureAPI.shared.provider =
-    ConfidenceFeatureProvider.Builder(credentials: .clientSecret(secret: "mysecret"))
-        .overrides(.field(path: "button.size", variant: "control", value: .integer(4)))
-        .build()
-```
-
-now, all resolves of `button.size` will return 4.
-
 ## Apply events
 This Provider automatically emits `apply` events to the Confidence backend once a flag's property is read by the application. This allows Confidence to track who was exposed to what variant and when.
 
@@ -176,3 +157,26 @@ To avoid generating redundant data, as long as the flags' data returned from the
 The Provider stores `apply` events on disk until they are emitted correctly, thus ensuring the apply data reaches the backend even if generated when there is no network available (assuming the device will ever re-connect to the network before the application is deleted by the user).
 
 <!-- Add link to the more detailed documentation on apply events in the Confidence portal once it's ready -->
+
+## Tracked events
+The Confidence instance offers APIs to track events, which are uploaded to the Confidence Events API:
+```swift
+confidence.track(eventName: "MyEvent", message: ["field": ConfidenceValue(string("value"))])
+```
+
+The SDK takes care of storing events in case of offline and retries in case of transient failures.
+
+It's also possible to set context data to be appended to all tracked events:
+```swift
+confidence.putContext(context: ["os_version": ConfidenceValue(string: "17.0")])
+``` 
+
+Confidence APIs allows to spawn child instances that inherit the parent's context:
+```swift
+let child_confidence = confidence.withContext(["new_context", ConfidenceValue(string: "new_value")])
+```
+Tracking events with `child_confidence` will include the context data from all its ancestors (i.e. `os_version`, and the evaluation context).
+
+Note: the context in the Confidence instance used to initalize the OpenFeature Provider is also part of the Evaluation Context used for flags.
+
+
