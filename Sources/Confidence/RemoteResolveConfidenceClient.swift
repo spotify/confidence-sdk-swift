@@ -72,7 +72,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             return ResolvedValue(
                 value: nil,
                 flag: try displayName(resolvedFlag: resolvedFlag),
-                resolveReason: convert(resolveReason: resolvedFlag.reason))
+                resolveReason: resolvedFlag.reason)
         }
 
         let variant = resolvedFlag.variant.isEmpty ? nil : resolvedFlag.variant
@@ -81,7 +81,8 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             variant: variant,
             value: .init(structure: responseValue.fields.mapValues { entryValue in ConfidenceValue(from: entryValue) }),
             flag: try displayName(resolvedFlag: resolvedFlag),
-            resolveReason: convert(resolveReason: resolvedFlag.reason))
+            resolveReason: resolvedFlag.reason
+        )
     }
 
     private func handleError(error: Error) -> Error {
@@ -89,16 +90,6 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             return error
         } else {
             return ConfidenceError.grpcError(message: "\(error)")
-        }
-    }
-
-    private func convert(resolveReason: ResolveReason) -> ResolvedValue.Reason {
-        switch resolveReason {
-        case .error, .unknown, .unspecified: return .generalError
-        case .noSegmentMatch, .noTreatmentMatch: return .noMatch
-        case .match: return .match
-        case .archived: return .disabled
-        case .targetingKeyError: return .targetingKeyError
         }
     }
 }
@@ -127,6 +118,7 @@ struct ResolvedFlag: Codable {
 public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case unspecified = "RESOLVE_REASON_UNSPECIFIED"
     case match = "RESOLVE_REASON_MATCH"
+    case stale = "RESOLVE_REAOSON_STALE"
     case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
     case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
     case archived = "RESOLVE_REASON_FLAG_ARCHIVED"

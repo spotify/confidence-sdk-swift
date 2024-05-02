@@ -25,6 +25,7 @@ public enum ConfidenceError: Error, Equatable {
     /// Internal error
     case internalError(message: String)
     case parseError(message: String)
+    case invalidContextError
 }
 
 extension ConfidenceError: CustomStringConvertible {
@@ -59,6 +60,8 @@ extension ConfidenceError: CustomStringConvertible {
             return "Parse error occurred: \(message)"
         case .flagNotFoundError(let key):
             return "Flag not found for key \(key)"
+        case .invalidContextError:
+            return "Invalid context error"
         }
     }
 }
