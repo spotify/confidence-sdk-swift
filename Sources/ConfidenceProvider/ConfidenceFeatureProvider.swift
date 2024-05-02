@@ -81,17 +81,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
-        guard let initialContext = initialContext else {
-            return
-        }
+        let convertedInitialContext = ConfidenceTypeMapper.from(ctx: initialContext)
+        confidence?.putContext(context: convertedInitialContext)
+        let context = confidence?.getContext() ?? convertedInitialContext
 
-        confidence?.putContext(context: ConfidenceTypeMapper.from(ctx: initialContext))
         if self.initializationStrategy == .activateAndFetchAsync {
             eventHandler.send(.ready)
         }
-
-        let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: initialContext)
-
         Task {
             await resolve(strategy: initializationStrategy, context: context)
         }
@@ -276,10 +272,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 value: overrideValue.value,
                 variant: overrideValue.variant,
                 reason: Reason.staticReason.rawValue)
-        }
-
-        guard let ctx = ctx else {
-            throw OpenFeatureError.invalidContextError
         }
 
         let context = confidence?.getContext() ?? ConfidenceTypeMapper.from(ctx: ctx)
