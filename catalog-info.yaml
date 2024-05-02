@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: confidence-openfeature-provider-swift
+  name: confidence-sdk-swift
 spec:
   type: library
   owner: hawkeye
