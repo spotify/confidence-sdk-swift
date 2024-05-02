@@ -1,4 +1,5 @@
 import Foundation
+import Common
 
 public struct Evaluation<T> {
     public let value: T
@@ -16,4 +17,10 @@ struct FlagResolution: Encodable, Decodable {
     let flags: [ResolvedValue]
     let resolveToken: String
     static let EMPTY = FlagResolution(context: [:], flags: [], resolveToken: "")
+}
+
+extension FlagResolution {
+    func evaluate<T>(_ flagName: String, _ defaultValue: T, _ flagApplier: FlagApplier) throws -> Evaluation<T> {
+        throw ConfidenceError.internalError(message: "")
+    }
 }

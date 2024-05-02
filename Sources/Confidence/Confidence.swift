@@ -66,7 +66,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func getFlag<T>(flagName: String, defaultValue: T) throws -> Evaluation<T> {
-        throw ConfidenceError.internalError(message: "")
+        try cache.evaluate(flagName, defaultValue, flagApplier)
     }
 
     public func getValue<T>(flagName: String, defaultValue: T) throws -> T {
