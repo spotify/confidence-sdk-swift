@@ -3,7 +3,6 @@ import Combine
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
-    public var timeout: TimeInterval
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
     private let parent: ConfidenceContextProvider?
@@ -12,9 +11,9 @@ public class Confidence: ConfidenceEventSender {
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
 
+    /// Internal, the hosting app should use Confidence.Builder instead
     required init(
         clientSecret: String,
-        timeout: TimeInterval,
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
         initializationStrategy: InitializationStrategy,
@@ -24,7 +23,6 @@ public class Confidence: ConfidenceEventSender {
     ) {
         self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
-        self.timeout = timeout
         self.region = region
         self.initializationStrategy = initializationStrategy
         self.contextFlow.value = context
@@ -34,15 +32,16 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    public func track(eventName: String, message: ConfidenceStruct) {
+        eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
+    }
+
+    /// Allows to observe changes in the Context, not meant to be used directly by the hosting app
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
         return contextFlow
             .dropFirst()
             .removeDuplicates()
             .eraseToAnyPublisher()
-    }
-
-    public func track(eventName: String, message: ConfidenceStruct) {
-        eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
@@ -73,7 +72,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func putContext(context: ConfidenceStruct) {
+    private func putContext(context: ConfidenceStruct) {
         withLock { confidence in
             var map = confidence.contextFlow.value
             for entry in context {
@@ -83,11 +82,12 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
+    public func putContext(context: ConfidenceStruct, removeKeys: [String] = []) {
         withLock { confidence in
             var map = confidence.contextFlow.value
-            for removedKey in removedKeys {
+            for removedKey in removeKeys {
                 map.removeValue(forKey: removedKey)
+                confidence.removedContextKeys.insert(removedKey)
             }
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
@@ -96,7 +96,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func removeContextEntry(key: String) {
+    public func removeKey(key: String) {
         withLock { confidence in
             var map = confidence.contextFlow.value
             map.removeValue(forKey: key)
@@ -108,7 +108,6 @@ public class Confidence: ConfidenceEventSender {
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,
-            timeout: timeout,
             region: region,
             eventSenderEngine: eventSenderEngine,
             initializationStrategy: initializationStrategy,
@@ -117,15 +116,17 @@ public class Confidence: ConfidenceEventSender {
     }
 }
 
+// MARK: Builder
+
 extension Confidence {
     public class Builder {
         let clientSecret: String
-        var timeout: TimeInterval = 10.0
         var region: ConfidenceRegion = .global
         var initializationStrategy: InitializationStrategy = .fetchAndActivate
         let eventStorage: EventStorage
         var visitorId: String?
 
+        /// Initializes the builder with the given credentails.
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
             do {
@@ -135,22 +136,27 @@ extension Confidence {
             }
         }
 
-        public func withTimeout(timeout: TimeInterval) -> Builder {
-            self.timeout = timeout
-            return self
-        }
-
-
+        /**
+        Sets the region for the network request to the Confidence backend.
+        The default is `global` and the requests are automatically routed to the closest server.
+        */
         public func withRegion(region: ConfidenceRegion) -> Builder {
             self.region = region
             return self
         }
 
+        /**
+        Flag resolve configuration related to how to refresh flags at startup
+        */
         public func withInitializationstrategy(initializationStrategy: InitializationStrategy) -> Builder {
             self.initializationStrategy = initializationStrategy
             return self
         }
 
+        /**
+        The SDK attaches a unique identifier to the Context, which is persisted across
+        restarts of the App but re-generated on every new install
+        */
         public func withVisitorId() -> Builder {
             self.visitorId = VisitorUtil().getId()
             return self
@@ -160,7 +166,6 @@ extension Confidence {
             let uploader = RemoteConfidenceClient(
                 options: ConfidenceClientOptions(
                     credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                    timeout: timeout,
                     region: region),
                 metadata: ConfidenceMetadata(
                     name: "SDK_ID_SWIFT_CONFIDENCE",
@@ -173,7 +178,6 @@ extension Confidence {
                 flushPolicies: [SizeFlushPolicy(batchSize: 1)])
             return Confidence(
                 clientSecret: clientSecret,
-                timeout: timeout,
                 region: region,
                 eventSenderEngine: eventSenderEngine,
                 initializationStrategy: initializationStrategy,

@@ -5,7 +5,6 @@ final class ConfidenceTests: XCTestCase {
     func testWithContext() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -24,7 +23,6 @@ final class ConfidenceTests: XCTestCase {
     func testWithContextUpdateParent() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -45,10 +43,32 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
+    func testWithContextUpdateParentRemoveKeys() {
+        let confidenceParent = Confidence.init(
+            clientSecret: "",
+            region: .europe,
+            eventSenderEngine: EventSenderEngineMock(),
+            initializationStrategy: .activateAndFetchAsync,
+            context: ["k1": ConfidenceValue(string: "v1")],
+            parent: nil
+        )
+        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
+            ["k2": ConfidenceValue(string: "v2")]
+        )
+        confidenceChild.putContext(
+            context: ["k3": ConfidenceValue(string: "v3")],
+            removeKeys: ["k1"]
+        )
+        let expected = [
+            "k2": ConfidenceValue(string: "v2"),
+            "k3": ConfidenceValue(string: "v3"),
+        ]
+        XCTAssertEqual(confidenceChild.getContext(), expected)
+    }
+
     func testUpdateLocalContext() {
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -67,7 +87,6 @@ final class ConfidenceTests: XCTestCase {
     func testUpdateLocalContextWithoutOverride() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -90,7 +109,6 @@ final class ConfidenceTests: XCTestCase {
     func testUpdateParentContextWithOverride() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -113,7 +131,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntry() {
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -123,7 +140,7 @@ final class ConfidenceTests: XCTestCase {
             ],
             parent: nil
         )
-        confidence.removeContextEntry(key: "k2")
+        confidence.removeKey(key: "k2")
         let expected = [
             "k1": ConfidenceValue(string: "v1")
         ]
@@ -133,7 +150,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntryFromParent() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -143,7 +159,7 @@ final class ConfidenceTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceChild.removeContextEntry(key: "k1")
+        confidenceChild.removeKey(key: "k1")
         let expected = [
             "k2": ConfidenceValue(string: "v2")
         ]
@@ -153,7 +169,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntryFromParentAndChild() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -166,7 +181,7 @@ final class ConfidenceTests: XCTestCase {
                 "k1": ConfidenceValue(string: "v3"),
             ]
         )
-        confidenceChild.removeContextEntry(key: "k1")
+        confidenceChild.removeKey(key: "k1")
         let expected = [
             "k2": ConfidenceValue(string: "v2")
         ]
@@ -176,7 +191,6 @@ final class ConfidenceTests: XCTestCase {
     func testRemoveContextEntryFromParentAndChildThenUpdate() {
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
@@ -189,7 +203,7 @@ final class ConfidenceTests: XCTestCase {
                 "k1": ConfidenceValue(string: "v3"),
             ]
         )
-        confidenceChild.removeContextEntry(key: "k1")
+        confidenceChild.removeKey(key: "k1")
         confidenceChild.putContext(key: "k1", value: ConfidenceValue(string: "v4"))
         let expected = [
             "k2": ConfidenceValue(string: "v2"),
@@ -201,7 +215,6 @@ final class ConfidenceTests: XCTestCase {
     func testVisitorId() {
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             initializationStrategy: .activateAndFetchAsync,
