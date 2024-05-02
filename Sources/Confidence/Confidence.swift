@@ -1,23 +1,29 @@
 import Foundation
 import Combine
+import Common
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
     public var timeout: TimeInterval
     public var region: ConfidenceRegion
-    public var initializationStrategy: InitializationStrategy
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
     private let contextFlow = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
+    private let remoteFlagResolver: RemoteConfidenceResolveClient
+    private let flagApplier: FlagApplier
+    private var cache = FlagResolution.EMPTY
+    private var storage: Storage
 
     required init(
         clientSecret: String,
         timeout: TimeInterval,
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
-        initializationStrategy: InitializationStrategy,
+        flagApplier: FlagApplier,
+        remoteFlagResolver: RemoteConfidenceResolveClient,
+        storage: Storage,
         context: ConfidenceStruct = [:],
         parent: ConfidenceEventSender? = nil,
         visitorId: String? = nil
@@ -26,12 +32,49 @@ public class Confidence: ConfidenceEventSender {
         self.clientSecret = clientSecret
         self.timeout = timeout
         self.region = region
-        self.initializationStrategy = initializationStrategy
+        self.storage = storage
         self.contextFlow.value = context
         self.parent = parent
+        self.storage = storage
+        self.flagApplier = flagApplier
+        self.remoteFlagResolver = remoteFlagResolver
         if let visitorId {
             putContext(context: ["visitorId": ConfidenceValue.init(string: visitorId)])
         }
+    }
+
+    public func activate() throws {
+        let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
+        self.cache = savedFlags
+    }
+
+    public func fetchAndActivate() async throws {
+        try await internalFetch()
+        try activate()
+    }
+
+    func internalFetch() async throws {
+        let context = getContext()
+        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
+        try storage.save(data: FlagResolution(context: context, flags: resolvedFlags.resolvedValues, resolveToken: resolvedFlags.resolveToken ?? ""))
+    }
+
+    public func asyncFetch() {
+        Task {
+            try await internalFetch()
+        }
+    }
+
+    public func getFlag<T>(flagName: String, defaultValue: T) throws -> Evaluation<T> {
+        throw ConfidenceError.internalError(message: "")
+    }
+
+    public func getValue<T>(flagName: String, defaultValue: T) throws -> T {
+        try getFlag(flagName: flagName, defaultValue: defaultValue).value
+    }
+
+    func isStorageEmpty() -> Bool {
+        return false
     }
 
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
@@ -111,7 +154,9 @@ public class Confidence: ConfidenceEventSender {
             timeout: timeout,
             region: region,
             eventSenderEngine: eventSenderEngine,
-            initializationStrategy: initializationStrategy,
+            flagApplier: flagApplier,
+            remoteFlagResolver: remoteFlagResolver,
+            storage: storage,
             context: context,
             parent: self)
     }
@@ -122,7 +167,6 @@ extension Confidence {
         let clientSecret: String
         var timeout: TimeInterval = 10.0
         var region: ConfidenceRegion = .global
-        var initializationStrategy: InitializationStrategy = .fetchAndActivate
         let eventStorage: EventStorage
         var visitorId: String?
 
@@ -146,26 +190,26 @@ extension Confidence {
             return self
         }
 
-        public func withInitializationstrategy(initializationStrategy: InitializationStrategy) -> Builder {
-            self.initializationStrategy = initializationStrategy
-            return self
-        }
-
         public func withVisitorId() -> Builder {
             self.visitorId = VisitorUtil().getId()
             return self
         }
 
         public func build() -> Confidence {
+            let options = ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
+                timeout: timeout,
+                region: region)
+            let metadata = ConfidenceMetadata(
+                name: "SDK_ID_SWIFT_CONFIDENCE",
+                version: "0.1.4") // x-release-please-version
             let uploader = RemoteConfidenceClient(
-                options: ConfidenceClientOptions(
-                    credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                    timeout: timeout,
-                    region: region),
-                metadata: ConfidenceMetadata(
-                    name: "SDK_ID_SWIFT_CONFIDENCE",
-                    version: "0.1.4") // x-release-please-version
+                options: options,
+                metadata: metadata
             )
+            let httpClient = NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region))
+            let flagApplier = FlagApplierWithRetries(httpClient: httpClient, storage: DefaultStorage(filePath: "confidence.flags.apply"), options: options, metadata: metadata)
+            let flagResolver = RemoteConfidenceResolveClient(options: options, applyOnResolve: false, flagApplier: flagApplier, metadata: metadata)
             let eventSenderEngine = EventSenderEngineImpl(
                 clientSecret: clientSecret,
                 uploader: uploader,
@@ -176,7 +220,9 @@ extension Confidence {
                 timeout: timeout,
                 region: region,
                 eventSenderEngine: eventSenderEngine,
-                initializationStrategy: initializationStrategy,
+                flagApplier: flagApplier,
+                remoteFlagResolver: flagResolver,
+                storage: DefaultStorage(filePath: "confidence.flags.resolve"),
                 context: [:],
                 parent: nil,
                 visitorId: visitorId

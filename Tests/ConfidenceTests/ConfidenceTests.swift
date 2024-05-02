@@ -8,7 +8,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")]
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
@@ -27,7 +26,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -51,7 +49,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -70,7 +67,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -93,7 +89,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -116,7 +111,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: [
                 "k1": ConfidenceValue(string: "v1"),
                 "k2": ConfidenceValue(string: "v2")
@@ -136,7 +130,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -156,7 +149,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -179,7 +171,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -204,7 +195,6 @@ final class ConfidenceTests: XCTestCase {
             timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
             context: ["k1": ConfidenceValue(string: "v1")],
             visitorId: "uuid"
         )

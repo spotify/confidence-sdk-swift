@@ -1,5 +1,4 @@
 import Foundation
-import Confidence
 
 public enum BaseUrlMapper {
     static func from(region: ConfidenceRegion) -> String {

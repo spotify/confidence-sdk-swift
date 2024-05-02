@@ -1,15 +1,19 @@
 import Foundation
-import Confidence
-import OpenFeature
+import Common
 
-public protocol ConfidenceResolveClient {
+protocol ConfidenceClient {
+    // Returns true if the batch has been correctly processed by the backend
+    func upload(events: [NetworkEvent]) async throws -> Bool
+}
+
+protocol ConfidenceResolveClient {
     // Async
     func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult
 }
 
-public struct ResolvedValue: Codable, Equatable {
+struct ResolvedValue: Codable, Equatable {
     var variant: String?
-    var value: Value?
+    var value: ConfidenceValue?
     var flag: String
     var resolveReason: Reason
 

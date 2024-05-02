@@ -1,5 +1,5 @@
 import Foundation
-import OpenFeature
+import Common
 
 public struct FlagPath {
     var flag: String
@@ -9,7 +9,7 @@ public struct FlagPath {
         let parts = path.components(separatedBy: ".")
 
         guard let flag = parts.first else {
-            throw OpenFeatureError.generalError(message: "Flag value key is empty")
+            throw ConfidenceError.internalError(message: "Flag value key is empty")
         }
 
         return .init(flag: flag, path: Array(parts.suffix(from: 1)))

@@ -1,7 +1,5 @@
 import Foundation
 import Common
-import Confidence
-import OpenFeature
 import os
 
 typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>
@@ -145,7 +143,7 @@ final class FlagApplierWithRetries: FlagApplier {
     }
 
     private func handleError(error: Error) -> Error {
-        if error is ConfidenceError || error is OpenFeatureError {
+        if error is ConfidenceError {
             return error
         } else {
             return ConfidenceError.grpcError(message: "\(error)")

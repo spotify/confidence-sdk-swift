@@ -9,6 +9,23 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         return value.description
     }
 
+    init(from networkValue: NetworkValue) {
+        switch networkValue {
+        case .boolean(let value):
+            self.value = .boolean(value)
+        case .string(let value):
+            self.value = .string(value)
+        case .number(let value):
+            self.value = .double(value)
+        case .list(let values):
+            self.value = .list(values.map { value in ConfidenceValue(from: value).value })
+        case .structure(let map):
+            self.value = .structure(map.fields.mapValues { entryValue in ConfidenceValue(from: entryValue).value })
+        case .null:
+            self.value = .null
+        }
+    }
+
     public required init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         self.value = try container.decode(ConfidenceValueInternal.self)

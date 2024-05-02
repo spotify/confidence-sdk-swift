@@ -1,7 +1,5 @@
 import Foundation
 import Common
-import Confidence
-import OpenFeature
 
 public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
@@ -32,32 +30,32 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
 
     public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
-            flags: flags.map { "flags/\($0)" },
-            evaluationContext: try NetworkTypeMapper.from(value: ctx),
-            clientSecret: options.credentials.getSecret(),
-            apply: applyOnResolve,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
-        )
+                    flags: flags.map { "flags/\($0)" },
+                    evaluationContext: try NetworkTypeMapper.from(value: ctx),
+                    clientSecret: options.credentials.getSecret(),
+                    apply: applyOnResolve,
+                    sdk: Sdk(id: metadata.name, version: metadata.version)
+                )
 
-        do {
-            let result: HttpClientResult<ResolveFlagsResponse> =
-            try await self.httpClient.post(path: ":resolve", data: request)
-            switch result {
-            case .success(let successData):
-                guard successData.response.status == .ok else {
-                    throw successData.response.mapStatusToError(error: successData.decodedError)
+                do {
+                    let result: HttpClientResult<ResolveFlagsResponse> =
+                    try await self.httpClient.post(path: ":resolve", data: request)
+                    switch result {
+                    case .success(let successData):
+                        guard successData.response.status == .ok else {
+                            throw successData.response.mapStatusToError(error: successData.decodedError)
+                        }
+                        guard let response = successData.decodedData else {
+                            throw ConfidenceError.parseError(message: "Unable to parse request response")
+                        }
+                        let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+                            try convert(resolvedFlag: resolvedFlag)
+                        }
+                        return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+                    case .failure(let errorData):
+                        throw handleError(error: errorData)
+                    }
                 }
-                guard let response = successData.decodedData else {
-                    throw OpenFeatureError.parseError(message: "Unable to parse request response")
-                }
-                let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                    try convert(resolvedFlag: resolvedFlag)
-                }
-                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-            case .failure(let errorData):
-                throw handleError(error: errorData)
-            }
-        }
     }
 
     public func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
@@ -67,7 +65,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     // MARK: Private
 
     private func convert(resolvedFlag: ResolvedFlag) throws -> ResolvedValue {
-        guard let responseFlagSchema = resolvedFlag.flagSchema,
+        guard let _ = resolvedFlag.flagSchema,
             let responseValue = resolvedFlag.value,
             !responseValue.fields.isEmpty
         else {
@@ -77,18 +75,17 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                 resolveReason: convert(resolveReason: resolvedFlag.reason))
         }
 
-        let value = try TypeMapper.from(object: responseValue, schema: responseFlagSchema)
         let variant = resolvedFlag.variant.isEmpty ? nil : resolvedFlag.variant
 
         return ResolvedValue(
             variant: variant,
-            value: value,
+            value: .init(structure: responseValue.fields.mapValues { entryValue in ConfidenceValue(from: entryValue) }),
             flag: try displayName(resolvedFlag: resolvedFlag),
             resolveReason: convert(resolveReason: resolvedFlag.reason))
     }
 
     private func handleError(error: Error) -> Error {
-        if error is ConfidenceError || error is OpenFeatureError {
+        if error is ConfidenceError {
             return error
         } else {
             return ConfidenceError.grpcError(message: "\(error)")
@@ -127,7 +124,7 @@ struct ResolvedFlag: Codable {
     var reason: ResolveReason
 }
 
-enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
+public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case unspecified = "RESOLVE_REASON_UNSPECIFIED"
     case match = "RESOLVE_REASON_MATCH"
     case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"

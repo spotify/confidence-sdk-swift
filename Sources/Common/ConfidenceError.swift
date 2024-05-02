@@ -11,6 +11,7 @@ public enum ConfidenceError: Error, Equatable {
     case corruptedCache(message: String)
     /// Flag not found in cache
     case flagNotFoundInCache
+    case flagNotFoundError(key: String)
     /// Value in cache expired
     case cachedValueExpired
     /// Apply state transition not allowed
@@ -23,6 +24,7 @@ public enum ConfidenceError: Error, Equatable {
     case badRequest(message: String?)
     /// Internal error
     case internalError(message: String)
+    case parseError(message: String)
 }
 
 extension ConfidenceError: CustomStringConvertible {
@@ -53,6 +55,10 @@ extension ConfidenceError: CustomStringConvertible {
             return "Bad request from provider: \(message)"
         case .internalError(let message):
             return "An internal error occurred: \(message)"
+        case .parseError(let message):
+            return "Parse error occurred: \(message)"
+        case .flagNotFoundError(let key):
+            return "Flag not found for key \(key)"
         }
     }
 }

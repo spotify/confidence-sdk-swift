@@ -1,16 +1,14 @@
 import Foundation
 import Common
-import Confidence
-import OpenFeature
 
 extension HTTPURLResponse {
     func mapStatusToError(error: HttpError?, flag: String = "unknown") -> Error {
-        let defaultError = OpenFeatureError.generalError(
+        let defaultError = ConfidenceError.internalError(
             message: "General error: \(error?.message ?? "Unknown error")")
 
         switch self.status {
         case .notFound:
-            return OpenFeatureError.flagNotFoundError(key: flag)
+            return ConfidenceError.flagNotFoundError(key: flag)
         case .badRequest:
             return ConfidenceError.badRequest(message: error?.message ?? "")
         default:
