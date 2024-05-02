@@ -66,7 +66,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func getFlag<T>(flagName: String, defaultValue: T) throws -> Evaluation<T> {
-        try cache.evaluate(flagName, defaultValue, flagApplier)
+        try cache.evaluate(flagName: flagName, defaultValue: defaultValue, context: getContext(), flagApplier: flagApplier)
     }
 
     public func getValue<T>(flagName: String, defaultValue: T) throws -> T {

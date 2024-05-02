@@ -20,7 +20,7 @@ struct FlagResolution: Encodable, Decodable {
 }
 
 extension FlagResolution {
-    func evaluate<T>(_ flagName: String, _ defaultValue: T, _ flagApplier: FlagApplier) throws -> Evaluation<T> {
+    func evaluate<T>(flagName: String, defaultValue: T, context: ConfidenceStruct, flagApplier: FlagApplier) throws -> Evaluation<T> {
         throw ConfidenceError.internalError(message: "")
     }
 }
