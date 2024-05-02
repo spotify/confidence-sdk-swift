@@ -22,7 +22,7 @@ struct FlagResolution: Encodable, Decodable, Equatable {
 }
 
 extension FlagResolution {
-    func evaluate<T>(flagName: String, defaultValue: T, context: ConfidenceStruct, flagApplier: FlagApplier) throws -> Evaluation<T> {
+    func evaluate<T>(flagName: String, defaultValue: T, context: ConfidenceStruct, flagApplier: FlagApplier? = nil) throws -> Evaluation<T> {
         let parsedKey = try FlagPath.getPath(for: flagName)
         if self == FlagResolution.EMPTY {
             return Evaluation(
@@ -40,7 +40,7 @@ extension FlagResolution {
 
         if resolvedFlag.resolveReason != .targetingKeyError {
             Task {
-                await flagApplier.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
             }
             } else {
                 return Evaluation(
