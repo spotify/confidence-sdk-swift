@@ -177,6 +177,6 @@ let child_confidence = confidence.withContext(["new_context", ConfidenceValue(st
 ```
 Tracking events with `child_confidence` will include the context data from all its ancestors (i.e. `os_version`, and the evaluation context).
 
-Note: the context in the Confidence instance used to initalize the OpenFeature Provider is also part of the Evaluation Context used for flags.
+Note: the context in the Confidence instance used to initialize the OpenFeature Provider is also part of the Evaluation Context used for flags.
 
 
