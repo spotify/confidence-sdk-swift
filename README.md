@@ -58,7 +58,7 @@ import OpenFeature
 The Confidence Provider instance needs to be created and then set in the global OpenFeatureAPI.
 The Confidence Provider takes in the configured Confidence instance for its initialization:
 ```swift
-let confidence = Confidence.Builder(credentials: .clientSecret(secret: "mysecret")).build()
+let confidence = Confidence.Builder(clientSecret: "mysecret").build()
 let provider = ConfidenceFeatureProvider(confidence: confidence)
 let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
 OpenFeatureAPI.shared.setProvider(provider: provider, initialContext:)
