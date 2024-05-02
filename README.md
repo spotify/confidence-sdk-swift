@@ -7,7 +7,7 @@ Functionalities:
 - Managed integration with the Confidence backend
 - Prefetch and cache flag evaluations, for fast value reads even when the application is offline
 - Automatic data collection (in the backend) about which flags have been accessed by the application
-- Event tracking for instrumenting your enviornment
+- Event tracking for instrumenting your application
 
 ## Dependency Setup
 
