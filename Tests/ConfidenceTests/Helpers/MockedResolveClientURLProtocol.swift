@@ -90,7 +90,12 @@ class MockedResolveClientURLProtocol: URLProtocol {
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
                     return ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
                 }
-                var responseValue: ConfidenceStruct? = resolved.value
+                var responseValue: NetworkStruct?
+                do {
+                    responseValue = try TypeMapper.from(value: resolved.value)
+                } catch {
+                    respondWithError(statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "\(error)")
+                }
 
                 if responseValue == nil {
                     respondWithError(
@@ -145,7 +150,7 @@ class MockedResolveClientURLProtocol: URLProtocol {
 extension MockedResolveClientURLProtocol {
     struct ResolvedTestFlag {
         var variant: String
-        var value: ConfidenceStruct
+        var value: ConfidenceValue
     }
 
     struct TestFlag {
@@ -166,7 +171,9 @@ extension MockedResolveClientURLProtocol {
         init(resolve: [String: ResolvedTestFlag], isArchived: Bool = false) {
             self.resolve = resolve
             self.schemas = resolve.compactMapValues { resolvedValue in
-                let structure = resolvedValue.value
+                guard let structure = resolvedValue.value.asStructure() else {
+                    return nil
+                }
                 let schema = structure.compactMapValues(TestFlag.toSchema)
 
                 return StructFlagSchema(schema: schema)

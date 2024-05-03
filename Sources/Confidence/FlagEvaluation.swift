@@ -57,7 +57,10 @@ extension FlagResolution {
             )
         }
 
-        let parsedValue = try getValue(path: parsedKey.path, value: .init(structure: resolvedFlag.value ?? [:]))
+        guard let value = resolvedFlag.value else {
+            throw ConfidenceError.parseError(message: "Could not parse flag")
+        }
+        let parsedValue = try getValue(path: parsedKey.path, value: value)
         let pathValue: T = getTyped(value: parsedValue) ?? defaultValue
 
         if resolvedFlag.resolveReason == .match {

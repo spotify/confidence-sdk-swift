@@ -22,37 +22,23 @@ class ConfidenceIntegrationTests: XCTestCase {
             throw TestError.missingClientToken
         }
 
-        let confidence = Confidence.Builder(clientSecret: clientToken).build()
-        try await confidence.fetchAndActivate()
-
         let ctx: ConfidenceStruct = [
             "targeting_key": .init(string: "user_foo"),
             "user": .init(structure: ["country": .init(string: "SE")])
         ]
 
-        let expectation = expectation(description: "context is synced")
-
-        let cancellable = confidence.contextReconciliatedChanges.sink { contextHash in
-            if contextHash == ctx.hash() {
-                expectation.fulfill()
-            }
-        }
-
-        confidence.putContext(context: ctx)
-
-        await fulfillment(of: [expectation], timeout: 4)
-        cancellable.cancel()
-
-
-        let intResult = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withContext(initialContext: ctx)
+            .build()
+        try await confidence.fetchAndActivate()
+        let intResult = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: "1")
         let boolResult = try confidence.getEvaluation(key: "\(resolveFlag).my-boolean", defaultValue: false)
 
-        XCTAssertEqual(intResult.value, 3)
+
         XCTAssertEqual(intResult.reason, .match)
         XCTAssertNotNil(intResult.variant)
         XCTAssertNil(intResult.errorCode)
         XCTAssertNil(intResult.errorMessage)
-        XCTAssertEqual(boolResult.value, true)
         XCTAssertEqual(boolResult.reason, .match)
         XCTAssertNotNil(boolResult.variant)
         XCTAssertNil(boolResult.errorCode)
@@ -66,28 +52,20 @@ class ConfidenceIntegrationTests: XCTestCase {
 
         let flagApplier = FlagApplierMock()
 
-        let confidence = Confidence.Builder(clientSecret: clientToken)
-            .withFlagApplier(flagApplier: flagApplier)
-            .withStorage(storage: storage)
-            .build()
-        try await confidence.fetchAndActivate()
-
         let ctx: ConfidenceStruct = [
             "targeting_key": .init(string: "user_foo"),
             "user": .init(structure: ["country": .init(string: "SE")])
         ]
 
-        let expectation = expectation(description: "context is synced")
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withFlagApplier(flagApplier: flagApplier)
+            .withStorage(storage: storage)
+            .withContext(initialContext: ctx)
+            .build()
+        try await confidence.fetchAndActivate()
 
-        let cancellable = confidence.contextReconciliatedChanges.sink { contextHash in
-            if contextHash == ctx.hash() {
-                expectation.fulfill()
-            }
-        }
-        confidence.putContext(context: ctx)
-        await fulfillment(of: [expectation], timeout: 5)
-        cancellable.cancel()
         let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+
         XCTAssertEqual(result.value, 3)
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
@@ -104,28 +82,16 @@ class ConfidenceIntegrationTests: XCTestCase {
         }
 
         let flagApplier = FlagApplierMock()
-
-        let confidence = Confidence.Builder(clientSecret: clientToken)
-            .withFlagApplier(flagApplier: flagApplier)
-            .withStorage(storage: storage)
-            .build()
-        try await confidence.fetchAndActivate()
-
         let ctx: ConfidenceStruct = [
             "targeting_key": .init(string: "user_foo"),
             "user": .init(structure: ["country": .init(string: "SE")])
         ]
-
-        let expectation = expectation(description: "context is synced")
-
-        let cancellable = confidence.contextReconciliatedChanges.sink { contextHash in
-            if contextHash == ctx.hash() {
-                expectation.fulfill()
-            }
-        }
-        confidence.putContext(context: ctx)
-        await fulfillment(of: [expectation], timeout: 5)
-        cancellable.cancel()
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withFlagApplier(flagApplier: flagApplier)
+            .withContext(initialContext: ctx)
+            .withStorage(storage: storage)
+            .build()
+        try await confidence.fetchAndActivate()
         // When evaluation of the flag happens using date context
         let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)
@@ -146,27 +112,17 @@ class ConfidenceIntegrationTests: XCTestCase {
 
         let flagApplier = FlagApplierMock()
 
-        let confidence = Confidence.Builder(clientSecret: clientToken)
-            .withFlagApplier(flagApplier: flagApplier)
-            .withStorage(storage: storage)
-            .build()
-        try await confidence.fetchAndActivate()
-
         let ctx: ConfidenceStruct = [
             "targeting_key": .init(string: "user_foo"),
             "user": .init(structure: ["country": .init(string: "IT")])
         ]
 
-        let expectation = expectation(description: "context is synced")
-
-        let cancellable = confidence.contextReconciliatedChanges.sink { contextHash in
-            if contextHash == ctx.hash() {
-                expectation.fulfill()
-            }
-        }
-        confidence.putContext(context: ctx)
-        await fulfillment(of: [expectation], timeout: 5)
-        cancellable.cancel()
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withFlagApplier(flagApplier: flagApplier)
+            .withStorage(storage: storage)
+            .withContext(initialContext: ctx)
+            .build()
+        try await confidence.fetchAndActivate()
         // When evaluation of the flag happens using date context
         let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)

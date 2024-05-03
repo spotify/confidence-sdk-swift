@@ -62,9 +62,9 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     // MARK: Private
 
     private func convert(resolvedFlag: ResolvedFlag) throws -> ResolvedValue {
-        guard let schema = resolvedFlag.flagSchema,
+        guard let responseFlagSchema = resolvedFlag.flagSchema,
             let responseValue = resolvedFlag.value,
-            !responseValue.isEmpty
+            !responseValue.fields.isEmpty
         else {
             return ResolvedValue(
                 value: nil,
@@ -72,11 +72,12 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                 resolveReason: resolvedFlag.reason)
         }
 
+        let value = try TypeMapper.from(object: responseValue, schema: responseFlagSchema)
         let variant = resolvedFlag.variant.isEmpty ? nil : resolvedFlag.variant
 
         return ResolvedValue(
             variant: variant,
-            value: responseValue,
+            value: value,
             flag: try displayName(resolvedFlag: resolvedFlag),
             resolveReason: resolvedFlag.reason
         )
@@ -106,7 +107,7 @@ struct ResolveFlagsResponse: Codable {
 
 struct ResolvedFlag: Codable {
     var flag: String
-    var value: ConfidenceStruct? = [:]
+    var value: NetworkStruct? = NetworkStruct(fields: [:])
     var variant: String = ""
     var flagSchema: StructFlagSchema? = StructFlagSchema(schema: [:])
     var reason: ResolveReason

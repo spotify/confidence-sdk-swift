@@ -7,9 +7,9 @@ import XCTest
 class RemoteResolveConfidenceClientTest: XCTestCase {
     var flags: [String: MockedResolveClientURLProtocol.TestFlag] = [:]
     let resolvedFlag1 = MockedResolveClientURLProtocol.ResolvedTestFlag(
-        variant: "control", value: ["size": .init(integer: 3)])
+        variant: "control", value: .init(structure: ["size": .init(integer: 3)]))
     let resolvedFlag2 = MockedResolveClientURLProtocol.ResolvedTestFlag(
-        variant: "treatment", value: ["size": .init(integer: 2)])
+        variant: "treatment", value: .init(structure: ["size": .init(integer: 2)]))
 
     override func setUp() {
         self.flags = [

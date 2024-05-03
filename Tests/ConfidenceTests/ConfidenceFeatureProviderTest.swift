@@ -138,8 +138,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                     ConfidenceError.flagNotFoundError(key: "flag"))
         }
 
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(integer: 3)], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let expectation = expectation(description: "context is synced")
         let cancellable = confidence.contextReconciliatedChanges.sink { _ in
@@ -175,8 +180,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(integer: 3)], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
@@ -212,8 +222,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(value: ["size": .init(integer: 3)], flag: "flag", resolveReason: .noSegmentMatch)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .noSegmentMatch)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user1")])
@@ -248,8 +263,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(integer: 3)], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
@@ -292,8 +312,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(integer: 3)], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
@@ -329,8 +354,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(double: 3.14)], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
@@ -365,8 +395,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(boolean: true)], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(boolean: true)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
@@ -403,7 +438,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let client = FakeClient()
         let value = ResolvedValue(
             variant: "control",
-            value: ["size": .init(structure: ["boolean": .init(boolean: true)])],
+            value: .init(structure: ["size": .init(structure: ["boolean": .init(boolean: true)])]),
             flag: "flag",
             resolveReason: .match
         )
@@ -442,8 +477,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        client.resolvedValues =
-        [ResolvedValue(variant: "control", value: ["size": .init(null: ())], flag: "flag", resolveReason: .match)]
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(null: ())]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])

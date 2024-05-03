@@ -6,8 +6,11 @@ import XCTest
 
 class LocalStorageResolverTest: XCTestCase {
     func testStaleValueFromCache() throws {
-        let resolvedValue =
-            ResolvedValue(value: ["string": .init(string: "Value")], flag: "flag_name", resolveReason: .match)
+        let resolvedValue = ResolvedValue(
+            value: .init(structure: ["string": .init(string: "Value")]),
+            flag: "flag_name",
+            resolveReason: .match
+        )
         let flagResolution = FlagResolution(
             context: ["hey": ConfidenceValue(string: "old value")],
             flags: [resolvedValue],
@@ -21,8 +24,11 @@ class LocalStorageResolverTest: XCTestCase {
     }
 
     func testMissingValueFromCache() throws {
-        let resolvedValue =
-            ResolvedValue(value: ["string": .init(string: "Value")], flag: "flag_name", resolveReason: .match)
+        let resolvedValue = ResolvedValue(
+            value: .init(structure: ["string": .init(string: "Value")]),
+            flag: "flag_name",
+            resolveReason: .match
+        )
         let context =
             ["hey": ConfidenceValue(string: "old value")]
         let flagResolution =
