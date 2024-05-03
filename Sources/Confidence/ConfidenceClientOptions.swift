@@ -1,5 +1,4 @@
 import Foundation
-import Confidence
 
 public struct ConfidenceClientOptions {
     public var credentials: ConfidenceClientCredentials

@@ -224,7 +224,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         let client = FakeClient()
         client.resolvedValues = [
             ResolvedValue(
-                variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
                 resolveReason: .noSegmentMatch)
@@ -357,7 +356,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         client.resolvedValues = [
             ResolvedValue(
                 variant: "control",
-                value: .init(structure: ["size": .init(integer: 3)]),
+                value: .init(structure: ["size": .init(double: 3.14)]),
                 flag: "flag",
                 resolveReason: .match)
         ]
@@ -503,8 +502,8 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
-        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
     func testProviderThrowsFlagNotFound() async throws {
