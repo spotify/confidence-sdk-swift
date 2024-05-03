@@ -223,7 +223,7 @@ final class ConfidenceTests: XCTestCase {
         )
         let expected = [
             "k1": ConfidenceValue(string: "v1"),
-            "visitorId": ConfidenceValue(string: "uuid")
+            "visitor_id": ConfidenceValue(string: "uuid")
         ]
         XCTAssertEqual(confidence.getContext(), expected)
     }
@@ -234,18 +234,18 @@ final class ConfidenceTests: XCTestCase {
         let confidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
-        let visitorId = try XCTUnwrap(confidence.getContext()["visitorId"]?.asString())
+        let visitorId = try XCTUnwrap(confidence.getContext()["visitor_id"]?.asString())
         XCTAssertNotEqual(visitorId, "")
         XCTAssertNotEqual(visitorId, "storage-error")
         let newConfidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
-        XCTAssertEqual(visitorId, try XCTUnwrap(newConfidence.getContext()["visitorId"]?.asString()))
+        XCTAssertEqual(visitorId, try XCTUnwrap(newConfidence.getContext()["visitor_id"]?.asString()))
         userDefaults.removeObject(forKey: "confidence.visitor_id")
         let veryNewConfidence = Confidence.Builder(clientSecret: "")
             .withVisitorId()
             .build()
-        let newVisitorId = try XCTUnwrap(veryNewConfidence.getContext()["visitorId"]?.asString())
+        let newVisitorId = try XCTUnwrap(veryNewConfidence.getContext()["visitor_id"]?.asString())
         XCTAssertNotEqual(newVisitorId, "")
         XCTAssertNotEqual(newVisitorId, "storage-error")
         XCTAssertNotEqual(newVisitorId, visitorId)
@@ -256,6 +256,6 @@ final class ConfidenceTests: XCTestCase {
         userDefaults.removeObject(forKey: "confidence.visitor_id")
         let confidence = Confidence.Builder(clientSecret: "")
             .build()
-        XCTAssertNil(confidence.getContext()["visitorId"])
+        XCTAssertNil(confidence.getContext()["visitor_id"])
     }
 }
