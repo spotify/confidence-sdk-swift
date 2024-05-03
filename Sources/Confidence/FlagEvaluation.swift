@@ -58,7 +58,13 @@ extension FlagResolution {
         }
 
         guard let value = resolvedFlag.value else {
-            throw ConfidenceError.parseError(message: "Could not parse flag")
+            return Evaluation(
+                value: defaultValue,
+                variant: resolvedFlag.variant,
+                reason: resolvedFlag.resolveReason,
+                errorCode: nil,
+                errorMessage: nil
+            )
         }
 
         let parsedValue = try getValue(path: parsedKey.path, value: value)

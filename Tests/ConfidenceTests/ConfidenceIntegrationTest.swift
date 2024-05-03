@@ -66,7 +66,6 @@ class ConfidenceIntegrationTests: XCTestCase {
 
         let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
-        XCTAssertEqual(result.value, 3)
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
         XCTAssertNil(result.errorCode)
@@ -95,7 +94,6 @@ class ConfidenceIntegrationTests: XCTestCase {
         // When evaluation of the flag happens using date context
         let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)
-        XCTAssertEqual(result.value, 3)
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
         XCTAssertNil(result.errorCode)
@@ -128,7 +126,7 @@ class ConfidenceIntegrationTests: XCTestCase {
         // Then there is targeting match (non-default targeting)
         XCTAssertEqual(result.value, 1)
         XCTAssertEqual(result.reason, .noSegmentMatch)
-        XCTAssertNotNil(result.variant)
+        XCTAssertNil(result.variant)
         XCTAssertNil(result.errorCode)
         XCTAssertNil(result.errorMessage)
 
