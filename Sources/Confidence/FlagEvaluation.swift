@@ -52,7 +52,8 @@ extension FlagResolution {
                 )
             }
 
-        let pathValue: T = getTyped(value: try getValue(path: parsedKey.path, value: resolvedFlag.value!)) ?? defaultValue
+        let parsedValue = try getValue(path: parsedKey.path, value: .init(structure: resolvedFlag.value ?? [:]))
+        let pathValue: T = getTyped(value: parsedValue) ?? defaultValue
 
         if resolvedFlag.resolveReason == .match {
             var resolveReason: ResolveReason = .match
@@ -66,6 +67,10 @@ extension FlagResolution {
     }
 
     private func getTyped<T>(value: ConfidenceValue) -> T? {
+        if let value = self as? T {
+            return value
+        }
+
         switch value.type() {
         case .boolean:
             return value.asBoolean() as? T

@@ -13,7 +13,7 @@ protocol ConfidenceResolveClient {
 
 struct ResolvedValue: Codable, Equatable {
     var variant: String?
-    var value: ConfidenceValue?
+    var value: ConfidenceStruct?
     var flag: String
     var resolveReason: ResolveReason
 }

@@ -8,13 +8,16 @@ public class Confidence: ConfidenceEventSender {
     public var region: ConfidenceRegion
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
-    private let contextFlow = CurrentValueSubject<ConfidenceStruct, Never>([:])
+    private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
-    private let remoteFlagResolver: RemoteConfidenceResolveClient
+    private let remoteFlagResolver: ConfidenceResolveClient
     private let flagApplier: FlagApplier
     private var cache = FlagResolution.EMPTY
     private var storage: Storage
+    internal let contextReconciliatedChanges = PassthroughSubject<String, Never>()
+    private var cancellables = Set<AnyCancellable>()
+    private var currentFetchTask: Task<(), Never>?
 
     required init(
         clientSecret: String,
@@ -22,7 +25,7 @@ public class Confidence: ConfidenceEventSender {
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
         flagApplier: FlagApplier,
-        remoteFlagResolver: RemoteConfidenceResolveClient,
+        remoteFlagResolver: ConfidenceResolveClient,
         storage: Storage,
         context: ConfidenceStruct = [:],
         parent: ConfidenceEventSender? = nil,
@@ -33,7 +36,7 @@ public class Confidence: ConfidenceEventSender {
         self.timeout = timeout
         self.region = region
         self.storage = storage
-        self.contextFlow.value = context
+        self.contextSubject.value = context
         self.parent = parent
         self.storage = storage
         self.flagApplier = flagApplier
@@ -41,6 +44,21 @@ public class Confidence: ConfidenceEventSender {
         if let visitorId {
             putContext(context: ["visitorId": ConfidenceValue.init(string: visitorId)])
         }
+
+        contextChanges().sink { [weak self] context in
+            guard let self = self else {
+                return
+            }
+            self.currentFetchTask?.cancel()
+            self.currentFetchTask = Task {
+                do {
+                    let context = self.getContext()
+                    try await self.fetchAndActivate()
+                    self.contextReconciliatedChanges.send(context.hash())
+                } catch {
+                }
+            }
+        }.store(in: &cancellables)
     }
 
     public func activate() throws {
@@ -65,13 +83,13 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func getFlag<T>(flagName: String, defaultValue: T) throws -> Evaluation<T> {
-        try cache.evaluate(flagName: flagName, defaultValue: defaultValue, context: getContext(), flagApplier: flagApplier)
+    public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
+        try self.cache.evaluate(flagName: key, defaultValue: defaultValue, context: getContext(), flagApplier: flagApplier)
     }
 
-    public func getValue<T>(flagName: String, defaultValue: T) -> T {
+    public func getValue<T>(key: String, defaultValue: T) -> T {
         do {
-            return try getFlag(flagName: flagName, defaultValue: defaultValue).value
+            return try getEvaluation(key: key, defaultValue: defaultValue).value
         } catch {
             return defaultValue
         }
@@ -82,7 +100,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
-        return contextFlow
+        return contextSubject
             .dropFirst()
             .removeDuplicates()
             .eraseToAnyPublisher()
@@ -106,7 +124,7 @@ public class Confidence: ConfidenceEventSender {
         var reconciledCtx = parentContext.filter {
             !removedContextKeys.contains($0.key)
         }
-        self.contextFlow.value.forEach { entry in
+        self.contextSubject.value.forEach { entry in
             reconciledCtx.updateValue(entry.value, forKey: entry.key)
         }
         return reconciledCtx
@@ -114,40 +132,40 @@ public class Confidence: ConfidenceEventSender {
 
     public func putContext(key: String, value: ConfidenceValue) {
         withLock { confidence in
-            var map = confidence.contextFlow.value
+            var map = confidence.contextSubject.value
             map[key] = value
-            confidence.contextFlow.value = map
+            confidence.contextSubject.value = map
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
         withLock { confidence in
-            var map = confidence.contextFlow.value
+            var map = confidence.contextSubject.value
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
             }
-            confidence.contextFlow.value = map
+            confidence.contextSubject.value = map
         }
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
         withLock { confidence in
-            var map = confidence.contextFlow.value
+            var map = confidence.contextSubject.value
             for removedKey in removedKeys {
                 map.removeValue(forKey: removedKey)
             }
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
             }
-            confidence.contextFlow.value = map
+            confidence.contextSubject.value = map
         }
     }
 
     public func removeContextEntry(key: String) {
         withLock { confidence in
-            var map = confidence.contextFlow.value
+            var map = confidence.contextSubject.value
             map.removeValue(forKey: key)
-            confidence.contextFlow.value = map
+            confidence.contextSubject.value = map
             confidence.removedContextKeys.insert(key)
         }
     }
@@ -170,8 +188,12 @@ extension Confidence {
     public class Builder {
         let clientSecret: String
         var timeout: TimeInterval = 10.0
+        internal var flagApplier: FlagApplier?
+        internal var storage: Storage?
+        internal let eventStorage: EventStorage
+        internal var flagResolver: ConfidenceResolveClient?
         var region: ConfidenceRegion = .global
-        let eventStorage: EventStorage
+
         var visitorId: String?
         var initialContext: ConfidenceStruct = [:]
 
@@ -182,6 +204,22 @@ extension Confidence {
             } catch {
                 eventStorage = EventStorageInMemory()
             }
+        }
+
+        internal func withFlagResolverClient(flagResolver: ConfidenceResolveClient) -> Builder {
+            self.flagResolver = flagResolver
+            return self
+        }
+
+
+        internal func withFlagApplier(flagApplier: FlagApplier) -> Builder {
+            self.flagApplier = flagApplier
+            return self
+        }
+
+        internal func withStorage(storage: Storage) -> Builder {
+            self.storage = storage
+            return self
         }
 
         public func withContext(initialContext: ConfidenceStruct) -> Builder {
@@ -218,8 +256,8 @@ extension Confidence {
                 metadata: metadata
             )
             let httpClient = NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region))
-            let flagApplier = FlagApplierWithRetries(httpClient: httpClient, storage: DefaultStorage(filePath: "confidence.flags.apply"), options: options, metadata: metadata)
-            let flagResolver = RemoteConfidenceResolveClient(options: options, applyOnResolve: false, flagApplier: flagApplier, metadata: metadata)
+            let flagApplier = flagApplier ?? FlagApplierWithRetries(httpClient: httpClient, storage: DefaultStorage(filePath: "confidence.flags.apply"), options: options, metadata: metadata)
+            let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(options: options, applyOnResolve: false, metadata: metadata)
             let eventSenderEngine = EventSenderEngineImpl(
                 clientSecret: clientSecret,
                 uploader: uploader,
@@ -232,7 +270,7 @@ extension Confidence {
                 eventSenderEngine: eventSenderEngine,
                 flagApplier: flagApplier,
                 remoteFlagResolver: flagResolver,
-                storage: DefaultStorage(filePath: "confidence.flags.resolve"),
+                storage: storage ?? DefaultStorage(filePath: "confidence.flags.resolve"),
                 context: initialContext,
                 parent: nil,
                 visitorId: visitorId

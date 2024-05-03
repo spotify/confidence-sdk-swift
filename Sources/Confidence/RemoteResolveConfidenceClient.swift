@@ -3,7 +3,6 @@ import Common
 
 public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
-    private let flagApplier: FlagApplier
     private var options: ConfidenceClientOptions
     private let metadata: ConfidenceMetadata
 
@@ -13,12 +12,10 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     init(
         options: ConfidenceClientOptions,
         session: URLSession? = nil,
-        applyOnResolve: Bool,
-        flagApplier: FlagApplier,
+        applyOnResolve: Bool = false,
         metadata: ConfidenceMetadata
     ) {
         self.options = options
-        self.flagApplier = flagApplier
         self.applyOnResolve = applyOnResolve
         self.metadata = metadata
         self.httpClient = NetworkClient(
@@ -67,7 +64,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private func convert(resolvedFlag: ResolvedFlag) throws -> ResolvedValue {
         guard let _ = resolvedFlag.flagSchema,
             let responseValue = resolvedFlag.value,
-            !responseValue.fields.isEmpty
+              !responseValue.isEmpty
         else {
             return ResolvedValue(
                 value: nil,
@@ -79,7 +76,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
 
         return ResolvedValue(
             variant: variant,
-            value: .init(structure: responseValue.fields.mapValues { entryValue in ConfidenceValue(from: entryValue) }),
+            value: responseValue,
             flag: try displayName(resolvedFlag: resolvedFlag),
             resolveReason: resolvedFlag.reason
         )
@@ -109,7 +106,7 @@ struct ResolveFlagsResponse: Codable {
 
 struct ResolvedFlag: Codable {
     var flag: String
-    var value: NetworkStruct? = NetworkStruct(fields: [:])
+    var value: ConfidenceStruct? = [:]
     var variant: String = ""
     var flagSchema: StructFlagSchema? = StructFlagSchema(schema: [:])
     var reason: ResolveReason

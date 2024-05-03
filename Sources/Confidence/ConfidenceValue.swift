@@ -39,7 +39,7 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         self.value = .string(string)
     }
 
-    public init(integer: Int64) {
+    public init(integer: Int) {
         self.value = .integer(integer)
     }
 
@@ -70,7 +70,7 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
     }
 
 
-    public init(integerList: [Int64]) {
+    public init(integerList: [Int]) {
         self.value = .list(integerList.map { .integer($0) })
     }
 
@@ -118,9 +118,9 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         return nil
     }
 
-    public func asInteger() -> Int64? {
-        if case let .integer(int64) = value {
-            return int64
+    public func asInteger() -> Int? {
+        if case let .integer(int) = value {
+            return int
         }
 
         return nil
@@ -225,7 +225,7 @@ public enum ConfidenceValueType: CaseIterable {
 private enum ConfidenceValueInternal: Equatable, Codable {
     case boolean(Bool)
     case string(String)
-    case integer(Int64)
+    case integer(Int)
     case double(Double)
     case date(DateComponents)
     case timestamp(Date)

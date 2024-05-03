@@ -21,7 +21,7 @@ public enum ConfidenceTypeMapper {
         case .string(let value):
             return ConfidenceValue(string: value)
         case .integer(let value):
-            return ConfidenceValue(integer: value)
+            return ConfidenceValue(integer: Int(value))
         case .double(let value):
             return ConfidenceValue(double: value)
         case .date(let value):
@@ -37,7 +37,7 @@ public enum ConfidenceTypeMapper {
             case .string:
                 return ConfidenceValue.init(stringList: values.compactMap { $0.asString() })
             case .integer:
-                return ConfidenceValue.init(integerList: values.compactMap { $0.asInteger() })
+                return ConfidenceValue.init(integerList: values.compactMap { $0.asInteger() }.map { Int($0) })
             case .double:
                 return ConfidenceValue.init(doubleList: values.compactMap { $0.asDouble() })
             // Currently Date Value is converted to Timestamp ConfidenceValue to not lose precision, so this should never happen
