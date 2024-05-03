@@ -22,7 +22,12 @@ struct FlagResolution: Encodable, Decodable, Equatable {
 }
 
 extension FlagResolution {
-    func evaluate<T>(flagName: String, defaultValue: T, context: ConfidenceStruct, flagApplier: FlagApplier? = nil) throws -> Evaluation<T> {
+    func evaluate<T>(
+        flagName: String,
+        defaultValue: T,
+        context: ConfidenceStruct,
+        flagApplier: FlagApplier? = nil
+    ) throws -> Evaluation<T> {
         let parsedKey = try FlagPath.getPath(for: flagName)
         if self == FlagResolution.EMPTY {
             return Evaluation(
@@ -33,7 +38,7 @@ extension FlagResolution {
                 errorMessage: nil
             )
         }
-        let resolvedFlag = self.flags.first(where: { resolvedFlag in  resolvedFlag.flag == parsedKey.flag })
+        let resolvedFlag = self.flags.first { resolvedFlag in  resolvedFlag.flag == parsedKey.flag }
         guard let resolvedFlag = resolvedFlag else {
             throw ConfidenceError.flagNotFoundError(key: parsedKey.flag)
         }
@@ -42,15 +47,15 @@ extension FlagResolution {
             Task {
                 await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
             }
-            } else {
-                return Evaluation(
-                    value: defaultValue,
-                    variant: nil,
-                    reason: .targetingKeyError,
-                    errorCode: .invalidContext,
-                    errorMessage: "Invalid targeting key"
-                )
-            }
+        } else {
+            return Evaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: .targetingKeyError,
+                errorCode: .invalidContext,
+                errorMessage: "Invalid targeting key"
+            )
+        }
 
         let parsedValue = try getValue(path: parsedKey.path, value: .init(structure: resolvedFlag.value ?? [:]))
         let pathValue: T = getTyped(value: parsedValue) ?? defaultValue
@@ -60,9 +65,21 @@ extension FlagResolution {
             if self.context != context {
                 resolveReason = .stale
             }
-            return Evaluation(value: pathValue, variant: resolvedFlag.variant, reason: resolveReason, errorCode: nil, errorMessage: nil)
+            return Evaluation(
+                value: pathValue,
+                variant: resolvedFlag.variant,
+                reason: resolveReason,
+                errorCode: nil,
+                errorMessage: nil
+            )
         } else {
-            return Evaluation(value: defaultValue, variant: resolvedFlag.variant, reason: resolvedFlag.resolveReason, errorCode: nil, errorMessage: nil)
+            return Evaluation(
+                value: defaultValue,
+                variant: resolvedFlag.variant,
+                reason: resolvedFlag.resolveReason,
+                errorCode: nil,
+                errorMessage: nil
+            )
         }
     }
 
@@ -94,31 +111,31 @@ extension FlagResolution {
     }
 
     private func getValue(path: [String], value: ConfidenceValue) throws -> ConfidenceValue {
-           if path.isEmpty {
-               guard let _ = value.asStructure() else {
-                   throw ConfidenceError.parseError(
-                       message: "Flag path must contain path to the field for non-object values")
-               }
-           }
+        if path.isEmpty {
+            guard value.asStructure() != nil else {
+                throw ConfidenceError.parseError(
+                    message: "Flag path must contain path to the field for non-object values")
+            }
+        }
 
-           var pathValue = value
-           if !path.isEmpty {
-               pathValue = try getValueForPath(path: path, value: value)
-           }
+        var pathValue = value
+        if !path.isEmpty {
+            pathValue = try getValueForPath(path: path, value: value)
+        }
 
-           return pathValue
-       }
+        return pathValue
+    }
 
     private func getValueForPath(path: [String], value: ConfidenceValue) throws -> ConfidenceValue {
-           var curValue = value
-           for field in path {
-               guard let values = curValue.asStructure(), let newValue = values[field] else {
-                   throw ConfidenceError.internalError(message: "Unable to find key '\(field)'")
-               }
+        var curValue = value
+        for field in path {
+            guard let values = curValue.asStructure(), let newValue = values[field] else {
+                throw ConfidenceError.internalError(message: "Unable to find key '\(field)'")
+            }
 
-               curValue = newValue
-           }
+            curValue = newValue
+        }
 
-           return curValue
-       }
+        return curValue
+    }
 }

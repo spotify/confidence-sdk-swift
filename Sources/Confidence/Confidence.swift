@@ -58,7 +58,8 @@ public class Confidence: ConfidenceEventSender {
                 } catch {
                 }
             }
-        }.store(in: &cancellables)
+        }
+        .store(in: &cancellables)
     }
 
     public func activate() throws {
@@ -74,7 +75,12 @@ public class Confidence: ConfidenceEventSender {
     func internalFetch() async throws {
         let context = getContext()
         let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
-        try storage.save(data: FlagResolution(context: context, flags: resolvedFlags.resolvedValues, resolveToken: resolvedFlags.resolveToken ?? ""))
+        let resolution = FlagResolution(
+            context: context,
+            flags: resolvedFlags.resolvedValues,
+            resolveToken: resolvedFlags.resolveToken ?? ""
+        )
+        try storage.save(data: resolution)
     }
 
     public func asyncFetch() {
@@ -84,7 +90,12 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
-        try self.cache.evaluate(flagName: key, defaultValue: defaultValue, context: getContext(), flagApplier: flagApplier)
+        try self.cache.evaluate(
+            flagName: key,
+            defaultValue: defaultValue,
+            context: getContext(),
+            flagApplier: flagApplier
+        )
     }
 
     public func getValue<T>(key: String, defaultValue: T) -> T {
@@ -107,7 +118,11 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func track(eventName: String, message: ConfidenceStruct) {
-        eventSenderEngine.emit(eventName: eventName, message: message, context: getContext())
+        eventSenderEngine.emit(
+            eventName: eventName,
+            message: message,
+            context: getContext()
+        )
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
@@ -256,8 +271,17 @@ extension Confidence {
                 metadata: metadata
             )
             let httpClient = NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region))
-            let flagApplier = flagApplier ?? FlagApplierWithRetries(httpClient: httpClient, storage: DefaultStorage(filePath: "confidence.flags.apply"), options: options, metadata: metadata)
-            let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(options: options, applyOnResolve: false, metadata: metadata)
+            let flagApplier = flagApplier ?? FlagApplierWithRetries(
+                httpClient: httpClient,
+                storage: DefaultStorage(filePath: "confidence.flags.apply"),
+                options: options,
+                metadata: metadata
+            )
+            let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(
+                options: options,
+                applyOnResolve: false,
+                metadata: metadata
+            )
             let eventSenderEngine = EventSenderEngineImpl(
                 clientSecret: clientSecret,
                 uploader: uploader,

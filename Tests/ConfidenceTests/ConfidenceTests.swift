@@ -1,7 +1,8 @@
 import XCTest
- @testable import Confidence
+@testable import Confidence
 
- final class ConfidenceTests: XCTestCase {
+// swiftlint:disable type_body_length
+final class ConfidenceTests: XCTestCase {
     func testWithContext() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
@@ -323,4 +324,5 @@ import XCTest
             .build()
         XCTAssertNil(confidence.getContext()["visitorId"])
     }
- }
+}
+// swiftlint:enable type_body_length

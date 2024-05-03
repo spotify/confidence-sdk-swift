@@ -10,17 +10,11 @@ struct Metadata: ProviderMetadata {
 }
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
-///
-///
-///
-// swiftlint:disable type_body_length
-// swiftlint:disable file_length
 public class ConfidenceFeatureProvider: FeatureProvider {
     public var metadata: ProviderMetadata
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private let initializationStrategy: InitializationStrategy
-    private let storage: Storage
     private let eventHandler = EventHandler(ProviderEvent.notReady)
     private let confidence: Confidence
     private var cancellables = Set<AnyCancellable>()
@@ -39,7 +33,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     ) {
         let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
         self.metadata = Metadata(name: metadata.name)
-        self.storage = DefaultStorage.resolverFlagsCache()
         self.initializationStrategy = initializationStrategy
         self.confidence = confidence
     }
@@ -59,7 +52,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 try confidence.activate()
                 eventHandler.send(.ready)
                 confidence.asyncFetch()
-                } else {
+            } else {
                 Task {
                     try await confidence.fetchAndActivate()
                     eventHandler.send(.ready)
@@ -138,35 +131,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 }
 
-// MARK: Storage
-
-extension ConfidenceFeatureProvider {
-    public static func isStorageEmpty(
-        storage: Storage = DefaultStorage.resolverFlagsCache()
-    ) -> Bool {
-        storage.isEmpty()
-    }
-}
-
-// MARK: Builder
-extension DefaultStorage {
-    public static func resolverFlagsCache() -> DefaultStorage {
-        DefaultStorage(filePath: "resolver.flags.cache")
-    }
-
-    public static func resolverApplyCache() -> DefaultStorage {
-        DefaultStorage(filePath: "resolver.apply.cache")
-    }
-
-    public static func applierFlagsCache() -> DefaultStorage {
-        DefaultStorage(filePath: "applier.flags.cache")
-    }
-}
-// swiftlint:enable type_body_length
-// swiftlint:enable file_length
-
 extension Evaluation {
     func toProviderEvaluation() -> ProviderEvaluation<T> {
-        ProviderEvaluation(value: self.value, variant: self.variant, reason: self.reason.rawValue, errorCode: nil, errorMessage: nil)
+        ProviderEvaluation(
+            value: self.value,
+            variant: self.variant,
+            reason: self.reason.rawValue,
+            errorCode: nil,
+            errorMessage: nil
+        )
     }
 }

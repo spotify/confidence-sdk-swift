@@ -27,32 +27,32 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
 
     public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
-                    flags: flags.map { "flags/\($0)" },
-                    evaluationContext: try NetworkTypeMapper.from(value: ctx),
-                    clientSecret: options.credentials.getSecret(),
-                    apply: applyOnResolve,
-                    sdk: Sdk(id: metadata.name, version: metadata.version)
-                )
+            flags: flags.map { "flags/\($0)" },
+            evaluationContext: try NetworkTypeMapper.from(value: ctx),
+            clientSecret: options.credentials.getSecret(),
+            apply: applyOnResolve,
+            sdk: Sdk(id: metadata.name, version: metadata.version)
+        )
 
-                do {
-                    let result: HttpClientResult<ResolveFlagsResponse> =
-                    try await self.httpClient.post(path: ":resolve", data: request)
-                    switch result {
-                    case .success(let successData):
-                        guard successData.response.status == .ok else {
-                            throw successData.response.mapStatusToError(error: successData.decodedError)
-                        }
-                        guard let response = successData.decodedData else {
-                            throw ConfidenceError.parseError(message: "Unable to parse request response")
-                        }
-                        let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                            try convert(resolvedFlag: resolvedFlag)
-                        }
-                        return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-                    case .failure(let errorData):
-                        throw handleError(error: errorData)
-                    }
+        do {
+            let result: HttpClientResult<ResolveFlagsResponse> =
+            try await self.httpClient.post(path: ":resolve", data: request)
+            switch result {
+            case .success(let successData):
+                guard successData.response.status == .ok else {
+                    throw successData.response.mapStatusToError(error: successData.decodedError)
                 }
+                guard let response = successData.decodedData else {
+                    throw ConfidenceError.parseError(message: "Unable to parse request response")
+                }
+                let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+                    try convert(resolvedFlag: resolvedFlag)
+                }
+                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+            case .failure(let errorData):
+                throw handleError(error: errorData)
+            }
+        }
     }
 
     public func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
@@ -62,9 +62,9 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     // MARK: Private
 
     private func convert(resolvedFlag: ResolvedFlag) throws -> ResolvedValue {
-        guard let _ = resolvedFlag.flagSchema,
+        guard let schema = resolvedFlag.flagSchema,
             let responseValue = resolvedFlag.value,
-              !responseValue.isEmpty
+            !responseValue.isEmpty
         else {
             return ResolvedValue(
                 value: nil,
