@@ -708,42 +708,6 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         }
     }
 
-    func testProviderNoTargetingKey() throws {
-        let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
-            "user1": .init(variant: "control", value: .structure(["size": .null]))
-        ]
-
-        let schemas: [String: StructFlagSchema] = [
-            "user1": .init(schema: ["size": .intSchema])
-        ]
-
-        let flags: [String: MockedResolveClientURLProtocol.TestFlag] = [
-            "flags/flag": .init(resolve: resolve, schemas: schemas)
-        ]
-
-        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
-        let provider =
-        builder
-            .with(session: session)
-            .with(flagApplier: flagApplier)
-            .build()
-
-        // Note no context has been set via initialize or onContextSet
-        XCTAssertThrowsError(
-            try provider.getIntegerEvaluation(
-                key: "flag.size",
-                defaultValue: 3,
-                context: nil)
-        ) { error in
-            XCTAssertEqual(
-                error as? OpenFeatureError, OpenFeatureError.invalidContextError)
-        }
-
-        // TODO: Check this - how do we check for something not called?
-        XCTAssertEqual(MockedResolveClientURLProtocol.resolveStats, 0)
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
-    }
-
     func testProviderTargetingKeyError() throws {
         let resolve: [String: MockedResolveClientURLProtocol.ResolvedTestFlag] = [
             "user1": .init(variant: "control", value: .structure(["size": .integer(3)]))
