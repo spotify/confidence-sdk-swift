@@ -28,7 +28,7 @@ public class Confidence: ConfidenceEventSender {
         self.contextFlow.value = context
         self.parent = parent
         if let visitorId {
-            putContext(context: ["visitorId": ConfidenceValue.init(string: visitorId)])
+            putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
     }
 
