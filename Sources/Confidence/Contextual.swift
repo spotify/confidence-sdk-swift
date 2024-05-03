@@ -16,10 +16,6 @@ public protocol Contextual: ConfidenceContextProvider {
     */
     func removeKey(key: String)
     /**
-    Perform `putContext` and multiple `removeKey` at once
-    */
-    func putContext(context: ConfidenceStruct, removeKeys: [String])
-    /**
     Creates a child Contextual instance that maintains access to its parent's data
     */
     func withContext(_ context: ConfidenceStruct) -> Self
