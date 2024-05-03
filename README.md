@@ -17,7 +17,7 @@ You have two options, both start from File > Add Packages... in the code menu.
 First, ensure you have your GitHub account added as an option (+ > Add Source Control Account...). You will need to create a [Personal Access Token](https://github.com/settings/tokens) with the permissions defined in the Xcode interface.
 
 1. Add as a remote repository
-    * Search for `git@github.com:spotify/confidence-openfeature-provider-swift.git` and click "Add Package"
+    * Search for `git@github.com:spotify/confidence-sdk-swift.git` and click "Add Package"
 2. Clone the repository locally
     * Clone locally using your preferred method
     * Use the "Add Local..." button to select the local folder
@@ -30,14 +30,14 @@ the relevant OpenFeature SDK dependency manually.
 <!---x-release-please-start-version-->
 In the dependencies section of Package.swift add:
 ```swift
-.package(url: "git@github.com:spotify/confidence-openfeature-provider-swift.git", from: "0.1.4")
+.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "0.1.4")
 ```
 <!---x-release-please-end-->
 
 and in the target dependencies section add:
 ```swift
-.product(name: "ConfidenceProvider", package: "confidence-openfeature-provider-swift"),
-.product(name: "Confidence", package: "confidence-openfeature-provider-swift"),
+.product(name: "ConfidenceProvider", package: "confidence-sdk-swift"),
+.product(name: "Confidence", package: "confidence-sdk-swift"),
 ```
 
 ## Usage

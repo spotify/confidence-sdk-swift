@@ -163,7 +163,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) {
+    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
         withLock { confidence in
             var map = confidence.contextSubject.value
             for removedKey in removedKeys {
@@ -176,7 +176,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func removeContextEntry(key: String) {
+    public func removeKey(key: String) {
         withLock { confidence in
             var map = confidence.contextSubject.value
             map.removeValue(forKey: key)

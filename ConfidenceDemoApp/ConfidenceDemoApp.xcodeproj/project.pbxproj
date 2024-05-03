@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		733219BF2BE3C11100747AC2 /* ConfidenceOpenFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
@@ -14,7 +15,6 @@
 		C770C99F2A739FCE00C2AC8C /* ConfidenceDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C99E2A739FCE00C2AC8C /* ConfidenceDemoTests.swift */; };
 		C770C9A22A739FDF00C2AC8C /* ConfidenceDemoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9A02A739FDF00C2AC8C /* ConfidenceDemoUITests.swift */; };
 		C770C9A32A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9A12A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift */; };
-		C770C9AD2A73A06600C2AC8C /* ConfidenceProvider in Frameworks */ = {isa = PBXBuildFile; productRef = C770C9AC2A73A06600C2AC8C /* ConfidenceProvider */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,7 +45,7 @@
 		C770C99E2A739FCE00C2AC8C /* ConfidenceDemoTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoTests.swift; sourceTree = "<group>"; };
 		C770C9A02A739FDF00C2AC8C /* ConfidenceDemoUITests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoUITests.swift; sourceTree = "<group>"; };
 		C770C9A12A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		C770C9A92A73A04B00C2AC8C /* confidence-openfeature-provider-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "confidence-openfeature-provider-swift"; path = ..; sourceTree = "<group>"; };
+		C770C9A92A73A04B00C2AC8C /* confidence-sdk-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "confidence-sdk-swift"; path = ..; sourceTree = "<group>"; };
 		C770C9AA2A73A06000C2AC8C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -54,7 +54,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C770C9AD2A73A06600C2AC8C /* ConfidenceProvider in Frameworks */,
+				733219BF2BE3C11100747AC2 /* ConfidenceOpenFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,7 +137,7 @@
 		C770C9A82A73A04B00C2AC8C /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				C770C9A92A73A04B00C2AC8C /* confidence-openfeature-provider-swift */,
+				C770C9A92A73A04B00C2AC8C /* confidence-sdk-swift */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -166,7 +166,7 @@
 			);
 			name = ConfidenceDemoApp;
 			packageProductDependencies = (
-				C770C9AC2A73A06600C2AC8C /* ConfidenceProvider */,
+				733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */,
 			);
 			productName = ConfidenceDemoApp;
 			productReference = C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */;
@@ -638,9 +638,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C770C9AC2A73A06600C2AC8C /* ConfidenceProvider */ = {
+		733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = ConfidenceProvider;
+			productName = ConfidenceOpenFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

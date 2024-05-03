@@ -7,9 +7,9 @@ public enum ConfidenceTypeMapper {
         return convertValue(value)
     }
 
-    static func from(ctx: EvaluationContext) -> ConfidenceStruct {
-        var ctxMap = ctx.asMap()
-        ctxMap["targeting_key"] = .string(ctx.getTargetingKey())
+    static func from(ctx: EvaluationContext?) -> ConfidenceStruct {
+        var ctxMap = ctx?.asMap() ?? [:]
+        ctxMap["targeting_key"] = .string(ctx?.getTargetingKey() ?? "")
         return ctxMap.compactMapValues(convertValue)
     }
 
