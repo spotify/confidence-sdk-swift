@@ -38,7 +38,7 @@ public class Confidence: ConfidenceEventSender {
         self.flagApplier = flagApplier
         self.remoteFlagResolver = remoteFlagResolver
         if let visitorId {
-            putContext(context: ["visitorId": ConfidenceValue.init(string: visitorId)])
+            putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
 
         contextChanges().sink { [weak self] context in

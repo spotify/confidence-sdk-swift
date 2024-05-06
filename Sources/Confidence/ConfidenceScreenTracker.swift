@@ -1,3 +1,4 @@
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import Foundation
 import UIKit
 import Combine
@@ -98,3 +99,4 @@ extension UIViewController {
     @objc internal func confidence__viewDidDisappear(animated: Bool) {
     }
 }
+#endif
