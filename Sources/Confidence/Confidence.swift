@@ -103,7 +103,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     func isStorageEmpty() -> Bool {
-        return false
+        return storage.isEmpty()
     }
 
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
