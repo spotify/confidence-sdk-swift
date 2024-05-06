@@ -29,13 +29,7 @@ extension FlagResolution {
     ) throws -> Evaluation<T> {
         let parsedKey = try FlagPath.getPath(for: flagName)
         if self == FlagResolution.EMPTY {
-            return Evaluation(
-                value: defaultValue,
-                variant: nil,
-                reason: .error,
-                errorCode: .providerNotReady,
-                errorMessage: nil
-            )
+            throw ConfidenceError.flagNotFoundError(key: parsedKey.flag)
         }
         let resolvedFlag = self.flags.first { resolvedFlag in  resolvedFlag.flag == parsedKey.flag }
         guard let resolvedFlag = resolvedFlag else {
