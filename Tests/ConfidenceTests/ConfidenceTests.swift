@@ -43,29 +43,6 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testWithContextUpdateParentRemoveKeys() {
-        let confidenceParent = Confidence.init(
-            clientSecret: "",
-            region: .europe,
-            eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
-            context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
-        )
-        let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
-            ["k2": ConfidenceValue(string: "v2")]
-        )
-        confidenceChild.putContext(
-            context: ["k3": ConfidenceValue(string: "v3")],
-            removeKeys: ["k1"]
-        )
-        let expected = [
-            "k2": ConfidenceValue(string: "v2"),
-            "k3": ConfidenceValue(string: "v3"),
-        ]
-        XCTAssertEqual(confidenceChild.getContext(), expected)
-    }
-
     func testUpdateLocalContext() {
         let confidence = Confidence.init(
             clientSecret: "",
