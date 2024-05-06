@@ -122,28 +122,28 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func track(producer: ConfidenceProducer) {
-            if let eventProducer = producer as? ConfidenceEventProducer {
-                eventProducer.produceEvents()
-                    .sink { [weak self] event in
+        if let eventProducer = producer as? ConfidenceEventProducer {
+            eventProducer.produceEvents()
+                .sink { [weak self] event in
                     guard let self = self else {
                         return
                     }
                     self.track(eventName: event.name, message: event.message)
-                    }
+                }
                 .store(in: &cancellables)
-            }
+        }
 
-            if let contextProducer = producer as? ConfidenceContextProducer {
-                contextProducer.produceContexts()
-                    .sink { [weak self] context in
+        if let contextProducer = producer as? ConfidenceContextProducer {
+            contextProducer.produceContexts()
+                .sink { [weak self] context in
                     guard let self = self else {
                         return
                     }
                     self.putContext(context: context)
-                    }
+                }
                 .store(in: &cancellables)
-            }
         }
+    }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
         confidenceQueue.sync {  [weak self] in
