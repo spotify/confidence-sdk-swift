@@ -89,16 +89,28 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func track(eventsProducer: ConfidenceEventProducer) {
-        eventsProducer.produceEvents()
-            .sink { [weak self] event in
-            guard let self = self else {
-                return
-            }
+    public func track(producer: ConfidenceProducer) {
+        if let eventProducer = producer as? ConfidenceEventProducer {
+            eventProducer.produceEvents()
+                .sink { [weak self] event in
+                guard let self = self else {
+                    return
+                }
+                self.track(eventName: event.name, message: event.message)
+                }
+            .store(in: &cancellables)
+        }
 
-            self.track(eventName: event.name, message: event.message)
-            }
-        .store(in: &cancellables)
+        if let contextProducer = producer as? ConfidenceContextProducer {
+            contextProducer.produceContexts()
+                .sink { [weak self] context in
+                guard let self = self else {
+                    return
+                }
+                self.putContext(context: context)
+                }
+            .store(in: &cancellables)
+        }
     }
 
     public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {

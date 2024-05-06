@@ -3,21 +3,13 @@ import Foundation
 import UIKit
 import Combine
 
-public struct Event {
-    let name: String
-    let message: ConfidenceStruct
-
-    public init(name: String, message: ConfidenceStruct = [:]) {
-        self.name = name
-        self.message = message
-    }
-}
-
-public class ConfidenceAppLifecycleMonitor: ConfidenceEventProducer, ObservableObject {
-    private var events = CurrentValueSubject<Event?, Never>(nil)
+public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, ConfidenceContextProducer, ObservableObject {
+    private var events = PassthroughSubject<Event?, Never>()
     public func produceEvents() -> AnyPublisher<Event, Never> {
         events.compactMap { event in event }.eraseToAnyPublisher()
     }
+    private let queue = DispatchQueue(label: "lifecycle_producer")
+    public var currentProducedContext: CurrentValueSubject<ConfidenceStruct, Never> = CurrentValueSubject([:])
     private var appNotifications: [NSNotification.Name] = [
         UIApplication.didEnterBackgroundNotification,
         UIApplication.willEnterForegroundNotification,
@@ -43,10 +35,25 @@ public class ConfidenceAppLifecycleMonitor: ConfidenceEventProducer, ObservableO
                 object: nil
             )
         }
+
+        let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let currentBuild: String = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        let context: ConfidenceStruct = [
+            "version": .init(string: currentVersion),
+            "build": .init(string: currentBuild)
+        ]
+
+        self.currentProducedContext.send(context)
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+
+    public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never> {
+        currentProducedContext
+            .filter { context in !context.isEmpty }
+            .eraseToAnyPublisher()
     }
 
     private func track(eventName: String, sourceApp: String = "", url: String = "") {
@@ -86,14 +93,33 @@ public class ConfidenceAppLifecycleMonitor: ConfidenceEventProducer, ObservableO
         UserDefaults.standard.setValue(currentBuild, forKey: Self.buildNameKey)
     }
 
+    private func updateContext(isForeground: Bool) {
+        withLock { [weak self] in
+            guard let self = self else {
+                return
+            }
+            var context = self.currentProducedContext.value
+            context.updateValue(.init(boolean: isForeground), forKey: "is_foreground")
+            self.currentProducedContext.send(context)
+        }
+    }
+
+    private func withLock(callback: @escaping () -> Void) {
+        queue.sync {
+            callback()
+        }
+    }
+
     @objc func notificationResponse(notification: NSNotification) {
         switch notification.name {
         case UIApplication.didEnterBackgroundNotification:
+            updateContext(isForeground: false)
             track(eventName: "enter-background")
         case UIApplication.willEnterForegroundNotification:
+            updateContext(isForeground: true)
             track(eventName: "enter-foreground")
         case UIApplication.didFinishLaunchingNotification:
-            let options = notification.userInfo as? [UIApplication.LaunchOptionsKey: Any] ?? nil
+            let options = notification.userInfo as? [UIApplication.LaunchOptionsKey: Any]
             let sourceApp: String = options?[UIApplication.LaunchOptionsKey.sourceApplication] as? String ?? ""
             let url: String = options?[UIApplication.LaunchOptionsKey.url] as? String ?? ""
             track(eventName: "app-launch", sourceApp: sourceApp, url: url)

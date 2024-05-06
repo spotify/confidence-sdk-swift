@@ -23,7 +23,7 @@ struct ContentView: View {
                     .padding(10)
                 Text(text.text)
                 Button("Get remote flag value") {
-                    text.text = confidence.getValue(key: "swift-demoapp.color", defaultValue: "ERROR")
+                    text.text = confidence.getValue(key: "swift-demoapp.color", defaultValue: "DEFAULT")
                     if text.text == "Green" {
                         color.color = .green
                     } else if text.text == "Yellow" {

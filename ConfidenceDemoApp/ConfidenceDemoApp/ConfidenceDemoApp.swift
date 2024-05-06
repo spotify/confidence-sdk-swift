@@ -13,7 +13,7 @@ class Status: ObservableObject {
 
 @main
 struct ConfidenceDemoApp: App {
-    @StateObject private var lifecycleObserver = ConfidenceAppLifecycleMonitor()
+    @StateObject private var lifecycleObserver = ConfidenceAppLifecycleProducer()
 
     var body: some Scene {
         WindowGroup {
@@ -28,7 +28,7 @@ struct ConfidenceDemoApp: App {
                 .task {
                     do {
                         try await self.setup(confidence: confidence)
-                        confidence.track(eventsProducer: lifecycleObserver)
+                        confidence.track(producer: lifecycleObserver)
                         status.state = .ready
                     } catch {
                         status.state = .error(error)
