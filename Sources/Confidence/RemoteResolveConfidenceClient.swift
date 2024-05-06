@@ -115,7 +115,7 @@ struct ResolvedFlag: Codable {
 public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case unspecified = "RESOLVE_REASON_UNSPECIFIED"
     case match = "RESOLVE_REASON_MATCH"
-    case stale = "RESOLVE_REAOSON_STALE"
+    case stale = "RESOLVE_REASON_STALE"
     case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
     case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
     case archived = "RESOLVE_REASON_FLAG_ARCHIVED"
