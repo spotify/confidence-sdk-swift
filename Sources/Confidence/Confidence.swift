@@ -206,6 +206,9 @@ extension Confidence {
         var visitorId: String?
         var initialContext: ConfidenceStruct = [:]
 
+        /**
+        Initializes the builder with the given credentails.
+        */
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
             do {
@@ -236,11 +239,19 @@ extension Confidence {
             return self
         }
 
+        /**
+        Sets the region for the network request to the Confidence backend.
+        The default is `global` and the requests are automatically routed to the closest server.
+        */
         public func withRegion(region: ConfidenceRegion) -> Builder {
             self.region = region
             return self
         }
 
+        /**
+        The SDK attaches a unique identifier to the Context, which is persisted across
+        restarts of the App but re-generated on every new install
+        */
         public func withVisitorId() -> Builder {
             self.visitorId = VisitorUtil().getId()
             return self
