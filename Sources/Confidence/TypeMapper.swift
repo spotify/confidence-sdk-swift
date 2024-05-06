@@ -1,55 +1,72 @@
 import Foundation
 
 public enum TypeMapper {
-    static func from(value: ConfidenceStruct) -> NetworkStruct {
-        return NetworkStruct(fields: value.compactMapValues(convertValueToStructValue))
+    static func convert(structure: ConfidenceStruct) -> NetworkStruct {
+        return NetworkStruct(fields: structure.compactMapValues(convert))
     }
 
-    static func from(value: ConfidenceValue) throws -> NetworkStruct {
-        guard let value = value.asStructure() else {
-            throw ConfidenceError.parseError(message: "Value must be a .structure")
-        }
-
-        return NetworkStruct(fields: value.compactMapValues(convertValueToStructValue))
-    }
-
-    static func from(
-        object: NetworkStruct, schema: StructFlagSchema
-    )
-    throws
-    -> ConfidenceValue
-    {
-        let structure = Dictionary(uniqueKeysWithValues: try object.fields.map { field, value in
-            (field, try convertStructValueToValue(value, schema: schema.schema[field]))
+    static func convert(structure: NetworkStruct, schema: StructFlagSchema) throws -> ConfidenceStruct {
+        return Dictionary(uniqueKeysWithValues: try structure.fields.map { field, value in
+            (field, try convert(value, schema: schema.schema[field]))
         })
-        return .init(structure: structure)
     }
 
-    static private func convertValueToStructValue(_ value: ConfidenceValue) -> NetworkValue? {
-        if let value = value.asBoolean() {
-            return .boolean(value)
-        } else if let value = value.asInteger() {
-            return .number(Double(value))
-        } else if let value = value.asDate() {
+    // swiftlint:disable:next cyclomatic_complexity
+    static func convert(_ value: ConfidenceValue) -> NetworkValue? {
+        switch value.type() {
+        case .boolean:
+            guard let value = value.asBoolean() else {
+                return nil
+            }
+            return NetworkValue.boolean(value)
+        case .string:
+            guard let value = value.asString() else {
+                return nil
+            }
+            return NetworkValue.string(value)
+        case .integer:
+            guard let value = value.asInteger() else {
+                return nil
+            }
+            return NetworkValue.number(Double(value))
+        case .double:
+            guard let value = value.asDouble() else {
+                return nil
+            }
+            return NetworkValue.number(value)
+        case .date:
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.timeZone = TimeZone.current
+            dateFormatter.formatOptions = [.withFullDate]
+            guard let value = value.asDateComponents(), let dateString = Calendar.current.date(from: value) else {
+                return NetworkValue.string("") // This should never happen
+            }
+            return NetworkValue.string(dateFormatter.string(from: dateString))
+        case .timestamp:
+            guard let value = value.asDate() else {
+                return nil
+            }
             let timestampFormatter = ISO8601DateFormatter()
             timestampFormatter.timeZone = TimeZone.init(identifier: "UTC")
             let timestamp = timestampFormatter.string(from: value)
-            return .string(timestamp)
-        } else if let value = value.asDouble() {
-            return .number(value)
-        } else if let value = value.asString() {
-            return .string(value)
-        } else if let value = value.asList()  {
-            return .list(value.compactMap(convertValueToStructValue))
-        } else if let value = value.asStructure()  {
-            return .structure(NetworkStruct(fields: value.compactMapValues(convertValueToStructValue)))
-        } else {
-            return NetworkValue.null
+            return NetworkValue.string(timestamp)
+        case .list:
+            guard let value = value.asList() else {
+                return nil
+            }
+            return NetworkValue.list(value.compactMap(convert))
+        case .structure:
+            guard let value = value.asStructure() else {
+                return nil
+            }
+            return NetworkValue.structure(NetworkStruct(fields: value.compactMapValues(convert)))
+        case .null:
+            return nil
         }
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    static private func convertStructValueToValue(
+    static private func convert(
         _ structValue: NetworkValue, schema: FlagSchema?
     ) throws -> ConfidenceValue {
         guard let fieldType = schema else {
@@ -78,14 +95,14 @@ public enum TypeMapper {
             }
             return .init(structure: Dictionary(
                 uniqueKeysWithValues: try mapValue.fields.map { field, fieldValue in
-                    return (field, try convertStructValueToValue(fieldValue, schema: structSchema.schema[field]))
+                    return (field, try convert(fieldValue, schema: structSchema.schema[field]))
                 }))
         case .list(let values):
             guard case .listSchema(let listSchema) = fieldType else {
                 throw ConfidenceError.parseError(message: "Field is list in schema but something else in value")
             }
             return ConfidenceValue.init(list: try values.map { fieldValue in
-                try convertStructValueToValue(fieldValue, schema: listSchema)
+                try convert(fieldValue, schema: listSchema)
             })
         }
     }

@@ -59,12 +59,9 @@ final class EventSenderEngineImpl: EventSenderEngine {
                 for id in ids {
                     let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
                         .compactMap { event in
-                            let networkPayload = event.payload.compactMapValues { payloadValue in
-                                try? NetworkTypeMapper.convertValue(payloadValue)
-                            }
                             return NetworkEvent(
                                 eventDefinition: event.name,
-                                payload: NetworkStruct(fields: networkPayload),
+                                payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
                                 eventTime: Date.backport.toISOString(date: event.eventTime))
                         }
                     let shouldCleanup = try await self.uploader.upload(events: events)
