@@ -1,18 +1,18 @@
 import Foundation
 
 public enum TypeMapper {
-    static func convert(structure: ConfidenceStruct) -> NetworkStruct {
+    static internal func convert(structure: ConfidenceStruct) -> NetworkStruct {
         return NetworkStruct(fields: structure.compactMapValues(convert))
     }
 
-    static func convert(structure: NetworkStruct, schema: StructFlagSchema) throws -> ConfidenceStruct {
+    static internal func convert(structure: NetworkStruct, schema: StructFlagSchema) throws -> ConfidenceStruct {
         return Dictionary(uniqueKeysWithValues: try structure.fields.map { field, value in
-            (field, try convert(value, schema: schema.schema[field]))
+            (field, try convert(value: value, schema: schema.schema[field]))
         })
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    static func convert(_ value: ConfidenceValue) -> NetworkValue? {
+    static func convert(value: ConfidenceValue) -> NetworkValue? {
         switch value.type() {
         case .boolean:
             guard let value = value.asBoolean() else {
@@ -61,19 +61,17 @@ public enum TypeMapper {
             }
             return NetworkValue.structure(NetworkStruct(fields: value.compactMapValues(convert)))
         case .null:
-            return nil
+            return .null
         }
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    static private func convert(
-        _ structValue: NetworkValue, schema: FlagSchema?
-    ) throws -> ConfidenceValue {
+    static private func convert(value: NetworkValue, schema: FlagSchema?) throws -> ConfidenceValue {
         guard let fieldType = schema else {
             throw ConfidenceError.parseError(message: "Mismatch between schema and value")
         }
 
-        switch structValue {
+        switch value {
         case .null:
             return .init(null: ())
         case .number(let value):
@@ -95,14 +93,14 @@ public enum TypeMapper {
             }
             return .init(structure: Dictionary(
                 uniqueKeysWithValues: try mapValue.fields.map { field, fieldValue in
-                    return (field, try convert(fieldValue, schema: structSchema.schema[field]))
+                    return (field, try convert(value: fieldValue, schema: structSchema.schema[field]))
                 }))
         case .list(let values):
             guard case .listSchema(let listSchema) = fieldType else {
                 throw ConfidenceError.parseError(message: "Field is list in schema but something else in value")
             }
             return ConfidenceValue.init(list: try values.map { fieldValue in
-                try convert(fieldValue, schema: listSchema)
+                try convert(value: fieldValue, schema: listSchema)
             })
         }
     }
