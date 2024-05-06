@@ -524,10 +524,13 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        XCTAssertThrowsError(try confidence.getEvaluation(
-            key: "flag.size",
-            defaultValue: 42)) { error in
-                XCTAssertEqual(error as? ConfidenceError, ConfidenceError.flagNotFoundError(key: "flag"))
+        XCTAssertThrowsError(
+            try confidence.getEvaluation(
+                key: "flag.size",
+                defaultValue: 42
+            )
+        ) { error in
+            XCTAssertEqual(error as? ConfidenceError, ConfidenceError.flagNotFoundError(key: "flag"))
         }
 
         XCTAssertEqual(client.resolveStats, 1)
