@@ -19,7 +19,7 @@ struct ConfidenceDemoApp: App {
         WindowGroup {
             let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? ""
             let confidence = Confidence.Builder(clientSecret: secret)
-                .withContext(initialContext: ["targeting_key": ConfidenceValue(string: "UUID.init().uuidString")])
+                .withContext(initialContext: ["targeting_key": ConfidenceValue(string: UUID.init().uuidString)])
                 .withRegion(region: .europe)
                 .build()
             let status = Status()
