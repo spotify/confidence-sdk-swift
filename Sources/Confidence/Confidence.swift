@@ -3,7 +3,6 @@ import Combine
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
-    public var timeout: TimeInterval
     public var region: ConfidenceRegion
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
@@ -20,7 +19,6 @@ public class Confidence: ConfidenceEventSender {
 
     required init(
         clientSecret: String,
-        timeout: TimeInterval,
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
         flagApplier: FlagApplier,
@@ -32,7 +30,6 @@ public class Confidence: ConfidenceEventSender {
     ) {
         self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
-        self.timeout = timeout
         self.region = region
         self.storage = storage
         self.contextSubject.value = context
@@ -187,7 +184,6 @@ public class Confidence: ConfidenceEventSender {
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,
-            timeout: timeout,
             region: region,
             eventSenderEngine: eventSenderEngine,
             flagApplier: flagApplier,
@@ -201,7 +197,6 @@ public class Confidence: ConfidenceEventSender {
 extension Confidence {
     public class Builder {
         let clientSecret: String
-        var timeout: TimeInterval = 10.0
         internal var flagApplier: FlagApplier?
         internal var storage: Storage?
         internal let eventStorage: EventStorage
@@ -241,12 +236,6 @@ extension Confidence {
             return self
         }
 
-        public func withTimeout(timeout: TimeInterval) -> Builder {
-            self.timeout = timeout
-            return self
-        }
-
-
         public func withRegion(region: ConfidenceRegion) -> Builder {
             self.region = region
             return self
@@ -260,7 +249,6 @@ extension Confidence {
         public func build() -> Confidence {
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                timeout: timeout,
                 region: region)
             let metadata = ConfidenceMetadata(
                 name: "SDK_ID_SWIFT_CONFIDENCE",
@@ -288,7 +276,6 @@ extension Confidence {
                 flushPolicies: [SizeFlushPolicy(batchSize: 1)])
             return Confidence(
                 clientSecret: clientSecret,
-                timeout: timeout,
                 region: region,
                 eventSenderEngine: eventSenderEngine,
                 flagApplier: flagApplier,
