@@ -30,7 +30,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
         session: URLSession?
     ) {
-        let metadata = ConfidenceMetadata(version: "0.1.4") // x-release-please-version
+        let metadata = ConfidenceMetadata(
+            name: "SDK_ID_SWIFT_PROVIDER",
+            version: "0.1.4") // x-release-please-version
         self.metadata = Metadata(name: metadata.name)
         self.initializationStrategy = initializationStrategy
         self.confidence = confidence

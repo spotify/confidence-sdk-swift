@@ -29,7 +29,7 @@ class RemoteResolveConfidenceClientTest: XCTestCase {
             options: .init(credentials: .clientSecret(secret: "test")),
             session: session,
             applyOnResolve: true,
-            metadata: ConfidenceMetadata()
+            metadata: ConfidenceMetadata(name: "", version: "")
         )
 
         let context = ["targeting_key": ConfidenceValue(string: "user1")]
