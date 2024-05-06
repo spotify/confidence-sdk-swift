@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public struct Evaluation<T> {
     public let value: T

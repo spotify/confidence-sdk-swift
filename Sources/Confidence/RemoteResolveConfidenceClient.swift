@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"

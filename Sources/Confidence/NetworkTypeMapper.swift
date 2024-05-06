@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public enum NetworkTypeMapper {
     public static func from(value: ConfidenceStruct) throws -> NetworkStruct {

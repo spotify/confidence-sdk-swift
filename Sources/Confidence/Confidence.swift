@@ -1,6 +1,5 @@
 import Foundation
 import Combine
-import Common
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String

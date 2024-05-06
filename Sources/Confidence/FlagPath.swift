@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public struct FlagPath {
     var flag: String

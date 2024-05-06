@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public enum TypeMapper {
     static func from(value: ConfidenceStruct) -> NetworkStruct {

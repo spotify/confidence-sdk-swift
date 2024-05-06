@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 class VisitorUtil {
     let defaults = UserDefaults.standard
