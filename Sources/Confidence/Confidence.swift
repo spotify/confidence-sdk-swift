@@ -89,6 +89,18 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    public func track(eventsProducer: ConfidenceEventProducer) {
+        eventsProducer.produceEvents()
+            .sink { [weak self] event in
+            guard let self = self else {
+                return
+            }
+
+            self.track(eventName: event.name, message: event.message)
+            }
+        .store(in: &cancellables)
+    }
+
     public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
         try self.cache.evaluate(
             flagName: key,
