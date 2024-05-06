@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
@@ -7,6 +6,23 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
     private let value: ConfidenceValueInternal
     public var description: String {
         return value.description
+    }
+
+    init(from networkValue: NetworkValue) {
+        switch networkValue {
+        case .boolean(let value):
+            self.value = .boolean(value)
+        case .string(let value):
+            self.value = .string(value)
+        case .number(let value):
+            self.value = .double(value)
+        case .list(let values):
+            self.value = .list(values.map { value in ConfidenceValue(from: value).value })
+        case .structure(let map):
+            self.value = .structure(map.fields.mapValues { entryValue in ConfidenceValue(from: entryValue).value })
+        case .null:
+            self.value = .null
+        }
     }
 
     public required init(from decoder: Decoder) throws {
@@ -22,7 +38,7 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         self.value = .string(string)
     }
 
-    public init(integer: Int64) {
+    public init(integer: Int) {
         self.value = .integer(integer)
     }
 
@@ -52,8 +68,11 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         self.value = .list(stringList.map { .string($0) })
     }
 
+    internal init(list: [ConfidenceValue]) {
+        self.value = .list(list.map { $0.value })
+    }
 
-    public init(integerList: [Int64]) {
+    public init(integerList: [Int]) {
         self.value = .list(integerList.map { .integer($0) })
     }
 
@@ -101,9 +120,9 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         return nil
     }
 
-    public func asInteger() -> Int64? {
-        if case let .integer(int64) = value {
-            return int64
+    public func asInteger() -> Int? {
+        if case let .integer(int) = value {
+            return int
         }
 
         return nil
@@ -208,7 +227,7 @@ public enum ConfidenceValueType: CaseIterable {
 private enum ConfidenceValueInternal: Equatable, Codable {
     case boolean(Bool)
     case string(String)
-    case integer(Int64)
+    case integer(Int)
     case double(Double)
     case date(DateComponents)
     case timestamp(Date)

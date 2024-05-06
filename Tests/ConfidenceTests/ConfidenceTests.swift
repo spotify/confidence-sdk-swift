@@ -1,13 +1,22 @@
 import XCTest
 @testable import Confidence
 
+// swiftlint:disable type_body_length
 final class ConfidenceTests: XCTestCase {
     func testWithContext() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")]
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
@@ -21,11 +30,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testWithContextUpdateParent() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -44,11 +61,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testUpdateLocalContext() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidence = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -62,11 +87,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testUpdateLocalContextWithoutOverride() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -84,11 +117,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testUpdateParentContextWithOverride() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -106,15 +147,20 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testRemoveContextEntry() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidence = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
-            context: [
-                "k1": ConfidenceValue(string: "v1"),
-                "k2": ConfidenceValue(string: "v2")
-            ],
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
+            context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
         confidence.removeKey(key: "k2")
@@ -125,11 +171,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParent() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -144,11 +198,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParentAndChild() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -166,11 +228,19 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParentAndChildThenUpdate() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidenceParent = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil
         )
@@ -190,12 +260,21 @@ final class ConfidenceTests: XCTestCase {
     }
 
     func testVisitorId() {
+        let client = RemoteConfidenceResolveClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+            session: MockedClientURLProtocol.mockedSession(),
+            metadata: ConfidenceMetadata(name: "", version: ""))
+
         let confidence = Confidence.init(
             clientSecret: "",
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
-            initializationStrategy: .activateAndFetchAsync,
+            flagApplier: FlagApplierMock(),
+            remoteFlagResolver: client,
+            storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
+            parent: nil,
             visitorId: "uuid"
         )
         let expected = [
@@ -236,3 +315,4 @@ final class ConfidenceTests: XCTestCase {
         XCTAssertNil(confidence.getContext()["visitor_id"])
     }
 }
+// swiftlint:enable type_body_length

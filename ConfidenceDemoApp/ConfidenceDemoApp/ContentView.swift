@@ -1,11 +1,18 @@
 import SwiftUI
-import OpenFeature
+import Confidence
 import Combine
 
 struct ContentView: View {
-    @StateObject var status = Status()
+    @ObservedObject var status: Status
     @StateObject var text = DisplayText()
     @StateObject var color = FlagColor()
+
+    private let confidence: Confidence
+
+    init(confidence: Confidence, status: Status) {
+        self.confidence = confidence
+        self.status = status
+    }
 
     var body: some View {
         if case .ready = status.state {
@@ -16,10 +23,7 @@ struct ContentView: View {
                     .padding(10)
                 Text(text.text)
                 Button("Get remote flag value") {
-                    text.text = OpenFeatureAPI
-                        .shared
-                        .getClient()
-                        .getStringValue(key: "swift-demoapp.color", defaultValue: "ERROR")
+                    text.text = confidence.getValue(flagName: "swift-demoapp.color", defaultValue: "ERROR")
                     if text.text == "Green" {
                         color.color = .green
                     } else if text.text == "Yellow" {
@@ -39,33 +43,6 @@ struct ContentView: View {
         } else {
             VStack {
                 ProgressView()
-            }
-        }
-    }
-}
-
-class Status: ObservableObject {
-    enum State {
-        case unknown
-        case ready
-        case error(Error?)
-    }
-
-    var cancellable: AnyCancellable?
-
-    @Published var state: State = .unknown
-
-    init() {
-        cancellable = OpenFeatureAPI.shared.observe().sink { [weak self] event in
-            if event == .ready {
-                DispatchQueue.main.async {
-                    self?.state = .ready
-                }
-            }
-            if event == .error {
-                DispatchQueue.main.async {
-                    self?.state = .error(nil)
-                }
             }
         }
     }

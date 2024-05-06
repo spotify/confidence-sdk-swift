@@ -1,45 +1,46 @@
-import ConfidenceProvider
 import Confidence
-import OpenFeature
 import SwiftUI
+
+class Status: ObservableObject {
+    enum State {
+        case unknown
+        case ready
+        case error(Error?)
+    }
+
+    @Published var state: State = .unknown
+}
+
 
 @main
 struct ConfidenceDemoApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                    self.setup()
+            let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? ""
+            let confidence = Confidence.Builder(clientSecret: secret)
+                .withContext(initialContext: ["targeting_key": ConfidenceValue(string: UUID.init().uuidString)])
+                .withRegion(region: .europe)
+                .build()
+
+            let status = Status()
+
+            ContentView(confidence: confidence, status: status)
+                .task {
+                    do {
+                        try await self.setup(confidence: confidence)
+                        status.state = .ready
+                    } catch {
+                        status.state = .error(error)
+                        print(error.localizedDescription)
+                    }
                 }
         }
     }
 }
 
 extension ConfidenceDemoApp {
-    func setup() {
-        guard let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] else {
-            return
-        }
-
-        // If we have no cache, then do a fetch first.
-        var initializationStrategy: InitializationStrategy = .activateAndFetchAsync
-        if ConfidenceFeatureProvider.isStorageEmpty() {
-            initializationStrategy = .fetchAndActivate
-        }
-
-        let confidence = Confidence.Builder(clientSecret: secret)
-            .withRegion(region: .europe)
-            .withInitializationstrategy(initializationStrategy: initializationStrategy)
-            .build()
-        let provider = ConfidenceFeatureProvider(confidence: confidence)
-
-        // NOTE: Using a random UUID for each app start is not advised and can result in getting stale values.
-        let ctx = MutableContext(
-            targetingKey: UUID.init().uuidString,
-            structure: MutableStructure.init(attributes: ["country": .string("SE")]))
-        Task {
-            await OpenFeatureAPI.shared.setProviderAndWait(provider: provider, initialContext: ctx)
-        }
+    func setup(confidence: Confidence) async throws {
+        try await confidence.fetchAndActivate()
         confidence.track(
             eventName: "all-types",
             message: [
