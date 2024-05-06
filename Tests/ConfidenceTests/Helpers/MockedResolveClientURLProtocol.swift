@@ -1,5 +1,4 @@
 import Foundation
-import Common
 import OpenFeature
 
 @testable import Confidence
@@ -90,14 +89,8 @@ class MockedResolveClientURLProtocol: URLProtocol {
                 guard let resolved = flag.resolve[targetingKey], let schema = flag.schemas[targetingKey] else {
                     return ResolvedFlag(flag: flagName, reason: .noSegmentMatch)
                 }
-                var responseValue: NetworkStruct?
-                do {
-                    responseValue = try TypeMapper.from(value: resolved.value)
-                } catch {
-                    respondWithError(statusCode: 500, code: GrpcStatusCode.internalError.rawValue, message: "\(error)")
-                }
-
-                if responseValue == nil {
+                let responseValue = TypeMapper.convert(structure: resolved.value.asStructure() ?? [:])
+                if responseValue.fields.isEmpty {
                     respondWithError(
                         statusCode: 400,
                         code: GrpcStatusCode.invalidArgument.rawValue,

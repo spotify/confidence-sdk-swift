@@ -3,7 +3,6 @@ import Foundation
 final public class NetworkClient: HttpClient {
     private let headers: [String: String]
     private let retry: Retry
-    private let timeout: TimeInterval
     private let session: URLSession
     private let baseUrl: String
 
@@ -11,14 +10,12 @@ final public class NetworkClient: HttpClient {
         session: URLSession? = nil,
         baseUrl: String,
         defaultHeaders: [String: String] = [:],
-        timeout: TimeInterval = 30.0,
         retry: Retry = .none
     ) {
         self.session =
         session
         ?? {
             let configuration = URLSessionConfiguration.default
-            configuration.timeoutIntervalForRequest = timeout
             configuration.httpAdditionalHeaders = defaultHeaders
 
             return URLSession(configuration: configuration)
@@ -26,7 +23,6 @@ final public class NetworkClient: HttpClient {
 
         self.headers = defaultHeaders
         self.retry = retry
-        self.timeout = timeout
         self.baseUrl = baseUrl
     }
 

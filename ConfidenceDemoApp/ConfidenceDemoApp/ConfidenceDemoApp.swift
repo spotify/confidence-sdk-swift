@@ -11,6 +11,7 @@ class Status: ObservableObject {
     @Published var state: State = .unknown
 }
 
+
 @main
 struct ConfidenceDemoApp: App {
     @StateObject private var lifecycleObserver = ConfidenceAppLifecycleProducer()
@@ -22,30 +23,19 @@ struct ConfidenceDemoApp: App {
                 .withContext(initialContext: ["targeting_key": ConfidenceValue(string: UUID.init().uuidString)])
                 .withRegion(region: .europe)
                 .build()
+
             let status = Status()
 
             ContentView(confidence: confidence, status: status)
                 .task {
                     do {
                         try await self.setup(confidence: confidence)
-                        confidence.track(producer: lifecycleObserver)
+                        confidence.track(producer: lifecycleObserver())
                         status.state = .ready
                     } catch {
                         status.state = .error(error)
                         print(error.localizedDescription)
                     }
-                }
-                .onAppear {
-                    confidence.track(
-                        eventName: "ui-component-appeared",
-                        message: ["sceren": .init(string: "demo_app")]
-                    )
-                }
-                .onDisappear {
-                    confidence.track(
-                        eventName: "ui-component-disappeared",
-                        message: ["sceren": .init(string: "demo_app")]
-                    )
                 }
         }
     }

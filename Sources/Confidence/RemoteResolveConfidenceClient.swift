@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
@@ -28,7 +27,7 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
-            evaluationContext: try NetworkTypeMapper.from(value: ctx),
+            evaluationContext: TypeMapper.convert(structure: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve,
             sdk: Sdk(id: metadata.name, version: metadata.version)
@@ -72,7 +71,9 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                 resolveReason: resolvedFlag.reason)
         }
 
-        let value = try TypeMapper.from(object: responseValue, schema: responseFlagSchema)
+        let value = ConfidenceValue(
+            structure: try TypeMapper.convert(structure: responseValue, schema: responseFlagSchema)
+        )
         let variant = resolvedFlag.variant.isEmpty ? nil : resolvedFlag.variant
 
         return ResolvedValue(
@@ -116,7 +117,7 @@ struct ResolvedFlag: Codable {
 public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case unspecified = "RESOLVE_REASON_UNSPECIFIED"
     case match = "RESOLVE_REASON_MATCH"
-    case stale = "RESOLVE_REAOSON_STALE"
+    case stale = "RESOLVE_REASON_STALE"
     case noSegmentMatch = "RESOLVE_REASON_NO_SEGMENT_MATCH"
     case noTreatmentMatch = "RESOLVE_REASON_NO_TREATMENT_MATCH"
     case archived = "RESOLVE_REASON_FLAG_ARCHIVED"

@@ -1,10 +1,8 @@
 import Foundation
 import Combine
-import Common
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
-    public var timeout: TimeInterval
     public var region: ConfidenceRegion
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
@@ -21,7 +19,6 @@ public class Confidence: ConfidenceEventSender {
 
     required init(
         clientSecret: String,
-        timeout: TimeInterval,
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
         flagApplier: FlagApplier,
@@ -33,7 +30,6 @@ public class Confidence: ConfidenceEventSender {
     ) {
         self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
-        self.timeout = timeout
         self.region = region
         self.storage = storage
         self.contextSubject.value = context
@@ -89,30 +85,6 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func track(producer: ConfidenceProducer) {
-        if let eventProducer = producer as? ConfidenceEventProducer {
-            eventProducer.produceEvents()
-                .sink { [weak self] event in
-                guard let self = self else {
-                    return
-                }
-                self.track(eventName: event.name, message: event.message)
-                }
-            .store(in: &cancellables)
-        }
-
-        if let contextProducer = producer as? ConfidenceContextProducer {
-            contextProducer.produceContexts()
-                .sink { [weak self] context in
-                guard let self = self else {
-                    return
-                }
-                self.putContext(context: context)
-                }
-            .store(in: &cancellables)
-        }
-    }
-
     public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
         try self.cache.evaluate(
             flagName: key,
@@ -131,7 +103,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     func isStorageEmpty() -> Bool {
-        return false
+        return storage.isEmpty()
     }
 
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
@@ -148,6 +120,30 @@ public class Confidence: ConfidenceEventSender {
             context: getContext()
         )
     }
+
+    public func track(producer: ConfidenceProducer) {
+            if let eventProducer = producer as? ConfidenceEventProducer {
+                eventProducer.produceEvents()
+                    .sink { [weak self] event in
+                    guard let self = self else {
+                        return
+                    }
+                    self.track(eventName: event.name, message: event.message)
+                    }
+                .store(in: &cancellables)
+            }
+
+            if let contextProducer = producer as? ConfidenceContextProducer {
+                contextProducer.produceContexts()
+                    .sink { [weak self] context in
+                    guard let self = self else {
+                        return
+                    }
+                    self.putContext(context: context)
+                    }
+                .store(in: &cancellables)
+            }
+        }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
         confidenceQueue.sync {  [weak self] in
@@ -212,7 +208,6 @@ public class Confidence: ConfidenceEventSender {
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,
-            timeout: timeout,
             region: region,
             eventSenderEngine: eventSenderEngine,
             flagApplier: flagApplier,
@@ -226,7 +221,6 @@ public class Confidence: ConfidenceEventSender {
 extension Confidence {
     public class Builder {
         let clientSecret: String
-        var timeout: TimeInterval = 10.0
         internal var flagApplier: FlagApplier?
         internal var storage: Storage?
         internal let eventStorage: EventStorage
@@ -236,6 +230,9 @@ extension Confidence {
         var visitorId: String?
         var initialContext: ConfidenceStruct = [:]
 
+        /**
+        Initializes the builder with the given credentails.
+        */
         public init(clientSecret: String) {
             self.clientSecret = clientSecret
             do {
@@ -266,17 +263,19 @@ extension Confidence {
             return self
         }
 
-        public func withTimeout(timeout: TimeInterval) -> Builder {
-            self.timeout = timeout
-            return self
-        }
-
-
+        /**
+        Sets the region for the network request to the Confidence backend.
+        The default is `global` and the requests are automatically routed to the closest server.
+        */
         public func withRegion(region: ConfidenceRegion) -> Builder {
             self.region = region
             return self
         }
 
+        /**
+        The SDK attaches a unique identifier to the Context, which is persisted across
+        restarts of the App but re-generated on every new install
+        */
         public func withVisitorId() -> Builder {
             self.visitorId = VisitorUtil().getId()
             return self
@@ -285,7 +284,6 @@ extension Confidence {
         public func build() -> Confidence {
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                timeout: timeout,
                 region: region)
             let metadata = ConfidenceMetadata(
                 name: "SDK_ID_SWIFT_CONFIDENCE",
@@ -313,7 +311,6 @@ extension Confidence {
                 flushPolicies: [SizeFlushPolicy(batchSize: 1)])
             return Confidence(
                 clientSecret: clientSecret,
-                timeout: timeout,
                 region: region,
                 eventSenderEngine: eventSenderEngine,
                 flagApplier: flagApplier,

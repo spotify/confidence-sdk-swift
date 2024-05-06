@@ -21,26 +21,16 @@ let package = Package(
         .package(url: "git@github.com:open-feature/swift-sdk.git", from: "0.1.0"),
     ],
     targets: [
-        // Internal definitions shared between Confidence and ConfidenceProvider
-        // These are not exposed to the consumers of Confidence or ConfidenceProvider
-        .target(
-            name: "Common",
-            dependencies: [],
-            plugins: []
-        ),
         .target(
             name: "Confidence",
-            dependencies: [
-                "Common"
-            ],
+            dependencies: [],
             plugins: []
         ),
         .target(
             name: "ConfidenceProvider",
             dependencies: [
                 .product(name: "OpenFeature", package: "swift-sdk"),
-                "Confidence",
-                "Common"
+                "Confidence"
             ],
             plugins: []
         ),
@@ -48,7 +38,6 @@ let package = Package(
             name: "ConfidenceProviderTests",
             dependencies: [
                 "ConfidenceProvider",
-                "Common",
             ]
         ),
         .testTarget(

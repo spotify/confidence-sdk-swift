@@ -1,5 +1,4 @@
 import Foundation
-import Common
 import os
 
 typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>

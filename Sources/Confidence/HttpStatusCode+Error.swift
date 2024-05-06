@@ -1,5 +1,4 @@
 import Foundation
-import Common
 
 extension HTTPURLResponse {
     func mapStatusToError(error: HttpError?, flag: String = "unknown") -> Error {

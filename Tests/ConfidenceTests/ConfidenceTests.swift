@@ -12,7 +12,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -39,7 +38,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -71,7 +69,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -98,7 +95,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -129,7 +125,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -160,7 +155,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -185,7 +179,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -213,7 +206,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -244,7 +236,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
@@ -277,7 +268,6 @@ final class ConfidenceTests: XCTestCase {
 
         let confidence = Confidence.init(
             clientSecret: "",
-            timeout: TimeInterval(),
             region: .europe,
             eventSenderEngine: EventSenderEngineMock(),
             flagApplier: FlagApplierMock(),
