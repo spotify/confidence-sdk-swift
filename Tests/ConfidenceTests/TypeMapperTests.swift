@@ -4,7 +4,7 @@ import XCTest
 
 @testable import Confidence
 
-class ValueConverterTest: XCTestCase {
+class TypeMapperTests: XCTestCase {
     func testNetworkToConfidence() throws {
         let networkStruct = NetworkStruct.init(fields: [
             "string": .string("test1"),
@@ -39,6 +39,7 @@ class ValueConverterTest: XCTestCase {
     func testConfidenceToNetwork() throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.timeZone = TimeZone.init(identifier: "UTC+01")
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
 
         let confidenceStruct: ConfidenceStruct = [
