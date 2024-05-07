@@ -5,17 +5,16 @@ import Combine
 
 public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, ConfidenceContextProducer, ObservableObject {
     public var currentProducedContext: CurrentValueSubject<ConfidenceStruct, Never> = CurrentValueSubject([:])
-    private var events = PassthroughSubject<Event?, Never>()
+    private var events: CurrentValueSubject<Event?, Never> = CurrentValueSubject(nil)
     private let queue = DispatchQueue(label: "com.confidence.lifecycle_producer")
     private var appNotifications: [NSNotification.Name] = [
         UIApplication.didEnterBackgroundNotification,
-        UIApplication.willEnterForegroundNotification,
-        UIApplication.didFinishLaunchingNotification
+        UIApplication.willEnterForegroundNotification
     ]
 
     private static var versionNameKey = "CONFIDENCE_VERSION_NAME_KEY"
     private static var buildNameKey = "CONFIDENCE_VERSIONN_KEY"
-    private var isLaunched = false
+    private static var appLaunchedEventName = "app-launched"
 
     public init() {
         for notification in appNotifications {
@@ -42,7 +41,8 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
     }
 
     public func produceEvents() -> AnyPublisher<Event, Never> {
-        events.compactMap { event in event }.eraseToAnyPublisher()
+        track(eventName: Self.appLaunchedEventName)
+        return events.compactMap { event in event }.eraseToAnyPublisher()
     }
 
     public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never> {
@@ -63,17 +63,13 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             "build": .init(string: currentBuild)
         ]
 
-        if eventName == "app-launched" && !isLaunched {
-            isLaunched = true
-            if previousBuild != currentBuild || previousVersion != currentVersion {
-                events.send(Event(name: "app-updated", message: message))
-                return
-            } else {
+        if eventName == Self.appLaunchedEventName {
+            if previousBuild == nil && previousVersion == nil {
                 events.send(Event(name: "app-installed", message: message))
-                return
+            } else if previousBuild != currentBuild || previousVersion != currentVersion {
+                events.send(Event(name: "app-updated", message: message))
             }
         }
-
         events.send(Event(name: eventName, message: message))
 
         UserDefaults.standard.setValue(currentVersion, forKey: Self.versionNameKey)
@@ -103,8 +99,6 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             updateContext(isForeground: false)
         case UIApplication.willEnterForegroundNotification:
             updateContext(isForeground: true)
-        case UIApplication.didFinishLaunchingNotification:
-            track(eventName: "app-launched")
         default:
             break
         }

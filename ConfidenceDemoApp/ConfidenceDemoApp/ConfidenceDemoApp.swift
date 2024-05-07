@@ -29,8 +29,9 @@ struct ConfidenceDemoApp: App {
             ContentView(confidence: confidence, status: status)
                 .task {
                     do {
+                        confidence.track(producer: ConfidenceScreenTracker())
+                        confidence.track(producer: lifecycleObserver)
                         try await self.setup(confidence: confidence)
-                        confidence.track(producer: lifecycleObserver())
                         status.state = .ready
                     } catch {
                         status.state = .error(error)
