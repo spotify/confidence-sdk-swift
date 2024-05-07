@@ -2,8 +2,8 @@ import Foundation
 import Combine
 
 /**
- ConfidenceContextProducer or ConfidenceEventProducer
- */
+ConfidenceContextProducer or ConfidenceEventProducer
+*/
 public protocol ConfidenceProducer {
 }
 
@@ -18,15 +18,15 @@ public struct Event {
 }
 
 /**
- ConfidenceContextProducer implementer pushses context changes in a Publisher fashion
- */
+ConfidenceContextProducer implementer pushses context changes in a Publisher fashion
+*/
 public protocol ConfidenceContextProducer: ConfidenceProducer {
     func produceContexts() -> AnyPublisher<ConfidenceStruct, Never>
 }
 
 /**
- ConfidenceContextProducer implementer emit events in a Publisher fashion
- */
+ConfidenceContextProducer implementer emit events in a Publisher fashion
+*/
 public protocol ConfidenceEventProducer: ConfidenceProducer {
     func produceEvents() -> AnyPublisher<Event, Never>
 }
