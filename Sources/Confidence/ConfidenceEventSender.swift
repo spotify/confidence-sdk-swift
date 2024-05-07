@@ -9,5 +9,8 @@ public protocol ConfidenceEventSender: Contextual {
     according to the configured flushing logic
     */
     func track(eventName: String, message: ConfidenceStruct)
+    /**
+    The ConfidenceProducer can be used to push context changes or event tracking
+    */
     func track(producer: ConfidenceProducer)
 }

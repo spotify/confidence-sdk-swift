@@ -5,10 +5,6 @@ import Combine
 
 public class ConfidenceScreenTracker: ConfidenceEventProducer {
     private var events = PassthroughSubject<Event, Never>()
-    public func produceEvents() -> AnyPublisher<Event, Never> {
-        events.eraseToAnyPublisher()
-    }
-
     static let notificationName = Notification.Name(rawValue: "ConfidenceScreenTracker")
     static let screenName = "screen_name"
     static let messageKey = "message_json"
@@ -49,6 +45,10 @@ public class ConfidenceScreenTracker: ConfidenceEventProducer {
                     self.events.send(Event(name: name, message: message))
                 }
         }
+    }
+
+    public func produceEvents() -> AnyPublisher<Event, Never> {
+        events.eraseToAnyPublisher()
     }
 
     private func swizzle(forClass: AnyClass, original: Selector, new: Selector) {

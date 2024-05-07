@@ -4,12 +4,9 @@ import UIKit
 import Combine
 
 public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, ConfidenceContextProducer, ObservableObject {
-    private var events = PassthroughSubject<Event?, Never>()
-    public func produceEvents() -> AnyPublisher<Event, Never> {
-        events.compactMap { event in event }.eraseToAnyPublisher()
-    }
-    private let queue = DispatchQueue(label: "lifecycle_producer")
     public var currentProducedContext: CurrentValueSubject<ConfidenceStruct, Never> = CurrentValueSubject([:])
+    private var events = PassthroughSubject<Event?, Never>()
+    private let queue = DispatchQueue(label: "com.confidence.lifecycle_producer")
     private var appNotifications: [NSNotification.Name] = [
         UIApplication.didEnterBackgroundNotification,
         UIApplication.willEnterForegroundNotification,
@@ -22,8 +19,8 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         UIApplication.backgroundRefreshStatusDidChangeNotification
     ]
 
-    static var versionNameKey = "CONFIDENCE_VERSION_NAME_KEY"
-    static var buildNameKey = "CONFIDENCE_VERSIONN_KEY"
+    private static var versionNameKey = "CONFIDENCE_VERSION_NAME_KEY"
+    private static var buildNameKey = "CONFIDENCE_VERSIONN_KEY"
     private var isLaunched = false
 
     public init() {
@@ -48,6 +45,10 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+
+    public func produceEvents() -> AnyPublisher<Event, Never> {
+        events.compactMap { event in event }.eraseToAnyPublisher()
     }
 
     public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never> {
@@ -122,7 +123,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             let options = notification.userInfo as? [UIApplication.LaunchOptionsKey: Any]
             let sourceApp: String = options?[UIApplication.LaunchOptionsKey.sourceApplication] as? String ?? ""
             let url: String = options?[UIApplication.LaunchOptionsKey.url] as? String ?? ""
-            track(eventName: "app-launch", sourceApp: sourceApp, url: url)
+            track(eventName: "app-launched", sourceApp: sourceApp, url: url)
         case UIApplication.didBecomeActiveNotification:
             track(eventName: "app-active")
         case UIApplication.willResignActiveNotification:
