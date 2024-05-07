@@ -5,7 +5,7 @@ import Combine
 
 public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, ConfidenceContextProducer, ObservableObject {
     public var currentProducedContext: CurrentValueSubject<ConfidenceStruct, Never> = CurrentValueSubject([:])
-    private var events: CurrentValueSubject<Event?, Never> = CurrentValueSubject(nil)
+    private var events: BufferedPassthrough<Event> = BufferedPassthrough()
     private let queue = DispatchQueue(label: "com.confidence.lifecycle_producer")
     private var appNotifications: [NSNotification.Name] = [
         UIApplication.didEnterBackgroundNotification,
@@ -42,7 +42,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
 
     public func produceEvents() -> AnyPublisher<Event, Never> {
         track(eventName: Self.appLaunchedEventName)
-        return events.compactMap { event in event }.eraseToAnyPublisher()
+        return events.publisher()
     }
 
     public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never> {

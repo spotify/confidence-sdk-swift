@@ -4,7 +4,7 @@ import UIKit
 import Combine
 
 public class ConfidenceScreenTracker: ConfidenceEventProducer {
-    private var events = PassthroughSubject<Event, Never>()
+    private var events = BufferedPassthrough<Event>()
     static let notificationName = Notification.Name(rawValue: "ConfidenceScreenTracker")
     static let screenName = "screen_name"
     static let messageKey = "message_json"
@@ -48,7 +48,7 @@ public class ConfidenceScreenTracker: ConfidenceEventProducer {
     }
 
     public func produceEvents() -> AnyPublisher<Event, Never> {
-        events.eraseToAnyPublisher()
+        events.publisher()
     }
 
     private func swizzle(forClass: AnyClass, original: Selector, new: Selector) {
