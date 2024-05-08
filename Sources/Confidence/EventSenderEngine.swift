@@ -22,6 +22,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let uploader: ConfidenceClient
     private let clientSecret: String
     private let payloadMerger: PayloadMerger = PayloadMergerImpl()
+    private let queue = DispatchQueue(label: "engine")
 
     init(
         clientSecret: String,
@@ -54,19 +55,30 @@ final class EventSenderEngineImpl: EventSenderEngine {
         uploadReqChannel.sink { [weak self] _ in
             do {
                 guard let self = self else { return }
-                try self.storage.startNewBatch()
-                let ids = try storage.batchReadyIds()
-                for id in ids {
-                    let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
-                        .compactMap { event in
-                            return NetworkEvent(
-                                eventDefinition: event.name,
-                                payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
-                                eventTime: Date.backport.toISOString(date: event.eventTime))
+                var batches: [[ConfidenceEvent]] = []
+                try queue.sync {
+                    try self.storage.startNewBatch()
+                    let ids = try storage.batchReadyIds()
+                    for id in ids {
+                        let events: [ConfidenceEvent] = try self.storage.eventsFrom(id: id)
+                        batches.append(events)
+                        do {
+                            try storage.remove(id: id)
+                        } catch {
                         }
-                    let shouldCleanup = try await self.uploader.upload(events: events)
-                    if shouldCleanup {
-                        try storage.remove(id: id)
+                    }
+                }
+
+                for events in batches {
+                    let batch = events.compactMap { event in
+                        return NetworkEvent(
+                            eventDefinition: event.name,
+                            payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
+                            eventTime: Date.backport.toISOString(date: event.eventTime))
+                    }
+                    let shouldCleanup = try await self.uploader.upload(events: batch)
+                    if !shouldCleanup {
+                        try storage.writeEvents(events: events)
                     }
                 }
             } catch {

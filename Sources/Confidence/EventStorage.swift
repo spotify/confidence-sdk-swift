@@ -10,6 +10,7 @@ struct ConfidenceEvent: Codable {
 internal protocol EventStorage {
     func startNewBatch() throws
     func writeEvent(event: ConfidenceEvent) throws
+    func writeEvents(events: [ConfidenceEvent]) throws
     func batchReadyIds() throws -> [String]
     func eventsFrom(id: String) throws -> [ConfidenceEvent]
     func remove(id: String) throws
@@ -40,6 +41,23 @@ internal class EventStorageImpl: EventStorage {
                 at: currentFileName,
                 to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
             try resetCurrentFile()
+        }
+    }
+
+    func writeEvents(events: [ConfidenceEvent]) throws {
+        try storageQueue.sync {
+            guard let currentFileHandle = currentFileHandle else {
+                return
+            }
+            let encoder = JSONEncoder()
+            let serialied = try encoder.encode(events)
+            let delimiter = "\n".data(using: .utf8)
+            guard let delimiter else {
+                return
+            }
+            currentFileHandle.seekToEndOfFile()
+            try currentFileHandle.write(contentsOf: delimiter)
+            try currentFileHandle.write(contentsOf: serialied)
         }
     }
 
@@ -95,7 +113,9 @@ internal class EventStorageImpl: EventStorage {
     func remove(id: String) throws {
         try storageQueue.sync {
             let fileUrl = folderURL.appendingPathComponent(id)
-            try FileManager.default.removeItem(at: fileUrl)
+            if FileManager.default.fileExists(atPath: fileUrl.path) {
+                try FileManager.default.removeItem(at: fileUrl)
+            }
         }
     }
 
@@ -114,7 +134,7 @@ internal class EventStorageImpl: EventStorage {
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
             // Create a brand new file
-            let fileUrl = folderURL.appendingPathComponent(String(Date().timeIntervalSince1970))
+            let fileUrl = folderURL.appendingPathComponent(String(UUID().uuidString))
             FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
             self.currentFileUrl = fileUrl
             self.currentFileHandle = try FileHandle(forWritingTo: fileUrl)

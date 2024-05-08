@@ -9,12 +9,14 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
     private let queue = DispatchQueue(label: "com.confidence.lifecycle_producer")
     private var appNotifications: [NSNotification.Name] = [
         UIApplication.didEnterBackgroundNotification,
-        UIApplication.willEnterForegroundNotification
+        UIApplication.willEnterForegroundNotification,
+        UIApplication.didFinishLaunchingNotification,
+        UIApplication.didBecomeActiveNotification
     ]
 
     private static var versionNameKey = "CONFIDENCE_VERSION_NAME_KEY"
     private static var buildNameKey = "CONFIDENCE_VERSIONN_KEY"
-    private static var appLaunchedEventName = "app-launched"
+    private let appLaunchedEventName = "app-launched"
 
     public init() {
         for notification in appNotifications {
@@ -41,8 +43,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
     }
 
     public func produceEvents() -> AnyPublisher<Event, Never> {
-        track(eventName: Self.appLaunchedEventName)
-        return events.publisher()
+        events.publisher()
     }
 
     public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never> {
@@ -63,7 +64,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             "build": .init(string: currentBuild)
         ]
 
-        if eventName == Self.appLaunchedEventName {
+        if eventName == self.appLaunchedEventName {
             if previousBuild == nil && previousVersion == nil {
                 events.send(Event(name: "app-installed", message: message))
             } else if previousBuild != currentBuild || previousVersion != currentVersion {
@@ -99,6 +100,8 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             updateContext(isForeground: false)
         case UIApplication.willEnterForegroundNotification:
             updateContext(isForeground: true)
+        case UIApplication.didBecomeActiveNotification:
+            track(eventName: appLaunchedEventName)
         default:
             break
         }
