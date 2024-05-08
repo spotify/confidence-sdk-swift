@@ -22,7 +22,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let uploader: ConfidenceClient
     private let clientSecret: String
     private let payloadMerger: PayloadMerger = PayloadMergerImpl()
-    private let queue = DispatchQueue(label: "engine")
+    private let queue = DispatchQueue(label: "com.confidence.engine")
 
     init(
         clientSecret: String,
