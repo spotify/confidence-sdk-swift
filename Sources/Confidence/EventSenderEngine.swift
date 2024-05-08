@@ -55,30 +55,28 @@ final class EventSenderEngineImpl: EventSenderEngine {
         uploadReqChannel.sink { [weak self] _ in
             do {
                 guard let self = self else { return }
-                var batches: [[ConfidenceEvent]] = []
+                var batches: [String: [ConfidenceEvent]] = [:]
                 try queue.sync {
-                    try self.storage.startNewBatch()
-                    let ids = try storage.batchReadyIds()
+                    try self.storage.startNewBatch() // Unmarked files are now READY
+                    let ids = try storage.batchReadyIds() // Return READY and mark them as IN_FLIGHT
                     for id in ids {
                         let events: [ConfidenceEvent] = try self.storage.eventsFrom(id: id)
-                        batches.append(events)
-                        do {
-                            try storage.remove(id: id)
-                        } catch {
-                        }
+                        batches[id] = events
                     }
                 }
 
-                for events in batches {
-                    let batch = events.compactMap { event in
+                for batch in batches {
+                    let events = batch.value.compactMap { event in
                         return NetworkEvent(
                             eventDefinition: event.name,
                             payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
                             eventTime: Date.backport.toISOString(date: event.eventTime))
                     }
-                    let shouldCleanup = try await self.uploader.upload(events: batch)
-                    if !shouldCleanup {
-                        try storage.writeEvents(events: events)
+                    let shouldCleanup = try await self.uploader.upload(events: events)
+                    if shouldCleanup {
+                        try storage.remove(id: batch.key) // Done, remove
+                    } else {
+                        try storage.ready(id: batch.key) // Mark them READY again
                     }
                 }
             } catch {

@@ -14,10 +14,12 @@ internal protocol EventStorage {
     func batchReadyIds() throws -> [String]
     func eventsFrom(id: String) throws -> [ConfidenceEvent]
     func remove(id: String) throws
+    func ready(id: String) throws
 }
 
 internal class EventStorageImpl: EventStorage {
     private let READYTOSENDEXTENSION = "READY"
+    private let INFLIGHTEXTENSION = "IN_FLIGHT"
     private let storageQueue = DispatchQueue(label: "com.confidence.events.storage")
     private var folderURL: URL
     private var currentFileUrl: URL?
@@ -29,6 +31,7 @@ internal class EventStorageImpl: EventStorage {
             try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
         }
         try resetCurrentFile()
+        // TODO Move all INFLIGHT to READY
     }
 
     func startNewBatch() throws {
@@ -39,7 +42,9 @@ internal class EventStorageImpl: EventStorage {
             try currentFileHandle?.close()
             try FileManager.default.moveItem(
                 at: currentFileName,
-                to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
+                to: currentFileName
+                    .deletingPathExtension()
+                    .appendingPathExtension(READYTOSENDEXTENSION))
             try resetCurrentFile()
         }
     }
@@ -82,11 +87,33 @@ internal class EventStorageImpl: EventStorage {
     func batchReadyIds() throws -> [String] {
         try storageQueue.sync {
             let fileUrls = try FileManager.default.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-            return fileUrls.filter { url in
+            let readyUrls = fileUrls.filter { url in
                 url.pathExtension == READYTOSENDEXTENSION
             }
-            .map { url in
-                url.lastPathComponent
+            try readyUrls.forEach { fileUrl in
+                try FileManager.default.moveItem(
+                    at: fileUrl,
+                    to: fileUrl
+                        .deletingPathExtension()
+                        .appendingPathExtension(INFLIGHTEXTENSION))
+            }
+            return readyUrls.map { url in
+                url.deletingPathExtension()
+                    .appendingPathExtension(INFLIGHTEXTENSION)
+                    .lastPathComponent
+            }
+        }
+    }
+
+    func ready(id: String) throws {
+        try storageQueue.sync {
+            let fileUrl = folderURL.appendingPathComponent(id)
+            if FileManager.default.fileExists(atPath: fileUrl.path) {
+                try FileManager.default.moveItem(
+                    at: fileUrl,
+                    to: fileUrl
+                        .deletingPathExtension()
+                        .appendingPathExtension(READYTOSENDEXTENSION))
             }
         }
     }

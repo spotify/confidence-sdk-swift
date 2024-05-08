@@ -18,6 +18,10 @@ final class EventUploaderMock: ConfidenceClient {
 }
 
 final class EventStorageMock: EventStorage {
+    func ready(id: String) throws {
+        // TODO
+    }
+    
     private var events: [ConfidenceEvent] = []
     private var batches: [String: [ConfidenceEvent]] = [:]
     var removeCallback: () -> Void = {}

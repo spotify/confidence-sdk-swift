@@ -1,6 +1,10 @@
 import Foundation
 
 final class EventStorageInMemory: EventStorage {
+    func ready(id: String) throws {
+        // TODO
+    }
+
     private var events: [ConfidenceEvent] = []
     private var batches: [String: [ConfidenceEvent]] = [:]
     func startNewBatch() throws {
