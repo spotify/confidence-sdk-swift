@@ -10,7 +10,6 @@ struct ConfidenceEvent: Codable {
 internal protocol EventStorage {
     func startNewBatch() throws
     func writeEvent(event: ConfidenceEvent) throws
-    func writeEvents(events: [ConfidenceEvent]) throws
     func batchReadyIds() throws -> [String]
     func eventsFrom(id: String) throws -> [ConfidenceEvent]
     func remove(id: String) throws
@@ -41,23 +40,6 @@ internal class EventStorageImpl: EventStorage {
                 at: currentFileName,
                 to: currentFileName.appendingPathExtension(READYTOSENDEXTENSION))
             try resetCurrentFile()
-        }
-    }
-
-    func writeEvents(events: [ConfidenceEvent]) throws {
-        try storageQueue.sync {
-            guard let currentFileHandle = currentFileHandle else {
-                return
-            }
-            let encoder = JSONEncoder()
-            let serialied = try encoder.encode(events)
-            let delimiter = "\n".data(using: .utf8)
-            guard let delimiter else {
-                return
-            }
-            currentFileHandle.seekToEndOfFile()
-            try currentFileHandle.write(contentsOf: delimiter)
-            try currentFileHandle.write(contentsOf: serialied)
         }
     }
 
