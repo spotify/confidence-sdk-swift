@@ -22,6 +22,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let uploader: ConfidenceClient
     private let clientSecret: String
     private let payloadMerger: PayloadMerger = PayloadMergerImpl()
+    private let semaphore = DispatchSemaphore(value: 1)
 
     init(
         clientSecret: String,
@@ -52,10 +53,21 @@ final class EventSenderEngineImpl: EventSenderEngine {
         .store(in: &cancellables)
 
         uploadReqChannel.sink { [weak self] _ in
+            guard let self = self else { return }
+            await self.upload()
+        }
+        .store(in: &cancellables)
+    }
+
+    func upload() async {
+        await withSemaphore { [weak self] in
+            guard let self = self else { return }
             do {
-                guard let self = self else { return }
                 try self.storage.startNewBatch()
                 let ids = try storage.batchReadyIds()
+                if ids.isEmpty {
+                    return
+                }
                 for id in ids {
                     let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
                         .compactMap { event in
@@ -64,7 +76,13 @@ final class EventSenderEngineImpl: EventSenderEngine {
                                 payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
                                 eventTime: Date.backport.toISOString(date: event.eventTime))
                         }
-                    let shouldCleanup = try await self.uploader.upload(events: events)
+                    var shouldCleanup = false
+                    if events.isEmpty {
+                        shouldCleanup = true
+                    } else {
+                        shouldCleanup = try await self.uploader.upload(events: events)
+                    }
+
                     if shouldCleanup {
                         try storage.remove(id: id)
                     }
@@ -72,7 +90,12 @@ final class EventSenderEngineImpl: EventSenderEngine {
             } catch {
             }
         }
-        .store(in: &cancellables)
+    }
+
+    func withSemaphore(callback: @escaping () async -> Void) async {
+        semaphore.wait()
+        await callback()
+        semaphore.signal()
     }
 
     func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) {

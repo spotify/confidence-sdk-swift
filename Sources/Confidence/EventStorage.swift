@@ -95,7 +95,9 @@ internal class EventStorageImpl: EventStorage {
     func remove(id: String) throws {
         try storageQueue.sync {
             let fileUrl = folderURL.appendingPathComponent(id)
-            try FileManager.default.removeItem(at: fileUrl)
+            if FileManager.default.fileExists(atPath: fileUrl.path) {
+                try FileManager.default.removeItem(at: fileUrl)
+            }
         }
     }
 
@@ -114,7 +116,7 @@ internal class EventStorageImpl: EventStorage {
             self.currentFileHandle = try FileHandle(forWritingTo: currentFile)
         } else {
             // Create a brand new file
-            let fileUrl = folderURL.appendingPathComponent(String(Date().timeIntervalSince1970))
+            let fileUrl = folderURL.appendingPathComponent(String(UUID().uuidString))
             FileManager.default.createFile(atPath: fileUrl.path, contents: nil)
             self.currentFileUrl = fileUrl
             self.currentFileHandle = try FileHandle(forWritingTo: fileUrl)
