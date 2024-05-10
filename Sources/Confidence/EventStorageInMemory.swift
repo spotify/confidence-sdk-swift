@@ -8,10 +8,6 @@ final class EventStorageInMemory: EventStorage {
         events.removeAll()
     }
 
-    func writeEvents(events: [ConfidenceEvent]) throws {
-        self.events += events
-    }
-
     func writeEvent(event: ConfidenceEvent) throws {
         events.append(event)
     }

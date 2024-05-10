@@ -10,7 +10,6 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
     private var appNotifications: [NSNotification.Name] = [
         UIApplication.didEnterBackgroundNotification,
         UIApplication.willEnterForegroundNotification,
-        UIApplication.didFinishLaunchingNotification,
         UIApplication.didBecomeActiveNotification
     ]
 
