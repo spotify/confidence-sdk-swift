@@ -1,5 +1,62 @@
 # Changelog
 
+## [0.2.0](https://github.com/spotify/confidence-sdk-swift/compare/0.1.4...0.2.0) (2024-05-10)
+
+
+### 🐛 Bug Fixes
+
+* Add payload merger to merge context and message ([#108](https://github.com/spotify/confidence-sdk-swift/issues/108)) ([3386dd6](https://github.com/spotify/confidence-sdk-swift/commit/3386dd6a38f6987ea27eb0aa0171c7267ca0bb3d))
+* API call in Demo app ([#119](https://github.com/spotify/confidence-sdk-swift/issues/119)) ([bfdc949](https://github.com/spotify/confidence-sdk-swift/commit/bfdc94983d6bc1c24ff65a148637d38316bec04c))
+* Fix cancel async ([#103](https://github.com/spotify/confidence-sdk-swift/issues/103)) ([873ebe7](https://github.com/spotify/confidence-sdk-swift/commit/873ebe7633060e926543432dd9a670d759bfe9bf))
+* Improve testSlowFirstResolveWillbeCancelledOnSecondResolve ([#109](https://github.com/spotify/confidence-sdk-swift/issues/109)) ([0624dee](https://github.com/spotify/confidence-sdk-swift/commit/0624dee2b50fd69b48a0c1cddfaf642495abfc24))
+* Provider cache and resolver are accessed safely ([#107](https://github.com/spotify/confidence-sdk-swift/issues/107)) ([d166712](https://github.com/spotify/confidence-sdk-swift/commit/d1667125ca6dbd520eab1f0dc3ba568966197f6d))
+* Provider still works with OF ctx nil ([#115](https://github.com/spotify/confidence-sdk-swift/issues/115)) ([4d58327](https://github.com/spotify/confidence-sdk-swift/commit/4d583271fcd3e3655ca60036724f2e500ce783fc))
+* Revert "fix: Reconciliation bug" ([#117](https://github.com/spotify/confidence-sdk-swift/issues/117)) ([45135ae](https://github.com/spotify/confidence-sdk-swift/commit/45135aeebc406fa4c2cc719ca5ef5f36ff4ad0c6))
+* Track API ([#105](https://github.com/spotify/confidence-sdk-swift/issues/105)) ([996b272](https://github.com/spotify/confidence-sdk-swift/commit/996b272e414ef6e6642126dc9fc5e1f33e5b8159))
+* use the current strategy in resolve function ([#101](https://github.com/spotify/confidence-sdk-swift/issues/101)) ([eafe8bf](https://github.com/spotify/confidence-sdk-swift/commit/eafe8bf59ea71dfeaae2b3bcd8599a05870041c5))
+* Visitor Id context key ([e78344d](https://github.com/spotify/confidence-sdk-swift/commit/e78344d1ded3254dd3edb9e9f6930c878f8d8bde))
+* Visitor id key ([#116](https://github.com/spotify/confidence-sdk-swift/issues/116)) ([e78344d](https://github.com/spotify/confidence-sdk-swift/commit/e78344d1ded3254dd3edb9e9f6930c878f8d8bde))
+
+
+### ✨ New Features
+
+* Add ConfidenceValue ([#84](https://github.com/spotify/confidence-sdk-swift/issues/84)) ([8de4b78](https://github.com/spotify/confidence-sdk-swift/commit/8de4b7805378866023e939aec39c71a78ba771fe))
+* add EventStorage ([#87](https://github.com/spotify/confidence-sdk-swift/issues/87)) ([fdc7543](https://github.com/spotify/confidence-sdk-swift/commit/fdc754301c8c4bd497a132fdee868213e73e56b7))
+* add listening for context changes ([#97](https://github.com/spotify/confidence-sdk-swift/issues/97)) ([0d1cefd](https://github.com/spotify/confidence-sdk-swift/commit/0d1cefdeb766a3d24c7d05be5f834d8855f271f3))
+* Add resolving against confidence context ([#94](https://github.com/spotify/confidence-sdk-swift/issues/94)) ([a7cbb19](https://github.com/spotify/confidence-sdk-swift/commit/a7cbb195dd06d64e9ff12686d17994820ce6d90e))
+* Add visitorID context ([#106](https://github.com/spotify/confidence-sdk-swift/issues/106)) ([0ca65ea](https://github.com/spotify/confidence-sdk-swift/commit/0ca65eaa7157fdf7dca4eac052f849cd6c3c9fd6))
+* Append EvalContext to Events ([#85](https://github.com/spotify/confidence-sdk-swift/issues/85)) ([56f8130](https://github.com/spotify/confidence-sdk-swift/commit/56f81302aed36d4f0b6e7960f6c350b33708f632))
+* Confidence value is decodable and encodable with schema ([#92](https://github.com/spotify/confidence-sdk-swift/issues/92)) ([444a191](https://github.com/spotify/confidence-sdk-swift/commit/444a1914c13a974fb779cb047ad225e5d0ef4a2a))
+* Event sender engine ([#88](https://github.com/spotify/confidence-sdk-swift/issues/88)) ([b223804](https://github.com/spotify/confidence-sdk-swift/commit/b223804858d920c77e4a5cd77152d3b83b1c76e5))
+* Event Uploader ([#91](https://github.com/spotify/confidence-sdk-swift/issues/91)) ([b5ba3e0](https://github.com/spotify/confidence-sdk-swift/commit/b5ba3e05e0b727bda13dd4868e277bef8a5e3394))
+* handle status codes for retrying in uploader ([#95](https://github.com/spotify/confidence-sdk-swift/issues/95)) ([85b89ed](https://github.com/spotify/confidence-sdk-swift/commit/85b89ed592828b7e8d14ea60a914f8edca72416e))
+* Implement `withContext` ([#89](https://github.com/spotify/confidence-sdk-swift/issues/89)) ([d0dddee](https://github.com/spotify/confidence-sdk-swift/commit/d0dddee43da840bb4d31c645295a2cb002aefcfc))
+* Manage Events - track app lifecycle events ([#118](https://github.com/spotify/confidence-sdk-swift/issues/118)) ([e74af7c](https://github.com/spotify/confidence-sdk-swift/commit/e74af7c8bbafc41046c3435951f9335e3ad517a6))
+* Move flag evaluation confidence ([#113](https://github.com/spotify/confidence-sdk-swift/issues/113)) ([5f3c8aa](https://github.com/spotify/confidence-sdk-swift/commit/5f3c8aa1ecd5cda2374783bcfa9634efb53233b4))
+* Return previous value on Provider STALE ([#98](https://github.com/spotify/confidence-sdk-swift/issues/98)) ([896be5e](https://github.com/spotify/confidence-sdk-swift/commit/896be5eadef82caaa35a5452a4b8ea333449c9ff))
+
+
+### 🧹 Chore
+
+* release 0.2.0 ([#120](https://github.com/spotify/confidence-sdk-swift/issues/120)) ([34f603f](https://github.com/spotify/confidence-sdk-swift/commit/34f603f21812e0135caebe2660a67c2a2a22b792))
+
+
+### 📚 Documentation
+
+* Add apply documentation note ([#80](https://github.com/spotify/confidence-sdk-swift/issues/80)) ([1bd9525](https://github.com/spotify/confidence-sdk-swift/commit/1bd9525e5e0a7d40834aba7bc962225978a36f91))
+* Confidence SDK and Tracked Events ([#112](https://github.com/spotify/confidence-sdk-swift/issues/112)) ([18ab190](https://github.com/spotify/confidence-sdk-swift/commit/18ab1902a531276b0ce956acf7ccffda7b3f9c77))
+* Documentation for public protocols/constructors ([#111](https://github.com/spotify/confidence-sdk-swift/issues/111)) ([01dda08](https://github.com/spotify/confidence-sdk-swift/commit/01dda0868abba7ae456914c1b7a1e4c1117834e1))
+* STALE behaviour ([#102](https://github.com/spotify/confidence-sdk-swift/issues/102)) ([d4ec757](https://github.com/spotify/confidence-sdk-swift/commit/d4ec757a9c8011917eb1d86df9e8d7d2b0ffca11))
+
+
+### 🔄 Refactoring
+
+* Add Confidence Library scaffolding ([#83](https://github.com/spotify/confidence-sdk-swift/issues/83)) ([2e49e23](https://github.com/spotify/confidence-sdk-swift/commit/2e49e2370d29d63450cc094894743fae92914df5))
+* Add message container to payload ([#99](https://github.com/spotify/confidence-sdk-swift/issues/99)) ([f0bf363](https://github.com/spotify/confidence-sdk-swift/commit/f0bf36358b1d691831845d576b9b942127180ef7))
+* Rename product ([#114](https://github.com/spotify/confidence-sdk-swift/issues/114)) ([587a778](https://github.com/spotify/confidence-sdk-swift/commit/587a7789395389afea6255bc398edfcb78bb9182))
+* Rename product name ([587a778](https://github.com/spotify/confidence-sdk-swift/commit/587a7789395389afea6255bc398edfcb78bb9182))
+* send to track rename ([#100](https://github.com/spotify/confidence-sdk-swift/issues/100)) ([3c4febf](https://github.com/spotify/confidence-sdk-swift/commit/3c4febf10ca2919c4e2b20d831d371180513d0b8))
+
 ## [0.1.4](https://github.com/spotify/confidence-openfeature-provider-swift/compare/0.1.3...0.1.4) (2024-02-08)
 
 
