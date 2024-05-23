@@ -145,6 +145,10 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    public func flush() {
+        eventSenderEngine.flush()
+    }
+
     private func withLock(callback: @escaping (Confidence) -> Void) {
         confidenceQueue.sync {  [weak self] in
             guard let self = self else {
@@ -308,7 +312,7 @@ extension Confidence {
                 clientSecret: clientSecret,
                 uploader: uploader,
                 storage: eventStorage,
-                flushPolicies: [SizeFlushPolicy(batchSize: 1)])
+                flushPolicies: [SizeFlushPolicy(batchSize: 10)])
             return Confidence(
                 clientSecret: clientSecret,
                 region: region,

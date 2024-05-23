@@ -18,8 +18,8 @@ final class EventUploaderMock: ConfidenceClient {
 }
 
 final class EventStorageMock: EventStorage {
-    private var events: [ConfidenceEvent] = []
-    private var batches: [String: [ConfidenceEvent]] = [:]
+    var events: [ConfidenceEvent] = []
+    var batches: [String: [ConfidenceEvent]] = [:]
     var removeCallback: () -> Void = {}
 
     func startNewBatch() throws {

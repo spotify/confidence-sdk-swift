@@ -13,4 +13,9 @@ public protocol ConfidenceEventSender: Contextual {
     The ConfidenceProducer can be used to push context changes or event tracking
     */
     func track(producer: ConfidenceProducer)
+
+    /**
+    Schedule a manual flush of the event data currently stored on disk
+    */
+    func flush()
 }
