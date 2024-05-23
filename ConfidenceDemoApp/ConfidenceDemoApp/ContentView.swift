@@ -32,6 +32,9 @@ struct ContentView: View {
                         color.color = .red
                     }
                 }
+                Button("Flush 🚽") {
+                    confidence.flush()
+                }
             }
             .padding()
         } else if case .error(let error) = status.state {
