@@ -10,6 +10,7 @@ protocol FlushPolicy {
 protocol EventSenderEngine {
     func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct)
     func shutdown()
+    func flush()
 }
 
 final class EventSenderEngineImpl: EventSenderEngine {
@@ -33,13 +34,15 @@ final class EventSenderEngineImpl: EventSenderEngine {
         self.uploader = uploader
         self.clientSecret = clientSecret
         self.storage = storage
-        self.flushPolicies = flushPolicies
+        self.flushPolicies = flushPolicies + [ManualFlushPolicy()]
 
         writeReqChannel.sink { [weak self] event in
             guard let self = self else { return }
-            do {
-                try self.storage.writeEvent(event: event)
-            } catch {
+            if event.name != manualFlushEvent.name { // skip storing flush events.
+                do {
+                    try self.storage.writeEvent(event: event)
+                } catch {
+                }
             }
 
             self.flushPolicies.forEach { policy in policy.hit(event: event) }
@@ -104,6 +107,10 @@ final class EventSenderEngineImpl: EventSenderEngine {
             payload: payloadMerger.merge(context: context, message: message),
             eventTime: Date.backport.now)
         )
+    }
+
+    func flush() {
+        writeReqChannel.send(manualFlushEvent)
     }
 
     func shutdown() {

@@ -135,4 +135,53 @@ final class EventSenderEngineTest: XCTestCase {
 
         XCTAssertEqual(storage.isEmpty(), false)
     }
+
+    func testManualFlushWorks() throws {
+        let uploaderMock = EventUploaderMock()
+        let storageMock = EventStorageMock()
+        let eventSenderEngine = EventSenderEngineImpl(
+            clientSecret: "CLIENT_SECRET",
+            uploader: uploaderMock,
+            storage: storageMock,
+            // no other flush policy is set which means that only manual flushes will trigger upload
+            flushPolicies: []
+        )
+
+        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        XCTAssertEqual(storageMock.events.count, 4)
+        XCTAssertNil(uploaderMock.calledRequest)
+
+        eventSenderEngine.flush()
+
+        let expectation = XCTestExpectation(description: "Upload finished")
+        let cancellable = uploaderMock.subject.sink { _ in
+            expectation.fulfill()
+        }
+        wait(for: [expectation], timeout: 1)
+        let uploadRequest = uploaderMock.calledRequest
+        XCTAssertEqual(uploadRequest?.count, 4)
+
+        cancellable.cancel()
+    }
+
+
+    func testManualFlushEventIsNotStored() throws {
+        let uploaderMock = EventUploaderMock()
+        let storageMock = EventStorageMock()
+        let eventSenderEngine = EventSenderEngineImpl(
+            clientSecret: "CLIENT_SECRET",
+            uploader: uploaderMock,
+            storage: storageMock,
+            // no other flush policy is set which means that only manual flushes will trigger upload
+            flushPolicies: []
+        )
+
+        eventSenderEngine.flush()
+
+        XCTAssertEqual(storageMock.events.count, 0)
+        XCTAssertNil(uploaderMock.calledRequest)
+    }
 }

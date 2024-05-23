@@ -145,6 +145,10 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    public func flush() {
+        eventSenderEngine.flush()
+    }
+
     private func withLock(callback: @escaping (Confidence) -> Void) {
         confidenceQueue.sync {  [weak self] in
             guard let self = self else {
