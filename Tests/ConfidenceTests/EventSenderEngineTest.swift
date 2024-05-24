@@ -40,18 +40,29 @@ final class ImmidiateFlushPolicy: FlushPolicy {
 }
 
 final class EventSenderEngineTest: XCTestCase {
+    // swiftlint:disable implicitly_unwrapped_optional
+    var writeQueue: DispatchQueue!
+    var uploaderMock: EventUploaderMock!
+    var storageMock: EventStorageMock!
+    // swiftlint:enable implicitly_unwrapped_optional
+
+    override func setUp() async throws {
+        writeQueue = DispatchQueue(label: "ConfidenceWriteQueue")
+        uploaderMock = EventUploaderMock()
+        storageMock = EventStorageMock()
+    }
+
     func testPayloadOnEmit() throws {
-        let flushPolicies = [MinSizeFlushPolicy(maxSize: 1)]
-        let uploader = EventUploaderMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
-            uploader: uploader,
-            storage: EventStorageMock(),
-            flushPolicies: flushPolicies
+            uploader: uploaderMock,
+            storage: storageMock,
+            flushPolicies: [MinSizeFlushPolicy(maxSize: 1)],
+            writeQueue: writeQueue
         )
 
         let expectation = XCTestExpectation(description: "Upload finished")
-        let cancellable = uploader.subject.sink { _ in
+        let cancellable = uploaderMock.subject.sink { _ in
             expectation.fulfill()
         }
         eventSenderEngine.emit(
@@ -67,8 +78,8 @@ final class EventSenderEngineTest: XCTestCase {
 
 
         wait(for: [expectation], timeout: 5)
-        XCTAssertEqual(try XCTUnwrap(uploader.calledRequest)[0].eventDefinition, "my_event")
-        XCTAssertEqual(try XCTUnwrap(uploader.calledRequest)[0].payload, NetworkStruct(fields: [
+        XCTAssertEqual(try XCTUnwrap(uploaderMock.calledRequest)[0].eventDefinition, "my_event")
+        XCTAssertEqual(try XCTUnwrap(uploaderMock.calledRequest)[0].payload, NetworkStruct(fields: [
             "a": .number(0.0),
             "message": .number(1.0)
         ]))
@@ -76,91 +87,109 @@ final class EventSenderEngineTest: XCTestCase {
     }
 
     func testAddingEventsWithSizeFlushPolicyWorks() throws {
-        let flushPolicies = [MinSizeFlushPolicy(maxSize: 5)]
-        let uploader = EventUploaderMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
-            uploader: uploader,
-            storage: EventStorageMock(),
-            flushPolicies: flushPolicies
+            uploader: uploaderMock,
+            storage: storageMock,
+            flushPolicies: [MinSizeFlushPolicy(maxSize: 5)],
+            writeQueue: writeQueue
         )
 
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
         // TODO: We need to wait for writeReqChannel to complete to make this test meaningful
-        XCTAssertNil(uploader.calledRequest)
+        XCTAssertNil(uploaderMock.calledRequest)
     }
 
     func testRemoveEventsFromStorageOnBadRequest() throws {
         MockedClientURLProtocol.mockedOperation = .badRequest
-        let client = RemoteConfidenceClient(
+        let badRequestUploader = RemoteConfidenceClient(
             options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
-        let flushPolicies = [ImmidiateFlushPolicy()]
-        let storage = EventStorageMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
-            uploader: client,
-            storage: storage,
-            flushPolicies: flushPolicies
+            uploader: badRequestUploader,
+            storage: storageMock,
+            flushPolicies: [ImmidiateFlushPolicy()],
+            writeQueue: writeQueue
         )
         eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
         let expectation = expectation(description: "events batched")
-        storage.eventsRemoved{
+        storageMock.eventsRemoved{
             expectation.fulfill()
         }
         wait(for: [expectation], timeout: 2)
 
-        XCTAssertEqual(storage.isEmpty(), true)
+        XCTAssertEqual(storageMock.isEmpty(), true)
     }
 
     func testKeepEventsInStorageForRetry() throws {
+        let expectation = self.expectation(description: "Writes handled")
         MockedClientURLProtocol.mockedOperation = .needRetryLater
-        let client = RemoteConfidenceClient(
+        let retryLaterUploader = RemoteConfidenceClient(
             options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
-        let flushPolicies = [ImmidiateFlushPolicy()]
-        let storage = EventStorageMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
-            uploader: client,
-            storage: storage,
-            flushPolicies: flushPolicies
+            uploader: retryLaterUploader,
+            storage: storageMock,
+            flushPolicies: [ImmidiateFlushPolicy()],
+            writeQueue: writeQueue
         )
 
         eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
 
-        XCTAssertEqual(storage.isEmpty(), false)
+        writeQueue.async {
+            // Give some time for the events to be processed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                expectation.fulfill()
+            }
+        }
+
+        waitForExpectations(timeout: 1.0, handler: nil)
+
+        XCTAssertEqual(storageMock.isEmpty(), false)
     }
 
     func testManualFlushWorks() throws {
-        let uploaderMock = EventUploaderMock()
-        let storageMock = EventStorageMock()
+        let writeExpectation = self.expectation(description: "Writes handled")
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
             uploader: uploaderMock,
             storage: storageMock,
             // no other flush policy is set which means that only manual flushes will trigger upload
-            flushPolicies: []
+            flushPolicies: [],
+            writeQueue: writeQueue
         )
 
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+
+
+        writeQueue.async {
+            // Give some time for the events to be processed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                writeExpectation.fulfill()
+            }
+        }
+
+        waitForExpectations(timeout: 1.0, handler: nil)
+
         XCTAssertEqual(storageMock.events.count, 4)
         XCTAssertNil(uploaderMock.calledRequest)
 
         eventSenderEngine.flush()
 
-        let expectation = XCTestExpectation(description: "Upload finished")
+        let uploadExpectation = XCTestExpectation(description: "Upload finished")
         let cancellable = uploaderMock.subject.sink { _ in
-            expectation.fulfill()
+            uploadExpectation.fulfill()
         }
-        wait(for: [expectation], timeout: 1)
+        wait(for: [uploadExpectation], timeout: 1)
         let uploadRequest = uploaderMock.calledRequest
         XCTAssertEqual(uploadRequest?.count, 4)
 
@@ -169,14 +198,13 @@ final class EventSenderEngineTest: XCTestCase {
 
 
     func testManualFlushEventIsNotStored() throws {
-        let uploaderMock = EventUploaderMock()
-        let storageMock = EventStorageMock()
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
             uploader: uploaderMock,
             storage: storageMock,
             // no other flush policy is set which means that only manual flushes will trigger upload
-            flushPolicies: []
+            flushPolicies: [],
+            writeQueue: writeQueue
         )
 
         eventSenderEngine.flush()
