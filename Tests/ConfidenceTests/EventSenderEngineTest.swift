@@ -125,7 +125,6 @@ final class EventSenderEngineTest: XCTestCase {
     }
 
     func testKeepEventsInStorageForRetry() throws {
-        let expectation = self.expectation(description: "Writes handled")
         MockedClientURLProtocol.mockedOperation = .needRetryLater
         let retryLaterUploader = RemoteConfidenceClient(
             options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -142,16 +141,9 @@ final class EventSenderEngineTest: XCTestCase {
 
         eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
 
-        writeQueue.async {
-            // Give some time for the events to be processed
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                expectation.fulfill()
-            }
+        writeQueue.sync {
+            XCTAssertEqual(storageMock.isEmpty(), false)
         }
-
-        waitForExpectations(timeout: 1.0, handler: nil)
-
-        XCTAssertEqual(storageMock.isEmpty(), false)
     }
 
     func testManualFlushWorks() throws {
