@@ -9,4 +9,8 @@ class EventSenderEngineMock: EventSenderEngine {
     func shutdown() {
         // NO-OP
     }
+
+    func flush() {
+        // NO-OP
+    }
 }
