@@ -147,7 +147,6 @@ final class EventSenderEngineTest: XCTestCase {
     }
 
     func testManualFlushWorks() throws {
-        let writeExpectation = self.expectation(description: "Writes handled")
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
             uploader: uploaderMock,
@@ -163,17 +162,10 @@ final class EventSenderEngineTest: XCTestCase {
         eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
 
 
-        writeQueue.async {
-            // Give some time for the events to be processed
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                writeExpectation.fulfill()
-            }
+        writeQueue.sync {
+            XCTAssertEqual(storageMock.events.count, 4)
+            XCTAssertNil(uploaderMock.calledRequest)
         }
-
-        waitForExpectations(timeout: 1.0, handler: nil)
-
-        XCTAssertEqual(storageMock.events.count, 4)
-        XCTAssertNil(uploaderMock.calledRequest)
 
         eventSenderEngine.flush()
 
