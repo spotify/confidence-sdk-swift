@@ -17,5 +17,5 @@ fi
     TEST_RUNNER_CLIENT_TOKEN=$test_runner_client_token TEST_RUNNER_TEST_FLAG_NAME=$2 xcodebuild \
         -quiet \
         -scheme Confidence-Package \
-        -destination 'platform=iOS Simulator,name=iPhone 14 Pro,OS=16.2' \
+        -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' \
         test)
