@@ -24,36 +24,54 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let clientSecret: String
     private let payloadMerger: PayloadMerger = PayloadMergerImpl()
     private let semaphore = DispatchSemaphore(value: 1)
+    private let writeQueue: DispatchQueue
+
+    convenience init(
+        clientSecret: String,
+        uploader: ConfidenceClient,
+        storage: EventStorage
+    ) {
+        self.init(
+            clientSecret: clientSecret,
+            uploader: uploader,
+            storage: storage,
+            flushPolicies: [SizeFlushPolicy(batchSize: 10)],
+            writeQueue: DispatchQueue(label: "ConfidenceWriteQueue")
+        )
+    }
 
     init(
         clientSecret: String,
         uploader: ConfidenceClient,
         storage: EventStorage,
-        flushPolicies: [FlushPolicy]
+        flushPolicies: [FlushPolicy],
+        writeQueue: DispatchQueue
     ) {
         self.uploader = uploader
         self.clientSecret = clientSecret
         self.storage = storage
         self.flushPolicies = flushPolicies + [ManualFlushPolicy()]
+        self.writeQueue = writeQueue
 
-        writeReqChannel.sink { [weak self] event in
-            guard let self = self else { return }
-            if event.name != manualFlushEvent.name { // skip storing flush events.
-                do {
-                    try self.storage.writeEvent(event: event)
-                } catch {
+        writeReqChannel
+            .receive(on: self.writeQueue)
+            .sink { [weak self] event in
+                guard let self = self else { return }
+                if event.name != manualFlushEvent.name { // skip storing flush events.
+                    do {
+                        try self.storage.writeEvent(event: event)
+                    } catch {
+                    }
+                }
+                self.flushPolicies.forEach { policy in policy.hit(event: event) }
+                let shouldFlush = self.flushPolicies.contains { policy in policy.shouldFlush() }
+
+                if shouldFlush {
+                    self.uploadReqChannel.send(EventSenderEngineImpl.sendSignalName)
+                    self.flushPolicies.forEach { policy in policy.reset() }
                 }
             }
-
-            self.flushPolicies.forEach { policy in policy.hit(event: event) }
-            let shouldFlush = self.flushPolicies.contains { policy in policy.shouldFlush() }
-
-            if shouldFlush {
-                self.uploadReqChannel.send(EventSenderEngineImpl.sendSignalName)
-                self.flushPolicies.forEach { policy in policy.reset() }
-            }
-        }
-        .store(in: &cancellables)
+            .store(in: &cancellables)
 
         uploadReqChannel.sink { [weak self] _ in
             guard let self = self else { return }

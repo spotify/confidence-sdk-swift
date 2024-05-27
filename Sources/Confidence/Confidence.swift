@@ -311,8 +311,7 @@ extension Confidence {
             let eventSenderEngine = EventSenderEngineImpl(
                 clientSecret: clientSecret,
                 uploader: uploader,
-                storage: eventStorage,
-                flushPolicies: [SizeFlushPolicy(batchSize: 10)])
+                storage: eventStorage)
             return Confidence(
                 clientSecret: clientSecret,
                 region: region,
