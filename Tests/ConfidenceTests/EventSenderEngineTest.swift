@@ -50,6 +50,7 @@ final class EventSenderEngineTest: XCTestCase {
         writeQueue = DispatchQueue(label: "ConfidenceWriteQueue")
         uploaderMock = EventUploaderMock()
         storageMock = EventStorageMock()
+        try await super.setUp()
     }
 
     func testPayloadOnEmit() throws {
