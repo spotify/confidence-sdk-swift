@@ -13,9 +13,18 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         UIApplication.didBecomeActiveNotification
     ]
 
-    private static var versionNameKey = "CONFIDENCE_VERSION_NAME_KEY"
-    private static var buildNameKey = "CONFIDENCE_VERSIONN_KEY"
-    private let appLaunchedEventName = "app-launched"
+    // Storage Keys
+    private static var userDefaultVersionNameKey = "CONFIDENCE_VERSION_NAME_KEY"
+    private static var userDefaultBuildNameKey = "CONFIDENCE_BUILD_NUMBER_KEY"
+    // Context Keys
+    private static var versionNameContextKey = "app_version"
+    private static var buildNumberContextKey = "app_build"
+    private static var isForegroundContextKey = "is_foreground"
+    // Event Names
+    private static let appLaunchedEventName = "app-launched"
+    private static let appInstalledEventName = "app-installed"
+    private static let appUpdatedEventName = "app-updated"
+
 
     public init() {
         for notification in appNotifications {
@@ -30,8 +39,8 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let currentBuild: String = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
         let context: ConfidenceStruct = [
-            "version": .init(string: currentVersion),
-            "build": .init(string: currentBuild)
+            Self.versionNameContextKey: .init(string: currentVersion),
+            Self.buildNumberContextKey: .init(string: currentBuild)
         ]
 
         self.currentProducedContext.send(context)
@@ -52,28 +61,28 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
     }
 
     private func track(eventName: String) {
-        let previousBuild: String? = UserDefaults.standard.string(forKey: Self.buildNameKey)
-        let previousVersion: String? = UserDefaults.standard.string(forKey: Self.versionNameKey)
+        let previousBuild: String? = UserDefaults.standard.string(forKey: Self.userDefaultBuildNameKey)
+        let previousVersion: String? = UserDefaults.standard.string(forKey: Self.userDefaultVersionNameKey)
 
         let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let currentBuild: String = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
 
         let message: ConfidenceStruct = [
-            "version": .init(string: currentVersion),
-            "build": .init(string: currentBuild)
+            Self.versionNameContextKey: .init(string: currentVersion),
+            Self.buildNumberContextKey: .init(string: currentBuild)
         ]
 
-        if eventName == self.appLaunchedEventName {
+        if eventName == Self.appLaunchedEventName {
             if previousBuild == nil && previousVersion == nil {
-                events.send(Event(name: "app-installed", message: message))
+                events.send(Event(name: ConfidenceAppLifecycleProducer.appInstalledEventName, message: message))
             } else if previousBuild != currentBuild || previousVersion != currentVersion {
-                events.send(Event(name: "app-updated", message: message))
+                events.send(Event(name: ConfidenceAppLifecycleProducer.appUpdatedEventName, message: message))
             }
         }
         events.send(Event(name: eventName, message: message))
 
-        UserDefaults.standard.setValue(currentVersion, forKey: Self.versionNameKey)
-        UserDefaults.standard.setValue(currentBuild, forKey: Self.buildNameKey)
+        UserDefaults.standard.setValue(currentVersion, forKey: Self.userDefaultVersionNameKey)
+        UserDefaults.standard.setValue(currentBuild, forKey: Self.userDefaultBuildNameKey)
     }
 
     private func updateContext(isForeground: Bool) {
@@ -82,7 +91,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
                 return
             }
             var context = self.currentProducedContext.value
-            context.updateValue(.init(boolean: isForeground), forKey: "is_foreground")
+            context.updateValue(.init(boolean: isForeground), forKey: Self.isForegroundContextKey)
             self.currentProducedContext.send(context)
         }
     }
@@ -100,7 +109,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         case UIApplication.willEnterForegroundNotification:
             updateContext(isForeground: true)
         case UIApplication.didBecomeActiveNotification:
-            track(eventName: appLaunchedEventName)
+            track(eventName: Self.appLaunchedEventName)
         default:
             break
         }
