@@ -129,6 +129,9 @@ public class Confidence: ConfidenceEventSender {
                         return
                     }
                     self.track(eventName: event.name, message: event.message)
+                    if event.shouldFlush {
+                        eventSenderEngine.flush()
+                    }
                 }
                 .store(in: &cancellables)
         }
