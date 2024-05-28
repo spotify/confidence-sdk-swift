@@ -66,14 +66,10 @@ final class EventSenderEngineTest: XCTestCase {
         let cancellable = uploaderMock.subject.sink { _ in
             expectation.fulfill()
         }
-        eventSenderEngine.emit(
+        try eventSenderEngine.emit(
             eventName: "my_event",
             message: [
-                "a": .init(integer: 0),
-                "context": .init(structure: [
-                    "a": .init(string: "test1"),
-                    "b": .init(string: "test2"),
-                ]),
+                "a": .init(integer: 0)
             ],
             context: [
                 "a": .init(integer: 2),
@@ -87,8 +83,7 @@ final class EventSenderEngineTest: XCTestCase {
             "a": .number(0.0),
             "context": .structure(
                 .init(fields: [
-                    "a": .string("test1"),
-                    "b": .string("test2"),
+                    "a": .number(2),
                     "d": .number(3)
                 ])
             )
@@ -105,7 +100,7 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
         // TODO: We need to wait for writeReqChannel to complete to make this test meaningful
         XCTAssertNil(uploaderMock.calledRequest)
     }
@@ -124,7 +119,7 @@ final class EventSenderEngineTest: XCTestCase {
             flushPolicies: [ImmidiateFlushPolicy()],
             writeQueue: writeQueue
         )
-        eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
+        try eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
         let expectation = expectation(description: "events batched")
         storageMock.eventsRemoved{
             expectation.fulfill()
@@ -149,7 +144,7 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
+        try eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
 
         writeQueue.sync {
             XCTAssertEqual(storageMock.isEmpty(), false)
@@ -166,10 +161,10 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
 
 
         writeQueue.sync {

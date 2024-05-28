@@ -1,19 +1,17 @@
 import Foundation
 
 internal protocol PayloadMerger {
-    func merge(context: ConfidenceStruct, message: ConfidenceStruct) -> ConfidenceStruct
+    func merge(context: ConfidenceStruct, message: ConfidenceStruct) throws -> ConfidenceStruct
 }
 
 internal struct PayloadMergerImpl: PayloadMerger {
-    func merge(context: ConfidenceStruct, message: ConfidenceStruct) -> ConfidenceStruct {
-        let messageContextStruct = message["context"]?.asStructure() ?? [:]
-        var mutableContext = context
-        messageContextStruct.forEach { entry in
-            mutableContext.updateValue(entry.value, forKey: entry.key)
+    func merge(context: ConfidenceStruct, message: ConfidenceStruct) throws -> ConfidenceStruct {
+        guard message["context"] == nil else {
+            throw ConfidenceError.invalidContextInMessage
         }
-        var mutablePayload = message
-        mutablePayload["context"] = .init(structure: mutableContext)
-        return mutablePayload
+        var map: ConfidenceStruct = message
+        map["context"] = ConfidenceValue.init(structure: context)
+        return map
     }
 }
 
