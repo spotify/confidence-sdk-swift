@@ -288,31 +288,20 @@ final class ConfidenceTests: XCTestCase {
         let userDefaults = UserDefaults.standard
         userDefaults.removeObject(forKey: "confidence.visitor_id")
         let confidence = Confidence.Builder(clientSecret: "")
-            .withVisitorId()
             .build()
         let visitorId = try XCTUnwrap(confidence.getContext()["visitor_id"]?.asString())
         XCTAssertNotEqual(visitorId, "")
         XCTAssertNotEqual(visitorId, "storage-error")
         let newConfidence = Confidence.Builder(clientSecret: "")
-            .withVisitorId()
             .build()
         XCTAssertEqual(visitorId, try XCTUnwrap(newConfidence.getContext()["visitor_id"]?.asString()))
         userDefaults.removeObject(forKey: "confidence.visitor_id")
         let veryNewConfidence = Confidence.Builder(clientSecret: "")
-            .withVisitorId()
             .build()
         let newVisitorId = try XCTUnwrap(veryNewConfidence.getContext()["visitor_id"]?.asString())
         XCTAssertNotEqual(newVisitorId, "")
         XCTAssertNotEqual(newVisitorId, "storage-error")
         XCTAssertNotEqual(newVisitorId, visitorId)
-    }
-
-    func testWithoutVisitorId() throws {
-        let userDefaults = UserDefaults.standard
-        userDefaults.removeObject(forKey: "confidence.visitor_id")
-        let confidence = Confidence.Builder(clientSecret: "")
-            .build()
-        XCTAssertNil(confidence.getContext()["visitor_id"])
     }
 }
 // swiftlint:enable type_body_length

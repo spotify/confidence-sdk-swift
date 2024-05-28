@@ -231,7 +231,7 @@ extension Confidence {
         internal var flagResolver: ConfidenceResolveClient?
         var region: ConfidenceRegion = .global
 
-        var visitorId: String?
+        var visitorId = VisitorUtil().getId()
         var initialContext: ConfidenceStruct = [:]
 
         /**
@@ -273,15 +273,6 @@ extension Confidence {
         */
         public func withRegion(region: ConfidenceRegion) -> Builder {
             self.region = region
-            return self
-        }
-
-        /**
-        The SDK attaches a unique identifier to the Context, which is persisted across
-        restarts of the App but re-generated on every new install
-        */
-        public func withVisitorId() -> Builder {
-            self.visitorId = VisitorUtil().getId()
             return self
         }
 
