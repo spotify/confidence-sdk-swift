@@ -67,19 +67,14 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         let currentBuild: String = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
 
-        let message: ConfidenceStruct = [
-            Self.versionNameContextKey: .init(string: currentVersion),
-            Self.buildNumberContextKey: .init(string: currentBuild)
-        ]
-
         if eventName == Self.appLaunchedEventName {
             if previousBuild == nil && previousVersion == nil {
-                events.send(Event(name: ConfidenceAppLifecycleProducer.appInstalledEventName, message: message))
+                events.send(Event(name: ConfidenceAppLifecycleProducer.appInstalledEventName, message: [:]))
             } else if previousBuild != currentBuild || previousVersion != currentVersion {
-                events.send(Event(name: ConfidenceAppLifecycleProducer.appUpdatedEventName, message: message))
+                events.send(Event(name: ConfidenceAppLifecycleProducer.appUpdatedEventName, message: [:]))
             }
         }
-        events.send(Event(name: eventName, message: message))
+        events.send(Event(name: eventName, message: [:]))
 
         UserDefaults.standard.setValue(currentVersion, forKey: Self.userDefaultVersionNameKey)
         UserDefaults.standard.setValue(currentBuild, forKey: Self.userDefaultBuildNameKey)
