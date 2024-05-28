@@ -60,7 +60,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             .eraseToAnyPublisher()
     }
 
-    private func track(eventName: String) {
+    private func track(eventName: String, shouldFlush: Bool) {
         let previousBuild: String? = UserDefaults.standard.string(forKey: Self.userDefaultBuildNameKey)
         let previousVersion: String? = UserDefaults.standard.string(forKey: Self.userDefaultVersionNameKey)
 
@@ -69,12 +69,20 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
 
         if eventName == Self.appLaunchedEventName {
             if previousBuild == nil && previousVersion == nil {
-                events.send(Event(name: ConfidenceAppLifecycleProducer.appInstalledEventName, message: [:]))
+                events.send(Event(
+                    name: ConfidenceAppLifecycleProducer.appInstalledEventName,
+                    message: [:],
+                    shouldFlush: shouldFlush)
+                )
             } else if previousBuild != currentBuild || previousVersion != currentVersion {
-                events.send(Event(name: ConfidenceAppLifecycleProducer.appUpdatedEventName, message: [:]))
+                events.send(Event(
+                    name: ConfidenceAppLifecycleProducer.appUpdatedEventName,
+                    message: [:],
+                    shouldFlush: shouldFlush)
+                )
             }
         }
-        events.send(Event(name: eventName, message: [:]))
+        events.send(Event(name: eventName, message: [:], shouldFlush: shouldFlush))
 
         UserDefaults.standard.setValue(currentVersion, forKey: Self.userDefaultVersionNameKey)
         UserDefaults.standard.setValue(currentBuild, forKey: Self.userDefaultBuildNameKey)
@@ -104,7 +112,7 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         case UIApplication.willEnterForegroundNotification:
             updateContext(isForeground: true)
         case UIApplication.didBecomeActiveNotification:
-            track(eventName: Self.appLaunchedEventName)
+            track(eventName: Self.appLaunchedEventName, shouldFlush: true)
         default:
             break
         }

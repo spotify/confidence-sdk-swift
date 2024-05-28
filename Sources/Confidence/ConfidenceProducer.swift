@@ -10,10 +10,12 @@ public protocol ConfidenceProducer {
 public struct Event {
     let name: String
     let message: ConfidenceStruct
+    let shouldFlush: Bool
 
-    public init(name: String, message: ConfidenceStruct = [:]) {
+    public init(name: String, message: ConfidenceStruct = [:], shouldFlush: Bool = false) {
         self.name = name
         self.message = message
+        self.shouldFlush = shouldFlush
     }
 }
 
