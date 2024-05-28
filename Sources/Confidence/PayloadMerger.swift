@@ -6,9 +6,14 @@ internal protocol PayloadMerger {
 
 internal struct PayloadMergerImpl: PayloadMerger {
     func merge(context: ConfidenceStruct, message: ConfidenceStruct) -> ConfidenceStruct {
-        var map: ConfidenceStruct = context
-        map += message
-        return map
+        let messageContextStruct = message["context"]?.asStructure() ?? [:]
+        var mutableContext = context
+        messageContextStruct.forEach { entry in
+            mutableContext.updateValue(entry.value, forKey: entry.key)
+        }
+        var mutablePayload = message
+        mutablePayload["context"] = .init(structure: mutableContext)
+        return mutablePayload
     }
 }
 

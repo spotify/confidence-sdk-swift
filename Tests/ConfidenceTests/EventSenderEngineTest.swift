@@ -70,11 +70,14 @@ final class EventSenderEngineTest: XCTestCase {
             eventName: "my_event",
             message: [
                 "a": .init(integer: 0),
-                "message": .init(integer: 1),
+                "context": .init(structure: [
+                    "a": .init(string: "test1"),
+                    "b": .init(string: "test2"),
+                ]),
             ],
             context: [
                 "a": .init(integer: 2),
-                "message": .init(integer: 3) // the root "message" overrides this
+                "d": .init(integer: 3)
             ])
 
 
@@ -82,7 +85,13 @@ final class EventSenderEngineTest: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(uploaderMock.calledRequest)[0].eventDefinition, "my_event")
         XCTAssertEqual(try XCTUnwrap(uploaderMock.calledRequest)[0].payload, NetworkStruct(fields: [
             "a": .number(0.0),
-            "message": .number(1.0)
+            "context": .structure(
+                .init(fields: [
+                    "a": .string("test1"),
+                    "b": .string("test2"),
+                    "d": .number(3)
+                ])
+            )
         ]))
         cancellable.cancel()
     }
