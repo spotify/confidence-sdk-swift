@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.1](https://github.com/spotify/confidence-sdk-swift/compare/0.2.0...0.2.1) (2024-05-29)
+
+
+### 🐛 Bug Fixes
+
+* Improved keys and remove typo ([#127](https://github.com/spotify/confidence-sdk-swift/issues/127)) ([f31fe85](https://github.com/spotify/confidence-sdk-swift/commit/f31fe853f06755e1df664e9ea2f871d685228383))
+
+
+### ✨ New Features
+
+* add functionality to manual flush events ([#122](https://github.com/spotify/confidence-sdk-swift/issues/122)) ([475df55](https://github.com/spotify/confidence-sdk-swift/commit/475df558f661e63acbbe361541a422216b17a788))
+* introduce a writeQueue for event tracking ([#124](https://github.com/spotify/confidence-sdk-swift/issues/124)) ([a49a393](https://github.com/spotify/confidence-sdk-swift/commit/a49a39387d82a0a7ad444a882a7f1fba6a592eab))
+* LifecycleProducer events are emitted immediately ([#131](https://github.com/spotify/confidence-sdk-swift/issues/131)) ([accaaa3](https://github.com/spotify/confidence-sdk-swift/commit/accaaa323270e9f7bcf55d3c69ded2f900a530cd))
+
+
+### 📚 Documentation
+
+* update readme to cover Confidence APIs ([#121](https://github.com/spotify/confidence-sdk-swift/issues/121)) ([4962baf](https://github.com/spotify/confidence-sdk-swift/commit/4962baf8f1b24165c4149ef6630ddf639508c500))
+
+
+### 🔄 Refactoring
+
+* `context` container in event payload ([#130](https://github.com/spotify/confidence-sdk-swift/issues/130)) ([a9d41fa](https://github.com/spotify/confidence-sdk-swift/commit/a9d41fae6646a1381874f46e8708b2475c6b026e))
+* app-launched no msg ([91604eb](https://github.com/spotify/confidence-sdk-swift/commit/91604eb97f68d88089c04343a54b34af8fd37441))
+* from "message" to "data" ([#132](https://github.com/spotify/confidence-sdk-swift/issues/132)) ([f85dc9b](https://github.com/spotify/confidence-sdk-swift/commit/f85dc9ba6d13ac65260ab288c3ee26dc0af723c5))
+* No message in `app-launched` ([#128](https://github.com/spotify/confidence-sdk-swift/issues/128)) ([91604eb](https://github.com/spotify/confidence-sdk-swift/commit/91604eb97f68d88089c04343a54b34af8fd37441))
+* visitor id is default ([#129](https://github.com/spotify/confidence-sdk-swift/issues/129)) ([873e6b7](https://github.com/spotify/confidence-sdk-swift/commit/873e6b722eb94b1c463cef4d0bb62428fdbcfedb))
+
 ## [0.2.0](https://github.com/spotify/confidence-sdk-swift/compare/0.1.4...0.2.0) (2024-05-10)
 
 
