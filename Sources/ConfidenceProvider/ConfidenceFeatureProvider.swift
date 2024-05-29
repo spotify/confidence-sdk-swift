@@ -32,7 +32,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     ) {
         let metadata = ConfidenceMetadata(
             name: "SDK_ID_SWIFT_PROVIDER",
-            version: "0.2.0") // x-release-please-version
+            version: "0.2.1") // x-release-please-version
         self.metadata = Metadata(name: metadata.name)
         self.initializationStrategy = initializationStrategy
         self.confidence = confidence
