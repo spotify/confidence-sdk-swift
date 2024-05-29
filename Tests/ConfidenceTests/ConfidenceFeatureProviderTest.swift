@@ -576,7 +576,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
             .build()
 
         XCTAssertThrowsError(
-            try confidence.track(eventName: "test", message: ["context": ConfidenceValue(string: "test")])
+            try confidence.track(eventName: "test", data: ["context": ConfidenceValue(string: "test")])
         ) { error in
             XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
         }

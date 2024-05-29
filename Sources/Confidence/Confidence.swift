@@ -114,10 +114,10 @@ public class Confidence: ConfidenceEventSender {
             .eraseToAnyPublisher()
     }
 
-    public func track(eventName: String, message: ConfidenceStruct) throws {
+    public func track(eventName: String, data: ConfidenceStruct) throws {
         try eventSenderEngine.emit(
             eventName: eventName,
-            message: message,
+            data: data,
             context: getContext()
         )
     }
@@ -130,7 +130,7 @@ public class Confidence: ConfidenceEventSender {
                         return
                     }
                     do {
-                        try self.track(eventName: event.name, message: event.message)
+                        try self.track(eventName: event.name, data: event.data)
                         if event.shouldFlush {
                             eventSenderEngine.flush()
                         }
