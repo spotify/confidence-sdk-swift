@@ -66,15 +66,14 @@ final class EventSenderEngineTest: XCTestCase {
         let cancellable = uploaderMock.subject.sink { _ in
             expectation.fulfill()
         }
-        eventSenderEngine.emit(
+        try eventSenderEngine.emit(
             eventName: "my_event",
             message: [
-                "a": .init(integer: 0),
-                "message": .init(integer: 1),
+                "a": .init(integer: 0)
             ],
             context: [
                 "a": .init(integer: 2),
-                "message": .init(integer: 3) // the root "message" overrides this
+                "d": .init(integer: 3)
             ])
 
 
@@ -82,7 +81,12 @@ final class EventSenderEngineTest: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(uploaderMock.calledRequest)[0].eventDefinition, "my_event")
         XCTAssertEqual(try XCTUnwrap(uploaderMock.calledRequest)[0].payload, NetworkStruct(fields: [
             "a": .number(0.0),
-            "message": .number(1.0)
+            "context": .structure(
+                .init(fields: [
+                    "a": .number(2),
+                    "d": .number(3)
+                ])
+            )
         ]))
         cancellable.cancel()
     }
@@ -96,7 +100,7 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
         // TODO: We need to wait for writeReqChannel to complete to make this test meaningful
         XCTAssertNil(uploaderMock.calledRequest)
     }
@@ -115,7 +119,7 @@ final class EventSenderEngineTest: XCTestCase {
             flushPolicies: [ImmidiateFlushPolicy()],
             writeQueue: writeQueue
         )
-        eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
+        try eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
         let expectation = expectation(description: "events batched")
         storageMock.eventsRemoved{
             expectation.fulfill()
@@ -140,7 +144,7 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
+        try eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
 
         writeQueue.sync {
             XCTAssertEqual(storageMock.isEmpty(), false)
@@ -157,10 +161,10 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
 
 
         writeQueue.sync {

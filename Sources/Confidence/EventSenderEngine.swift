@@ -8,7 +8,7 @@ protocol FlushPolicy {
 }
 
 protocol EventSenderEngine {
-    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct)
+    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) throws
     func shutdown()
     func flush()
 }
@@ -119,10 +119,10 @@ final class EventSenderEngineImpl: EventSenderEngine {
         semaphore.signal()
     }
 
-    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) {
+    func emit(eventName: String, message: ConfidenceStruct, context: ConfidenceStruct) throws {
         writeReqChannel.send(ConfidenceEvent(
             name: eventName,
-            payload: payloadMerger.merge(context: context, message: message),
+            payload: try payloadMerger.merge(context: context, message: message),
             eventTime: Date.backport.now)
         )
     }

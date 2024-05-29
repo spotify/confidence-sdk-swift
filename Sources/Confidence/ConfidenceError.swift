@@ -26,6 +26,7 @@ public enum ConfidenceError: Error, Equatable {
     case internalError(message: String)
     case parseError(message: String)
     case invalidContextError
+    case invalidContextInMessage
 }
 
 extension ConfidenceError: CustomStringConvertible {
@@ -62,6 +63,8 @@ extension ConfidenceError: CustomStringConvertible {
             return "Flag not found for key \(key)"
         case .invalidContextError:
             return "Invalid context error"
+        case .invalidContextInMessage:
+            return "Field 'context' is not allowed in event's data"
         }
     }
 }

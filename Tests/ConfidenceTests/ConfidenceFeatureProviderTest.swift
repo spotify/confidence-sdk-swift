@@ -570,6 +570,17 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
+
+    func testInvalidContextInMessage() async throws {
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .build()
+
+        XCTAssertThrowsError(
+            try confidence.track(eventName: "test", message: ["context": ConfidenceValue(string: "test")])
+        ) { error in
+            XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
+        }
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {

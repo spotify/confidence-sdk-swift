@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import os
 
 public class Confidence: ConfidenceEventSender {
     public let clientSecret: String
@@ -113,8 +114,8 @@ public class Confidence: ConfidenceEventSender {
             .eraseToAnyPublisher()
     }
 
-    public func track(eventName: String, message: ConfidenceStruct) {
-        eventSenderEngine.emit(
+    public func track(eventName: String, message: ConfidenceStruct) throws {
+        try eventSenderEngine.emit(
             eventName: eventName,
             message: message,
             context: getContext()
@@ -128,9 +129,14 @@ public class Confidence: ConfidenceEventSender {
                     guard let self = self else {
                         return
                     }
-                    self.track(eventName: event.name, message: event.message)
-                    if event.shouldFlush {
-                        eventSenderEngine.flush()
+                    do {
+                        try self.track(eventName: event.name, message: event.message)
+                        if event.shouldFlush {
+                            eventSenderEngine.flush()
+                        }
+                    } catch {
+                        Logger(subsystem: "com.confidence", category: "track").warning(
+                            "Error from EventProducer, failed to track event: \(event.name)")
                     }
                 }
                 .store(in: &cancellables)
