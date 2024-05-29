@@ -46,7 +46,7 @@ extension ConfidenceDemoApp {
         try await confidence.fetchAndActivate()
         confidence.track(
             eventName: "all-types",
-            message: [
+            data: [
                 "my_string": ConfidenceValue(string: "hello_from_world"),
                 "my_timestamp": ConfidenceValue(timestamp: Date()),
                 "my_bool": ConfidenceValue(boolean: true),

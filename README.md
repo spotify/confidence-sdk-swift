@@ -91,7 +91,7 @@ let messageValue = messageFlag.value
 ### Tracking events
 The Confidence instance offers APIs to track events, which are uploaded to the Confidence backend:
 ```swift
-confidence.track(eventName: "MyEvent", message: ["field": ConfidenceValue(string("value"))])
+confidence.track(eventName: "MyEvent", data: ["field": ConfidenceValue(string("value"))])
 ```
 
 The SDK takes care of storing events in case of offline and retries in case of transient failures.

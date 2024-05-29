@@ -71,18 +71,18 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
             if previousBuild == nil && previousVersion == nil {
                 events.send(Event(
                     name: ConfidenceAppLifecycleProducer.appInstalledEventName,
-                    message: [:],
+                    data: [:],
                     shouldFlush: shouldFlush)
                 )
             } else if previousBuild != currentBuild || previousVersion != currentVersion {
                 events.send(Event(
                     name: ConfidenceAppLifecycleProducer.appUpdatedEventName,
-                    message: [:],
+                    data: [:],
                     shouldFlush: shouldFlush)
                 )
             }
         }
-        events.send(Event(name: eventName, message: [:], shouldFlush: shouldFlush))
+        events.send(Event(name: eventName, data: [:], shouldFlush: shouldFlush))
 
         UserDefaults.standard.setValue(currentVersion, forKey: Self.userDefaultVersionNameKey)
         UserDefaults.standard.setValue(currentBuild, forKey: Self.userDefaultBuildNameKey)

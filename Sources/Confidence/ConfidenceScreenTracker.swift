@@ -29,11 +29,11 @@ public class ConfidenceScreenTracker: ConfidenceEventProducer {
             queue: OperationQueue.main) { [weak self] notification in
                 let name = notification.userInfo?[Self.screenName] as? String
                 let messageJson = (notification.userInfo?[Self.messageKey] as? String)?.data(using: .utf8)
-                var message: ConfidenceStruct = [:]
-                if let data = messageJson {
+                var data: ConfidenceStruct = [:]
+                if let messageData = messageJson {
                     let decoder = JSONDecoder()
                     do {
-                        message = try decoder.decode(ConfidenceStruct.self, from: data)
+                        data = try decoder.decode(ConfidenceStruct.self, from: messageData)
                     } catch {
                     }
                 }
@@ -42,7 +42,7 @@ public class ConfidenceScreenTracker: ConfidenceEventProducer {
                     return
                 }
                 if let name = name {
-                    self.events.send(Event(name: name, message: message))
+                    self.events.send(Event(name: name, data: data))
                 }
         }
     }

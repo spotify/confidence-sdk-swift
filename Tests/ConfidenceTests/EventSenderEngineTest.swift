@@ -68,7 +68,7 @@ final class EventSenderEngineTest: XCTestCase {
         }
         try eventSenderEngine.emit(
             eventName: "my_event",
-            message: [
+            data: [
                 "a": .init(integer: 0)
             ],
             context: [
@@ -100,7 +100,7 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
         // TODO: We need to wait for writeReqChannel to complete to make this test meaningful
         XCTAssertNil(uploaderMock.calledRequest)
     }
@@ -119,7 +119,7 @@ final class EventSenderEngineTest: XCTestCase {
             flushPolicies: [ImmidiateFlushPolicy()],
             writeQueue: writeQueue
         )
-        try eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
+        try eventSenderEngine.emit(eventName: "testEvent", data: ConfidenceStruct(), context: ConfidenceStruct())
         let expectation = expectation(description: "events batched")
         storageMock.eventsRemoved{
             expectation.fulfill()
@@ -144,7 +144,7 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        try eventSenderEngine.emit(eventName: "testEvent", message: ConfidenceStruct(), context: ConfidenceStruct())
+        try eventSenderEngine.emit(eventName: "testEvent", data: ConfidenceStruct(), context: ConfidenceStruct())
 
         writeQueue.sync {
             XCTAssertEqual(storageMock.isEmpty(), false)
@@ -161,10 +161,10 @@ final class EventSenderEngineTest: XCTestCase {
             writeQueue: writeQueue
         )
 
-        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
-        try eventSenderEngine.emit(eventName: "Hello", message: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
+        try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
 
 
         writeQueue.sync {

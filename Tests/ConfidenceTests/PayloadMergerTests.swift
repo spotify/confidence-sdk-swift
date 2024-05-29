@@ -13,7 +13,7 @@ class PayloadMergerTests: XCTestCase {
                 "b": ConfidenceValue(string: "world"),
             ])
         ]
-        let merged = try PayloadMergerImpl().merge(context: context, message: message)
+        let merged = try PayloadMergerImpl().merge(context: context, data: message)
         XCTAssertEqual(merged, expected)
     }
 
@@ -24,7 +24,7 @@ class PayloadMergerTests: XCTestCase {
             "context": ConfidenceValue(string: "world")  // simple value context is lost
         ]
         XCTAssertThrowsError(
-            try PayloadMergerImpl().merge(context: context, message: message)
+            try PayloadMergerImpl().merge(context: context, data: message)
         ) { error in
             XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
         }
