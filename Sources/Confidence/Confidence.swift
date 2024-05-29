@@ -135,7 +135,7 @@ public class Confidence: ConfidenceEventSender {
                             eventSenderEngine.flush()
                         }
                     } catch {
-                        Logger(subsystem: "com.confidence", category: "track").debug(
+                        Logger(subsystem: "com.confidence", category: "track").warning(
                             "Error from EventProducer, failed to track event: \(event.name)")
                     }
                 }
