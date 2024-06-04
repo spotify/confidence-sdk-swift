@@ -131,10 +131,10 @@ extension NetworkClient {
                 do {
                     response.decodedError = try decoder.decode(HttpError.self, from: responseData)
                 } catch {
-                    let message = String(data: responseData, encoding: String.Encoding.utf8)
+                    let message = String(decoding: responseData, as: UTF8.self)
                     response.decodedError = HttpError(
                         code: httpURLResponse.statusCode,
-                        message: message ?? "unknown",
+                        message: message,
                         details: []
                     )
                 }

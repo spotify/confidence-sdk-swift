@@ -17,7 +17,7 @@ class StorageMock: Storage {
     func save(data: Encodable) throws {
         try storageQueue.sync {
             let dataB = try JSONEncoder().encode(data)
-            self.data = String(data: dataB, encoding: .utf8) ?? ""
+            self.data = String(decoding: dataB, as: UTF8.self)
 
             saveExpectation?.fulfill()
         }

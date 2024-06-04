@@ -19,7 +19,6 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
     // Context Keys
     private static var versionNameContextKey = "app_version"
     private static var buildNumberContextKey = "app_build"
-    private static var isForegroundContextKey = "is_foreground"
     // Event Names
     private static let appLaunchedEventName = "app-launched"
     private static let appInstalledEventName = "app-installed"
@@ -88,17 +87,6 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         UserDefaults.standard.setValue(currentBuild, forKey: Self.userDefaultBuildNameKey)
     }
 
-    private func updateContext(isForeground: Bool) {
-        withLock { [weak self] in
-            guard let self = self else {
-                return
-            }
-            var context = self.currentProducedContext.value
-            context.updateValue(.init(boolean: isForeground), forKey: Self.isForegroundContextKey)
-            self.currentProducedContext.send(context)
-        }
-    }
-
     private func withLock(callback: @escaping () -> Void) {
         queue.sync {
             callback()
@@ -107,10 +95,6 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
 
     @objc func notificationResponse(notification: NSNotification) {
         switch notification.name {
-        case UIApplication.didEnterBackgroundNotification:
-            updateContext(isForeground: false)
-        case UIApplication.willEnterForegroundNotification:
-            updateContext(isForeground: true)
         case UIApplication.didBecomeActiveNotification:
             track(eventName: Self.appLaunchedEventName, shouldFlush: true)
         default:

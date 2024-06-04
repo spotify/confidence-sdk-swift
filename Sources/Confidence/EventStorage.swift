@@ -50,10 +50,7 @@ internal class EventStorageImpl: EventStorage {
             }
             let encoder = JSONEncoder()
             let serialied = try encoder.encode(event)
-            let delimiter = "\n".data(using: .utf8)
-            guard let delimiter else {
-                return
-            }
+            let delimiter = Data("\n".utf8)
             currentFileHandle.seekToEndOfFile()
             try currentFileHandle.write(contentsOf: delimiter)
             try currentFileHandle.write(contentsOf: serialied)
@@ -78,8 +75,8 @@ internal class EventStorageImpl: EventStorage {
             let decoder = JSONDecoder()
             let fileUrl = folderURL.appendingPathComponent(id)
             let data = try Data(contentsOf: fileUrl)
-            let dataString = String(data: data, encoding: .utf8)
-            return try dataString?.components(separatedBy: "\n")
+            let dataString = String(decoding: data, as: UTF8.self)
+            return try dataString.components(separatedBy: "\n")
                 .filter { events in
                     !events.isEmpty
                 }
@@ -88,7 +85,7 @@ internal class EventStorageImpl: EventStorage {
                         return nil
                     }
                     return try decoder.decode(ConfidenceEvent.self, from: stringData)
-                } ?? []
+                }
         }
     }
 
