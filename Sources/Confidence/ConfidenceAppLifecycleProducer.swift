@@ -87,16 +87,6 @@ public class ConfidenceAppLifecycleProducer: ConfidenceEventProducer, Confidence
         UserDefaults.standard.setValue(currentBuild, forKey: Self.userDefaultBuildNameKey)
     }
 
-    private func updateContext() {
-        withLock { [weak self] in
-            guard let self = self else {
-                return
-            }
-            let context = self.currentProducedContext.value
-            self.currentProducedContext.send(context)
-        }
-    }
-
     private func withLock(callback: @escaping () -> Void) {
         queue.sync {
             callback()
