@@ -40,6 +40,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
         guard let initialContext = initialContext else {
+            eventHandler.send(.error)
             return
         }
 
