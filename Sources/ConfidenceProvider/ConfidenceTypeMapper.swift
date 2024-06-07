@@ -8,9 +8,15 @@ public enum ConfidenceTypeMapper {
     }
 
     static func from(ctx: EvaluationContext?) -> ConfidenceStruct {
-        var ctxMap = ctx?.asMap() ?? [:]
-        ctxMap["targeting_key"] = .string(ctx?.getTargetingKey() ?? "")
-        return ctxMap.compactMapValues(convertValue)
+        guard let openFeatureContext = ctx else {
+            return [:]
+        }
+        var ofCtxMap = openFeatureContext.asMap()
+        // Precendence given to the `attributes` rather then the bespoke `targeting_key`
+        if !openFeatureContext.getTargetingKey().isEmpty && !ofCtxMap.keys.contains("targeting_key") {
+            ofCtxMap["targeting_key"] = .string(openFeatureContext.getTargetingKey())
+        }
+        return ofCtxMap.compactMapValues(convertValue)
     }
 
     // swiftlint:disable:next cyclomatic_complexity

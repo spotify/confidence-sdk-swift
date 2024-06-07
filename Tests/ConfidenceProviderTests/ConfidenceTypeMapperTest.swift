@@ -18,6 +18,50 @@ class ValueConverterTest: XCTestCase {
         XCTAssertEqual(confidenceStruct, expected)
     }
 
+    func testContextConversionTargetingKey() throws {
+        let openFeatureCtx = MutableContext(
+            targetingKey: "",
+            structure: MutableStructure(attributes: (["targeting_key": .string("userid")])))
+        let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
+        let expected = [
+            "targeting_key": ConfidenceValue(string: "userid")
+        ]
+        XCTAssertEqual(confidenceStruct, expected)
+    }
+
+    func testContextConversionTargetingKeyPrecendence() throws {
+        let openFeatureCtx = MutableContext(
+            targetingKey: "userid-1",
+            structure: MutableStructure(attributes: (["targeting_key": .string("userid-2")])))
+        let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
+        let expected = [
+            "targeting_key": ConfidenceValue(string: "userid-2")
+        ]
+        XCTAssertEqual(confidenceStruct, expected)
+    }
+
+    func testContextConversionTargetingKeyPrecendence3() throws {
+        let openFeatureCtx = MutableContext(
+            targetingKey: "userid-1",
+            structure: MutableStructure(attributes: (["targeting_key": .string("")])))
+        let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
+        let expected = [
+            "targeting_key": ConfidenceValue(string: "")
+        ]
+        XCTAssertEqual(confidenceStruct, expected)
+    }
+
+    func testContextConversionTargetingKeyPrecendence2() throws {
+        let openFeatureCtx = MutableContext(
+            targetingKey: "userid-1",
+            structure: MutableStructure(attributes: ([:])))
+        let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
+        let expected = [
+            "targeting_key": ConfidenceValue(string: "userid-1")
+        ]
+        XCTAssertEqual(confidenceStruct, expected)
+    }
+
     func testContextConversionWithLists() throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
