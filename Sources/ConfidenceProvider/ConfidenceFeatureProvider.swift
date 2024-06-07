@@ -56,8 +56,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 confidence.asyncFetch()
             } else {
                 Task {
-                    try await confidence.fetchAndActivate()
-                    eventHandler.send(.ready)
+                    do {
+                        try await confidence.fetchAndActivate()
+                        eventHandler.send(.ready)
+                    } catch {
+                        eventHandler.send(.error)
+                    }
                 }
             }
         } catch {
