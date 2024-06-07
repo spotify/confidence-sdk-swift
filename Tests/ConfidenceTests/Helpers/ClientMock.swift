@@ -17,7 +17,7 @@ class ClientMock: ConfidenceResolveClient {
         self.testMode = testMode
     }
 
-    func resolve(ctx: ConfidenceStruct) throws -> ResolvesResult {
+    func resolve(ctx: ConfidenceStruct, isProvider: Bool) throws -> ResolvesResult {
         return ResolvesResult(resolvedValues: [], resolveToken: "")
     }
 

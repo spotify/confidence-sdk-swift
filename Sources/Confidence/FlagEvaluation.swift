@@ -25,7 +25,8 @@ extension FlagResolution {
         flagName: String,
         defaultValue: T,
         context: ConfidenceStruct,
-        flagApplier: FlagApplier? = nil
+        flagApplier: FlagApplier? = nil,
+        isProvider: Bool
     ) throws -> Evaluation<T> {
         let parsedKey = try FlagPath.getPath(for: flagName)
         if self == FlagResolution.EMPTY {

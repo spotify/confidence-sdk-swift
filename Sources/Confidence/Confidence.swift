@@ -7,7 +7,8 @@ public class Confidence: ConfidenceEventSender {
     public var region: ConfidenceRegion
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
-    private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
+    private let contextSubject = CurrentValueSubject<Confidence.ContextUpdateSignal, Never>(
+        ContextUpdateSignal.init(context: [:], isProvider: false))
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
     private let remoteFlagResolver: ConfidenceResolveClient
@@ -33,7 +34,7 @@ public class Confidence: ConfidenceEventSender {
         self.clientSecret = clientSecret
         self.region = region
         self.storage = storage
-        self.contextSubject.value = context
+        self.contextSubject.value = ContextUpdateSignal.init(context: context, isProvider: false)
         self.parent = parent
         self.storage = storage
         self.flagApplier = flagApplier
@@ -42,7 +43,7 @@ public class Confidence: ConfidenceEventSender {
             putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
 
-        contextChanges().sink { [weak self] context in
+        contextChanges().sink { [weak self] signal in
             guard let self = self else {
                 return
             }
@@ -50,7 +51,7 @@ public class Confidence: ConfidenceEventSender {
             self.currentFetchTask = Task {
                 do {
                     let context = self.getContext()
-                    try await self.fetchAndActivate()
+                    try await self.fetchAndActivate(isProvider: signal.isProvider)
                     self.contextReconciliatedChanges.send(context.hash())
                 } catch {
                 }
@@ -64,14 +65,20 @@ public class Confidence: ConfidenceEventSender {
         self.cache = savedFlags
     }
 
-    public func fetchAndActivate() async throws {
-        try await internalFetch()
+    /**
+    Fetches flag evaluations from backend and returns once the fetch is
+    complete (regardless of success)
+    Args:
+    - isProvider: used in case of OpenFeature integration, do not override manually
+    */
+    public func fetchAndActivate(isProvider: Bool = false) async throws {
+        try await internalFetch(isProvider: isProvider)
         try activate()
     }
 
-    func internalFetch() async throws {
+    func internalFetch(isProvider: Bool) async throws {
         let context = getContext()
-        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
+        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context, isProvider: isProvider)
         let resolution = FlagResolution(
             context: context,
             flags: resolvedFlags.resolvedValues,
@@ -80,24 +87,39 @@ public class Confidence: ConfidenceEventSender {
         try storage.save(data: resolution)
     }
 
-    public func asyncFetch() {
+    /**
+    Start a network request to fetch flag evaluations from backend, returns immediately.
+    In case of success storage cache will be updated for future sessions, but in-session cache remains unchanged.
+    Args:
+    - isProvider: used in case of OpenFeature integration, do not override manually
+    */
+    public func asyncFetch(isProvider: Bool = false) {
         Task {
-            try await internalFetch()
+            try await internalFetch(isProvider: isProvider)
         }
     }
 
-    public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
+    /**
+    Read flag evaluation from local cache. Does not trigger a backend request.
+    Args:
+    - key: flag name followed by the path of the property you want to access (dot notation expected).
+    e.g. "my-flag.my-property"
+    - defaultValue: value return in case of errors, for example if the flag/property is not found
+    - isProvider: used in case of OpenFeature integration, do not override manually
+    */
+    public func getEvaluation<T>(key: String, defaultValue: T, isProvider: Bool = false) throws -> Evaluation<T> {
         try self.cache.evaluate(
             flagName: key,
             defaultValue: defaultValue,
             context: getContext(),
-            flagApplier: flagApplier
+            flagApplier: flagApplier,
+            isProvider: isProvider
         )
     }
 
     public func getValue<T>(key: String, defaultValue: T) -> T {
         do {
-            return try getEvaluation(key: key, defaultValue: defaultValue).value
+            return try getEvaluation(key: key, defaultValue: defaultValue, isProvider: false).value
         } catch {
             return defaultValue
         }
@@ -107,7 +129,7 @@ public class Confidence: ConfidenceEventSender {
         return storage.isEmpty()
     }
 
-    public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
+    private func contextChanges() -> AnyPublisher<Confidence.ContextUpdateSignal, Never> {
         return contextSubject
             .dropFirst()
             .removeDuplicates()
@@ -172,7 +194,7 @@ public class Confidence: ConfidenceEventSender {
         var reconciledCtx = parentContext.filter {
             !removedContextKeys.contains($0.key)
         }
-        self.contextSubject.value.forEach { entry in
+        self.contextSubject.value.context.forEach { entry in
             reconciledCtx.updateValue(entry.value, forKey: entry.key)
         }
         return reconciledCtx
@@ -180,40 +202,47 @@ public class Confidence: ConfidenceEventSender {
 
     public func putContext(key: String, value: ConfidenceValue) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
+            var map = confidence.contextSubject.value.context
             map[key] = value
-            confidence.contextSubject.value = map
+            confidence.contextSubject.value = ContextUpdateSignal(context: map, isProvider: false)
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
+            var map = confidence.contextSubject.value.context
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
             }
-            confidence.contextSubject.value = map
+            confidence.contextSubject.value = ContextUpdateSignal(context: map, isProvider: false)
         }
     }
 
-    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
+    /**
+    Updates the context. This will trigger a new fetchAndActivate thus updating the cache mid-session.
+    Args:
+    - context: entries to be appended to the context
+    - removeKeys: keys of the entries that are removed from the context (including parent entries)
+    - isProvider: used in case of OpenFeature integration, do not override manually
+    */
+    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = [], isProvider: Bool = false) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
+            var map = confidence.contextSubject.value.context
             for removedKey in removedKeys {
                 map.removeValue(forKey: removedKey)
             }
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
             }
-            confidence.contextSubject.value = map
+            confidence.contextSubject.value = ContextUpdateSignal.init(context: map, isProvider: isProvider)
         }
     }
 
     public func removeKey(key: String) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
+            var map = confidence.contextSubject.value.context
             map.removeValue(forKey: key)
-            confidence.contextSubject.value = map
+            confidence.contextSubject.value = ContextUpdateSignal(context: map, isProvider: false)
             confidence.removedContextKeys.insert(key)
         }
     }
@@ -243,7 +272,7 @@ extension Confidence {
         var visitorId = VisitorUtil().getId()
         var initialContext: ConfidenceStruct = [:]
 
-        /**
+        /***
         Initializes the builder with the given credentails.
         */
         public init(clientSecret: String) {
@@ -276,7 +305,7 @@ extension Confidence {
             return self
         }
 
-        /**
+        /***
         Sets the region for the network request to the Confidence backend.
         The default is `global` and the requests are automatically routed to the closest server.
         */
@@ -323,6 +352,15 @@ extension Confidence {
                 parent: nil,
                 visitorId: visitorId
             )
+        }
+    }
+
+    private struct ContextUpdateSignal: Equatable, Hashable {
+        let context: ConfidenceStruct
+        let isProvider: Bool
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(context.hash())
         }
     }
 }

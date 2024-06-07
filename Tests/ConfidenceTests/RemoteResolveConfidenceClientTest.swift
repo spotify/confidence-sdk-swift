@@ -34,7 +34,7 @@ class RemoteResolveConfidenceClientTest: XCTestCase {
 
         let context = ["targeting_key": ConfidenceValue(string: "user1")]
 
-        let result = try await client.resolve(ctx: context)
+        let result = try await client.resolve(ctx: context, isProvider: false)
         XCTAssertEqual(result.resolvedValues.count, 2)
         let sortedResultValues = result.resolvedValues.sorted { resolvedValue1, resolvedValue2 in
             resolvedValue1.flag < resolvedValue2.flag

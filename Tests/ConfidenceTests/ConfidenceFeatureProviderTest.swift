@@ -52,7 +52,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
                 super.init(invocation: nil) // Workaround to use expectations in FakeClient
             }
 
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 callCount += 1
                 switch callCount {
                 case 1:
@@ -114,7 +114,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -172,7 +172,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -214,7 +214,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -254,7 +254,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -299,7 +299,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: XCTestCase, ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 if self.resolveStats == 1 {
                     let expectation = expectation(description: "never fullfil")
                     await fulfillment(of: [expectation])
@@ -345,7 +345,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -386,7 +386,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -427,7 +427,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -468,7 +468,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -509,7 +509,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
@@ -540,7 +540,7 @@ class ConfidenceFeatureProviderTest: XCTestCase {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
                 self.resolveStats += 1
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }

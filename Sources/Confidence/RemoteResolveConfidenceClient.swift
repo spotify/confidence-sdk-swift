@@ -24,13 +24,13 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
 
     // MARK: Resolver
 
-    public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
+    public func resolve(flags: [String], ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
             evaluationContext: TypeMapper.convert(structure: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
+            sdk: Sdk(id: isProvider ? "SDK_ID_SWIFT_PROVIDER" : metadata.name, version: metadata.version)
         )
 
         do {
@@ -54,8 +54,8 @@ public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         }
     }
 
-    public func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-        return try await resolve(flags: [], ctx: ctx)
+    public func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult {
+        return try await resolve(flags: [], ctx: ctx, isProvider: isProvider)
     }
 
     // MARK: Private

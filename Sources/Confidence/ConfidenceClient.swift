@@ -7,7 +7,7 @@ protocol ConfidenceClient {
 
 protocol ConfidenceResolveClient {
     // Async
-    func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult
+    func resolve(ctx: ConfidenceStruct, isProvider: Bool) async throws -> ResolvesResult
 }
 
 struct ResolvedValue: Codable, Equatable {
