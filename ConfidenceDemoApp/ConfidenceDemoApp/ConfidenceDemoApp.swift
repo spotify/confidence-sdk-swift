@@ -44,7 +44,7 @@ struct ConfidenceDemoApp: App {
 extension ConfidenceDemoApp {
     func setup(confidence: Confidence) async throws {
         try await confidence.fetchAndActivate()
-        confidence.track(
+        try confidence.track(
             eventName: "all-types",
             data: [
                 "my_string": ConfidenceValue(string: "hello_from_world"),
