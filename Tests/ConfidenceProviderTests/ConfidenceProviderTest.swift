@@ -6,7 +6,7 @@ import XCTest
 
 @testable import Confidence
 
-class ConfidenceTest: XCTestCase {
+class ConfidenceProviderTest: XCTestCase {
     private var readyExpectation = XCTestExpectation(description: "Ready")
     private var errorExpectation = XCTestExpectation(description: "Error")
 
