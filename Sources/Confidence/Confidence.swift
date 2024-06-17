@@ -59,7 +59,10 @@ public class Confidence: ConfidenceEventSender {
         }
         .store(in: &cancellables)
     }
-
+    /**
+    Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
+    Errors can be thrown if something goes wrong access data on disk.
+    */
     public func activate() throws {
         let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
         self.cache = savedFlags
@@ -91,9 +94,17 @@ public class Confidence: ConfidenceEventSender {
         try storage.save(data: resolution)
     }
 
+    /**
+    Fetches latest flag evaluations and store them on disk. Note that "activate" must be called for this data to be
+    made available in the app session.
+    */
     public func asyncFetch() {
         Task {
-            try await internalFetch()
+            do {
+                try await internalFetch()
+            } catch {
+                // TODO: Log errors for debugging
+            }
         }
     }
 
