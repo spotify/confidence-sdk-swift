@@ -53,7 +53,7 @@ public class Confidence: ConfidenceEventSender {
                     try await self.fetchAndActivate()
                     self.contextReconciliatedChanges.send(context.hash())
                 } catch {
-                    // Log errors for debugging
+                    // TODO: Log errors for debugging
                 }
             }
         }
@@ -75,7 +75,7 @@ public class Confidence: ConfidenceEventSender {
         do {
             try await internalFetch()
         } catch {
-            // Log errors for debugging
+            // TODO: Log errors for debugging
         }
         try activate()
     }
