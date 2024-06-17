@@ -39,12 +39,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
-        guard let initialContext = initialContext else {
-            eventHandler.send(.error)
-            return
-        }
-
-        self.updateConfidenceContext(context: initialContext)
+        self.updateConfidenceContext(context: initialContext ?? MutableContext(attributes: [:]))
         if self.initializationStrategy == .activateAndFetchAsync {
             eventHandler.send(.ready)
         }
