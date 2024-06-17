@@ -18,12 +18,13 @@ class ConfidenceProviderTest: XCTestCase {
         }
 
         let client = FakeClient()
-        let confidence = Confidence.Builder(clientSecret: "test")
+        let confidenceBuilder = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user1")])
             .withFlagResolverClient(flagResolver: client)
-            .build()
 
-        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .activateAndFetchAsync)
+        let provider = ConfidenceFeatureProvider(
+            confidenceBuilder: confidenceBuilder,
+            initializationStrategy: .activateAndFetchAsync)
         OpenFeatureAPI.shared.setProvider(provider: provider)
 
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
@@ -56,12 +57,13 @@ class ConfidenceProviderTest: XCTestCase {
             }
         }
 
-        let confidence = Confidence.Builder(clientSecret: "test")
+        let confidenceBuilder = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user1")])
             .withStorage(storage: FakeStorage())
-            .build()
 
-        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .activateAndFetchAsync)
+        let provider = ConfidenceFeatureProvider(
+            confidenceBuilder: confidenceBuilder,
+            initializationStrategy: .activateAndFetchAsync)
         OpenFeatureAPI.shared.setProvider(provider: provider)
 
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in

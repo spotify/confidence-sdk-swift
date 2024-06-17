@@ -260,6 +260,7 @@ extension Confidence {
         internal var storage: Storage?
         internal let eventStorage: EventStorage
         internal var flagResolver: ConfidenceResolveClient?
+        internal var metadata: ConfidenceMetadata?
         var region: ConfidenceRegion = .global
 
         var visitorId = VisitorUtil().getId()
@@ -298,6 +299,11 @@ extension Confidence {
             return self
         }
 
+        public func withMetadata(metadata: ConfidenceMetadata) -> Builder {
+            self.metadata = metadata
+            return self
+        }
+
         /**
         Sets the region for the network request to the Confidence backend.
         The default is `global` and the requests are automatically routed to the closest server.
@@ -311,7 +317,7 @@ extension Confidence {
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region)
-            let metadata = ConfidenceMetadata(
+            let metadata = metadata ?? ConfidenceMetadata(
                 name: "SDK_ID_SWIFT_CONFIDENCE",
                 version: "0.1.4") // x-release-please-version
             let uploader = RemoteConfidenceClient(

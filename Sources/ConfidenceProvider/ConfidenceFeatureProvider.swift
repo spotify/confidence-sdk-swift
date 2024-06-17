@@ -21,12 +21,15 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
 
     /// Initialize the Provider via a `Confidence` object.
-    public convenience init(confidence: Confidence, initializationStrategy: InitializationStrategy = .fetchAndActivate) {
-        self.init(confidence: confidence, session: nil)
+    public convenience init(
+        confidenceBuilder: Confidence.Builder,
+        initializationStrategy: InitializationStrategy = .fetchAndActivate
+    ) {
+        self.init(confidenceBuilder: confidenceBuilder, session: nil)
     }
 
     internal init(
-        confidence: Confidence,
+        confidenceBuilder: Confidence.Builder,
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
         session: URLSession?
     ) {
@@ -35,7 +38,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             version: "0.2.1") // x-release-please-version
         self.metadata = Metadata(name: metadata.name)
         self.initializationStrategy = initializationStrategy
-        self.confidence = confidence
+        self.confidence = confidenceBuilder
+            .withMetadata(metadata: metadata)
+            .build()
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
