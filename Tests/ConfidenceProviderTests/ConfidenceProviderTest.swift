@@ -42,19 +42,18 @@ class ConfidenceProviderTest: XCTestCase {
             func save(data: Encodable) throws {
                 // no-op
             }
-            
-            func load<T>(defaultValue: T) throws -> T where T : Decodable {
+
+            func load<T>(defaultValue: T) throws -> T where T: Decodable {
                 throw ConfidenceError.internalError(message: "test")
             }
-            
+
             func clear() throws {
                 // no-op
             }
-            
+
             func isEmpty() -> Bool {
                 return false
             }
-            
         }
 
         let confidence = Confidence.Builder(clientSecret: "test")
