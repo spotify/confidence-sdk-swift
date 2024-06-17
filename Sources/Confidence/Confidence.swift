@@ -53,19 +53,33 @@ public class Confidence: ConfidenceEventSender {
                     try await self.fetchAndActivate()
                     self.contextReconciliatedChanges.send(context.hash())
                 } catch {
+                    // TODO: Log errors for debugging
                 }
             }
         }
         .store(in: &cancellables)
     }
-
+    /**
+    Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
+    Errors can be thrown if something goes wrong access data on disk.
+    */
     public func activate() throws {
         let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
         self.cache = savedFlags
     }
 
+    /**
+    Fetches latest flag evaluations and store them on disk. Regardless of the fetch outcome (success or failure), this
+    function activates the cache after the fetch.
+    Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
+    Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data on disk.
+    */
     public func fetchAndActivate() async throws {
-        try await internalFetch()
+        do {
+            try await internalFetch()
+        } catch {
+            // TODO: Log errors for debugging
+        }
         try activate()
     }
 
@@ -80,9 +94,17 @@ public class Confidence: ConfidenceEventSender {
         try storage.save(data: resolution)
     }
 
+    /**
+    Fetches latest flag evaluations and store them on disk. Note that "activate" must be called for this data to be
+    made available in the app session.
+    */
     public func asyncFetch() {
         Task {
-            try await internalFetch()
+            do {
+                try await internalFetch()
+            } catch {
+                // TODO: Log errors for debugging
+            }
         }
     }
 

@@ -7,7 +7,7 @@ import XCTest
 @testable import Confidence
 
 @available(macOS 13.0, iOS 16.0, *)
-class ConfidenceFeatureProviderTest: XCTestCase {
+class ConfidenceTest: XCTestCase {
     private var flagApplier = FlagApplierMock()
     private let storage = StorageMock()
     private var readyExpectation = XCTestExpectation(description: "Ready")

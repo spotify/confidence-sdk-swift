@@ -39,11 +39,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
-        guard let initialContext = initialContext else {
-            return
-        }
-
-        self.updateConfidenceContext(context: initialContext)
+        self.updateConfidenceContext(context: initialContext ?? MutableContext(attributes: [:]))
         if self.initializationStrategy == .activateAndFetchAsync {
             eventHandler.send(.ready)
         }
@@ -55,8 +51,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 confidence.asyncFetch()
             } else {
                 Task {
-                    try await confidence.fetchAndActivate()
-                    eventHandler.send(.ready)
+                    do {
+                        try await confidence.fetchAndActivate()
+                        eventHandler.send(.ready)
+                    } catch {
+                        eventHandler.send(.error)
+                    }
                 }
             }
         } catch {
