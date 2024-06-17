@@ -6,7 +6,6 @@ import XCTest
 
 @testable import Confidence
 
-@available(macOS 13.0, iOS 16.0, *)
 class ConfidenceTest: XCTestCase {
     private var readyExpectation = XCTestExpectation(description: "Ready")
     private var errorExpectation = XCTestExpectation(description: "Error")
