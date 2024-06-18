@@ -581,6 +581,13 @@ class ConfidenceTest: XCTestCase {
             XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
         }
     }
+
+    func testConfidenceMetadata() {
+        let confidence = Confidence.Builder(clientSecret: "").build()
+        let remoteClient = confidence.remoteFlagResolver as? RemoteConfidenceResolveClient
+        XCTAssertEqual("SDK_ID_SWIFT_CONFIDENCE", remoteClient?.metadata.name)
+        XCTAssertNotEqual("", remoteClient?.metadata.version)
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {

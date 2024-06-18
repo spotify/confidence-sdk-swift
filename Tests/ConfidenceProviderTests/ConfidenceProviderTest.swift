@@ -74,4 +74,22 @@ class ConfidenceProviderTest: XCTestCase {
         await fulfillment(of: [errorExpectation], timeout: 5.0)
         cancellable.cancel()
     }
+
+    func testMetadata() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                throw ConfidenceError.internalError(message: "test")
+            }
+        }
+
+        let confidenceForOpenFeature = ConfidenceFeatureProvider.createConfidence(clientSecret: "testSecret")
+        let provider = ConfidenceFeatureProvider(
+            confidence: confidenceForOpenFeature,
+            initializationStrategy: .activateAndFetchAsync
+        )
+        XCTAssertEqual("SDK_ID_SWIFT_PROVIDER", provider.metadata.name)
+        let remoteClient = confidenceForOpenFeature.remoteFlagResolver as? RemoteConfidenceResolveClient
+        XCTAssertEqual("SDK_ID_SWIFT_PROVIDER", remoteClient?.metadata.name)
+        XCTAssertNotEqual("", remoteClient?.metadata.version)
+    }
 }
