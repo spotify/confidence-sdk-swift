@@ -3,10 +3,11 @@ import Foundation
 public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private var options: ConfidenceClientOptions
-    private let metadata: ConfidenceMetadata
-
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
+
+    // Internal for testing
+    internal let metadata: ConfidenceMetadata
 
     init(
         options: ConfidenceClientOptions,
