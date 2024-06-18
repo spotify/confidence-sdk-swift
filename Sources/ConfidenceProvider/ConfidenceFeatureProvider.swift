@@ -30,7 +30,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             .withRegion(region: .global)
             .withMetadata(metadata: ConfidenceMetadata.init(
                 name: providerId,
-                version: "0.2.1") // x-release-please-version
+                version: "0.2.2") // x-release-please-version
             )
             .build())
     }

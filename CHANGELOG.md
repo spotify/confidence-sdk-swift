@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.2](https://github.com/spotify/confidence-sdk-swift/compare/0.2.1...0.2.2) (2024-06-18)
+
+
+### 🐛 Bug Fixes
+
+* Confidence version auto-update ([#140](https://github.com/spotify/confidence-sdk-swift/issues/140)) ([9611e60](https://github.com/spotify/confidence-sdk-swift/commit/9611e608af7ccef7f68e58e0ab36bc26feffce20))
+* Issues with context/secret trigger error ([#137](https://github.com/spotify/confidence-sdk-swift/issues/137)) ([54a674e](https://github.com/spotify/confidence-sdk-swift/commit/54a674e7ff8be4c97ad296f6bf066b8641ae95b5))
+* targeting_key conversion ([#136](https://github.com/spotify/confidence-sdk-swift/issues/136)) ([d295ffa](https://github.com/spotify/confidence-sdk-swift/commit/d295ffa81cce2bb0ef611caea6661319541ac40c))
+
+
+### ✨ New Features
+
+* CreateConfidence from Provider for Metadata ([#141](https://github.com/spotify/confidence-sdk-swift/issues/141)) ([bf368df](https://github.com/spotify/confidence-sdk-swift/commit/bf368df1fba8b545b22f16a901d1ebd7b5d6fde9))
+
+
+### 📚 Documentation
+
+* track needs try ([#133](https://github.com/spotify/confidence-sdk-swift/issues/133)) ([0983035](https://github.com/spotify/confidence-sdk-swift/commit/098303518b8ca8a4c165d75b4bcb024cdc6fba18))
+
+
+### 🔄 Refactoring
+
+* remove is_foreground from event producer ([#135](https://github.com/spotify/confidence-sdk-swift/issues/135)) ([da06d45](https://github.com/spotify/confidence-sdk-swift/commit/da06d458d426825a590b4d6342f08614ceb007e4))
+
 ## [0.2.1](https://github.com/spotify/confidence-sdk-swift/compare/0.2.0...0.2.1) (2024-05-29)
 
 
