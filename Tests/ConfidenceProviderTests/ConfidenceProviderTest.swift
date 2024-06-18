@@ -1,10 +1,10 @@
 import Foundation
-import ConfidenceProvider
 import Combine
 import OpenFeature
 import XCTest
 
 @testable import Confidence
+@testable import ConfidenceProvider
 
 class ConfidenceProviderTest: XCTestCase {
     private var readyExpectation = XCTestExpectation(description: "Ready")
@@ -84,11 +84,11 @@ class ConfidenceProviderTest: XCTestCase {
 
         let confidenceForOpenFeature = ConfidenceFeatureProvider.createConfidence(clientSecret: "testSecret")
         let provider = ConfidenceFeatureProvider(
-            confidence: confidenceForOpenFeature,
+            confidenceForOF: confidenceForOpenFeature,
             initializationStrategy: .activateAndFetchAsync
         )
         XCTAssertEqual("SDK_ID_SWIFT_PROVIDER", provider.metadata.name)
-        let remoteClient = confidenceForOpenFeature.remoteFlagResolver as? RemoteConfidenceResolveClient
+        let remoteClient = confidenceForOpenFeature.confidence.remoteFlagResolver as? RemoteConfidenceResolveClient
         XCTAssertEqual("SDK_ID_SWIFT_PROVIDER", remoteClient?.metadata.name)
         XCTAssertNotEqual("", remoteClient?.metadata.version)
     }

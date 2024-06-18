@@ -25,14 +25,25 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     /**
     Creates the `Confidence` object to be used as init parameter for this Provider.
     */
-    public static func createConfidence(clientSecret: String) -> Confidence {
-        return Confidence.Builder.init(clientSecret: clientSecret)
+    public static func createConfidence(clientSecret: String) -> ConfidenceForOpenFeature {
+        return ConfidenceForOpenFeature.init(confidence: Confidence.Builder.init(clientSecret: clientSecret)
             .withRegion(region: .global)
             .withMetadata(metadata: ConfidenceMetadata.init(
                 name: providerId,
                 version: "0.2.1") // x-release-please-version
             )
-            .build()
+            .build())
+    }
+
+    /**
+    Proxy holder to ensure correct Confidence configuration passed into the Provider's init.
+    Do not instantiate directly.
+    */
+    public class ConfidenceForOpenFeature {
+        internal init(confidence: Confidence) {
+            self.confidence = confidence
+        }
+        let confidence: Confidence
     }
 
     /**
@@ -41,6 +52,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     rather then be instantiated directly via `Confidence.init(...)` as you would if not using the OpenFeature integration.
     */
     public convenience init(
+        confidenceForOF: ConfidenceForOpenFeature,
+        initializationStrategy: InitializationStrategy = .fetchAndActivate
+    ) {
+        self.init(confidence: confidenceForOF.confidence, session: nil)
+    }
+
+    // Allows to pass a confidence object with injected configurations for testing
+    internal convenience init(
         confidence: Confidence,
         initializationStrategy: InitializationStrategy = .fetchAndActivate
     ) {
