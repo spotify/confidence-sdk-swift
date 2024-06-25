@@ -325,7 +325,7 @@ extension Confidence {
                 region: region)
             let metadata = ConfidenceMetadata(
                 name: sdkId,
-                version: "0.2.2") // x-release-please-version
+                version: "0.2.3") // x-release-please-version
             let uploader = RemoteConfidenceClient(
                 options: options,
                 metadata: metadata

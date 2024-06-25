@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/spotify/confidence-sdk-swift/compare/0.2.2...0.2.3) (2024-06-25)
+
+
+### 🔄 Refactoring
+
+* Revert "feat: CreateConfidence from Provider for Metadata ([#141](https://github.com/spotify/confidence-sdk-swift/issues/141))" ([#142](https://github.com/spotify/confidence-sdk-swift/issues/142)) ([643a49a](https://github.com/spotify/confidence-sdk-swift/commit/643a49ab969a87cda197f90ae34d63c81d074054))
+
 ## [0.2.2](https://github.com/spotify/confidence-sdk-swift/compare/0.2.1...0.2.2) (2024-06-18)
 
 
