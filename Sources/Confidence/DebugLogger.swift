@@ -14,15 +14,15 @@ private extension Logger {
     static let confidence = Logger(subsystem: subsystem ?? "", category: "confidence")
 }
 
-internal class DebugLoggerImpl : DebugLogger {
+internal class DebugLoggerImpl: DebugLogger {
     func logMessage(message: String, isWarning: Bool) {
-        if (!isWarning) {
+        if !isWarning {
             Logger.confidence.debug("\(message)")
         } else {
             Logger.confidence.warning("\(message)")
         }
     }
-    
+
     func logEvent(event: ConfidenceEvent, details: String) {
         Logger.confidence.debug("\(details) \(event.name) \(event.payload) \(event.eventTime)")
     }
@@ -30,7 +30,7 @@ internal class DebugLoggerImpl : DebugLogger {
     func logFlags(flag: String) {
         Logger.confidence.debug("\(flag)")
     }
-    
+
     func logContext(context: ConfidenceStruct) {
         Logger.confidence.debug("\(context)")
     }

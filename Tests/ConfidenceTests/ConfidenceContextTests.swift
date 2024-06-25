@@ -17,7 +17,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
-            context: ["k1": ConfidenceValue(string: "v1")], 
+            context: ["k1": ConfidenceValue(string: "v1")],
             debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
