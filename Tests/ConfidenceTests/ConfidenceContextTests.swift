@@ -17,7 +17,8 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
-            context: ["k1": ConfidenceValue(string: "v1")]
+            context: ["k1": ConfidenceValue(string: "v1")], 
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -44,7 +45,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -75,7 +77,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         confidence.putContext(
             key: "k1",
@@ -101,7 +104,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -131,7 +135,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -161,7 +166,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         confidence.removeKey(key: "k2")
         let expected = [
@@ -185,7 +191,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -212,7 +219,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             [
@@ -242,7 +250,8 @@ final class ConfidenceContextTests: XCTestCase {
             remoteFlagResolver: client,
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
-            parent: nil
+            parent: nil,
+            debugLogger: nil
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             [
@@ -275,7 +284,8 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            visitorId: "uuid"
+            visitorId: "uuid",
+            debugLogger: nil
         )
         let expected = [
             "k1": ConfidenceValue(string: "v1"),

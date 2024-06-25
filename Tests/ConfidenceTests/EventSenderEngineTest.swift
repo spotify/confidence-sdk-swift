@@ -59,7 +59,8 @@ final class EventSenderEngineTest: XCTestCase {
             uploader: uploaderMock,
             storage: storageMock,
             flushPolicies: [MinSizeFlushPolicy(maxSize: 1)],
-            writeQueue: writeQueue
+            writeQueue: writeQueue,
+            debugLogger: nil
         )
 
         let expectation = XCTestExpectation(description: "Upload finished")
@@ -97,7 +98,8 @@ final class EventSenderEngineTest: XCTestCase {
             uploader: uploaderMock,
             storage: storageMock,
             flushPolicies: [MinSizeFlushPolicy(maxSize: 5)],
-            writeQueue: writeQueue
+            writeQueue: writeQueue,
+            debugLogger: nil
         )
 
         try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
@@ -117,7 +119,8 @@ final class EventSenderEngineTest: XCTestCase {
             uploader: badRequestUploader,
             storage: storageMock,
             flushPolicies: [ImmidiateFlushPolicy()],
-            writeQueue: writeQueue
+            writeQueue: writeQueue,
+            debugLogger: nil
         )
         try eventSenderEngine.emit(eventName: "testEvent", data: ConfidenceStruct(), context: ConfidenceStruct())
         let expectation = expectation(description: "events batched")
@@ -141,7 +144,8 @@ final class EventSenderEngineTest: XCTestCase {
             uploader: retryLaterUploader,
             storage: storageMock,
             flushPolicies: [ImmidiateFlushPolicy()],
-            writeQueue: writeQueue
+            writeQueue: writeQueue,
+            debugLogger: nil
         )
 
         try eventSenderEngine.emit(eventName: "testEvent", data: ConfidenceStruct(), context: ConfidenceStruct())
@@ -158,7 +162,8 @@ final class EventSenderEngineTest: XCTestCase {
             storage: storageMock,
             // no other flush policy is set which means that only manual flushes will trigger upload
             flushPolicies: [],
-            writeQueue: writeQueue
+            writeQueue: writeQueue,
+            debugLogger: nil
         )
 
         try eventSenderEngine.emit(eventName: "Hello", data: [:], context: [:])
@@ -193,7 +198,8 @@ final class EventSenderEngineTest: XCTestCase {
             storage: storageMock,
             // no other flush policy is set which means that only manual flushes will trigger upload
             flushPolicies: [],
-            writeQueue: writeQueue
+            writeQueue: writeQueue,
+            debugLogger: nil
         )
 
         eventSenderEngine.flush()

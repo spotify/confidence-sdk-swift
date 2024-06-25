@@ -8,7 +8,11 @@ protocol FlushPolicy {
 }
 
 protocol EventSenderEngine {
-    func emit(eventName: String, data: ConfidenceStruct, context: ConfidenceStruct) throws
+    func emit(
+        eventName: String,
+        data: ConfidenceStruct,
+        context: ConfidenceStruct
+    ) throws
     func shutdown()
     func flush()
 }
@@ -25,18 +29,21 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let payloadMerger: PayloadMerger = PayloadMergerImpl()
     private let semaphore = DispatchSemaphore(value: 1)
     private let writeQueue: DispatchQueue
+    private let debugLogger: DebugLogger?
 
     convenience init(
         clientSecret: String,
         uploader: ConfidenceClient,
-        storage: EventStorage
+        storage: EventStorage,
+        debugLogger: DebugLogger?
     ) {
         self.init(
             clientSecret: clientSecret,
             uploader: uploader,
             storage: storage,
             flushPolicies: [SizeFlushPolicy(batchSize: 10)],
-            writeQueue: DispatchQueue(label: "ConfidenceWriteQueue")
+            writeQueue: DispatchQueue(label: "ConfidenceWriteQueue"),
+            debugLogger: debugLogger
         )
     }
 
@@ -45,13 +52,15 @@ final class EventSenderEngineImpl: EventSenderEngine {
         uploader: ConfidenceClient,
         storage: EventStorage,
         flushPolicies: [FlushPolicy],
-        writeQueue: DispatchQueue
+        writeQueue: DispatchQueue,
+        debugLogger: DebugLogger?
     ) {
         self.uploader = uploader
         self.clientSecret = clientSecret
         self.storage = storage
         self.flushPolicies = flushPolicies + [ManualFlushPolicy()]
         self.writeQueue = writeQueue
+        self.debugLogger = debugLogger
 
         writeReqChannel
             .receive(on: self.writeQueue)
@@ -60,6 +69,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
                 if event.name != manualFlushEvent.name { // skip storing flush events.
                     do {
                         try self.storage.writeEvent(event: event)
+                        debugLogger?.logEvent(event: event, details: "Event written to disk ")
                     } catch {
                     }
                 }
@@ -119,16 +129,22 @@ final class EventSenderEngineImpl: EventSenderEngine {
         semaphore.signal()
     }
 
-    func emit(eventName: String, data: ConfidenceStruct, context: ConfidenceStruct) throws {
-        writeReqChannel.send(ConfidenceEvent(
+    func emit(
+        eventName: String,
+        data: ConfidenceStruct,
+        context: ConfidenceStruct
+    ) throws {
+        let event = ConfidenceEvent(
             name: eventName,
             payload: try payloadMerger.merge(context: context, data: data),
             eventTime: Date.backport.now)
-        )
+        writeReqChannel.send(event)
+        debugLogger?.logEvent(event: event, details: "Emitting event ")
     }
 
     func flush() {
         writeReqChannel.send(manualFlushEvent)
+        debugLogger?.logEvent(event: manualFlushEvent, details: "Event flushed ")
     }
 
     func shutdown() {
