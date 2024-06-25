@@ -3,20 +3,24 @@ import Combine
 import os
 
 public class Confidence: ConfidenceEventSender {
-    public let clientSecret: String
-    public var region: ConfidenceRegion
+    private let clientSecret: String
+    private var region: ConfidenceRegion
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
     private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
     private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
-    private let remoteFlagResolver: ConfidenceResolveClient
     private let flagApplier: FlagApplier
     private var cache = FlagResolution.EMPTY
     private var storage: Storage
-    internal let contextReconciliatedChanges = PassthroughSubject<String, Never>()
     private var cancellables = Set<AnyCancellable>()
     private var currentFetchTask: Task<(), Never>?
+
+    // Internal for testing
+    internal let remoteFlagResolver: ConfidenceResolveClient
+    internal let contextReconciliatedChanges = PassthroughSubject<String, Never>()
+
+    public static let sdkId: String = "SDK_ID_SWIFT_CONFIDENCE"
 
     required init(
         clientSecret: String,
@@ -240,6 +244,9 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    /**
+    Sets the initial Context.
+    */
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,
@@ -255,15 +262,20 @@ public class Confidence: ConfidenceEventSender {
 
 extension Confidence {
     public class Builder {
-        let clientSecret: String
+        // Must be configured or configured automatically
+        internal let clientSecret: String
+        internal let eventStorage: EventStorage
+        internal let visitorId = VisitorUtil().getId()
+
+        // Can be configured
+        internal var region: ConfidenceRegion = .global
+        internal var metadata: ConfidenceMetadata?
+        internal var initialContext: ConfidenceStruct = [:]
+
+        // Injectable for testing
         internal var flagApplier: FlagApplier?
         internal var storage: Storage?
-        internal let eventStorage: EventStorage
         internal var flagResolver: ConfidenceResolveClient?
-        var region: ConfidenceRegion = .global
-
-        var visitorId = VisitorUtil().getId()
-        var initialContext: ConfidenceStruct = [:]
 
         /**
         Initializes the builder with the given credentails.
@@ -312,7 +324,7 @@ extension Confidence {
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region)
             let metadata = ConfidenceMetadata(
-                name: "SDK_ID_SWIFT_CONFIDENCE",
+                name: sdkId,
                 version: "0.2.2") // x-release-please-version
             let uploader = RemoteConfidenceClient(
                 options: options,

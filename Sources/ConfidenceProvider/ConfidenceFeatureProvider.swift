@@ -10,15 +10,16 @@ struct Metadata: ProviderMetadata {
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
 public class ConfidenceFeatureProvider: FeatureProvider {
+    public static let providerId: String = "SDK_ID_SWIFT_PROVIDER"
     public var metadata: ProviderMetadata
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private let initializationStrategy: InitializationStrategy
     private let eventHandler = EventHandler(ProviderEvent.notReady)
     private let confidence: Confidence
+    private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
     private var currentResolveTask: Task<Void, Never>?
-    private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
 
     /**
     Initialize the Provider via a `Confidence` object.
@@ -34,7 +35,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         session: URLSession?
     ) {
         let metadata = ConfidenceMetadata(
-            name: "SDK_ID_SWIFT_PROVIDER",
+            name: ConfidenceFeatureProvider.providerId,
             version: "0.2.2") // x-release-please-version
         self.metadata = Metadata(name: metadata.name)
         self.initializationStrategy = initializationStrategy
