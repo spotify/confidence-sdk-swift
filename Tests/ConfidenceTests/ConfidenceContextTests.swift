@@ -31,6 +31,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testWithContextUpdateParent() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -46,7 +47,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -60,9 +61,11 @@ final class ConfidenceContextTests: XCTestCase {
             "k3": ConfidenceValue(string: "v3"),
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testUpdateLocalContext() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -78,7 +81,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         confidence.putContext(
             key: "k1",
@@ -87,9 +90,11 @@ final class ConfidenceContextTests: XCTestCase {
             "k1": ConfidenceValue(string: "v3"),
         ]
         XCTAssertEqual(confidence.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testUpdateLocalContextWithoutOverride() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -105,7 +110,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -118,9 +123,11 @@ final class ConfidenceContextTests: XCTestCase {
             "k2": ConfidenceValue(string: "v4"),
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testUpdateParentContextWithOverride() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -136,7 +143,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -149,9 +156,11 @@ final class ConfidenceContextTests: XCTestCase {
             "k2": ConfidenceValue(string: "v2"),
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testRemoveContextEntry() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -167,16 +176,18 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         confidence.removeKey(key: "k2")
         let expected = [
             "k1": ConfidenceValue(string: "v1")
         ]
         XCTAssertEqual(confidence.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testRemoveContextEntryFromParent() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -192,7 +203,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
@@ -202,9 +213,11 @@ final class ConfidenceContextTests: XCTestCase {
             "k2": ConfidenceValue(string: "v2")
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testRemoveContextEntryFromParentAndChild() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -220,7 +233,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             [
@@ -233,9 +246,11 @@ final class ConfidenceContextTests: XCTestCase {
             "k2": ConfidenceValue(string: "v2")
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 1)
     }
 
     func testRemoveContextEntryFromParentAndChildThenUpdate() {
+        let debugLogger = DebugLoggerMock()
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
@@ -251,7 +266,7 @@ final class ConfidenceContextTests: XCTestCase {
             storage: StorageMock(),
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
-            debugLogger: nil
+            debugLogger: debugLogger
         )
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             [
@@ -266,6 +281,7 @@ final class ConfidenceContextTests: XCTestCase {
             "k1": ConfidenceValue(string: "v4"),
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
+        XCTAssertEqual(debugLogger.contextLogs, 2)
     }
 
     func testVisitorId() {
