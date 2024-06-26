@@ -107,7 +107,7 @@ final class EventSenderEngineTest: XCTestCase {
 
     func testRemoveEventsFromStorageOnBadRequest() throws {
         MockedClientURLProtocol.mockedOperation = .badRequest
-        let badRequestUploader = RemoteConfidenceClient(
+        let badRequestUploader = ConfidenceClientEventsRemote(
             options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
@@ -131,7 +131,7 @@ final class EventSenderEngineTest: XCTestCase {
 
     func testKeepEventsInStorageForRetry() throws {
         MockedClientURLProtocol.mockedOperation = .needRetryLater
-        let retryLaterUploader = RemoteConfidenceClient(
+        let retryLaterUploader = ConfidenceClientEventsRemote(
             options: ConfidenceClientOptions(credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))

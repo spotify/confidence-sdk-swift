@@ -1,6 +1,6 @@
 import Foundation
 
-protocol ConfidenceClient {
+protocol ConfidenceEventsClient {
     // Returns true if the batch has been correctly processed by the backend
     func upload(events: [NetworkEvent]) async throws -> Bool
 }
@@ -20,4 +20,9 @@ struct ResolvedValue: Codable, Equatable {
 public struct ResolvesResult: Codable, Equatable {
     var resolvedValues: [ResolvedValue]
     var resolveToken: String?
+}
+
+struct Sdk: Codable {
+    var id: String
+    var version: String
 }

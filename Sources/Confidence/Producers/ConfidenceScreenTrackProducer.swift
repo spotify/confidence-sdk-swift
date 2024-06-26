@@ -3,7 +3,7 @@ import Foundation
 import UIKit
 import Combine
 
-public class ConfidenceScreenTracker: ConfidenceEventProducer {
+public class ConfidenceScreenTrackProducer: ConfidenceEventProducer {
     private var events = BufferedPassthrough<Event>()
     static let notificationName = Notification.Name(rawValue: "ConfidenceScreenTracker")
     static let screenName = "screen_name"
@@ -70,7 +70,7 @@ extension UIViewController {
     private func sendNotification(event: String) {
         var className = String(describing: type(of: self))
             .replacingOccurrences(of: "ViewController", with: "")
-        var message: [String: String] = [ConfidenceScreenTracker.screenName: className]
+        var message: [String: String] = [ConfidenceScreenTrackProducer.screenName: className]
 
         if let trackable = self as? TrackableComponent {
             className = trackable.trackName()
@@ -79,14 +79,14 @@ extension UIViewController {
                 do {
                     let data = try encoder.encode(trackableWithMessage.trackMessage())
                     let messageString = String(decoding: data, as: UTF8.self)
-                    message.updateValue(messageString, forKey: ConfidenceScreenTracker.messageKey)
+                    message.updateValue(messageString, forKey: ConfidenceScreenTrackProducer.messageKey)
                 } catch {
                 }
             }
         }
 
         NotificationCenter.default.post(
-            name: ConfidenceScreenTracker.notificationName,
+            name: ConfidenceScreenTrackProducer.notificationName,
             object: self,
             userInfo: message
         )

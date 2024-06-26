@@ -326,7 +326,7 @@ extension Confidence {
             let metadata = ConfidenceMetadata(
                 name: sdkId,
                 version: "0.2.3") // x-release-please-version
-            let uploader = RemoteConfidenceClient(
+            let uploader = ConfidenceClientEventsRemote(
                 options: options,
                 metadata: metadata
             )
@@ -337,7 +337,7 @@ extension Confidence {
                 options: options,
                 metadata: metadata
             )
-            let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(
+            let flagResolver = flagResolver ?? ConfidenceClientResolveRemote(
                 options: options,
                 applyOnResolve: false,
                 metadata: metadata

@@ -4,7 +4,7 @@ import XCTest
 // swiftlint:disable type_body_length
 final class ConfidenceContextTests: XCTestCase {
     func testWithContext() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -30,7 +30,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testWithContextUpdateParent() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -61,7 +61,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testUpdateLocalContext() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -87,7 +87,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testUpdateLocalContextWithoutOverride() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -117,7 +117,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testUpdateParentContextWithOverride() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -147,7 +147,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntry() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -171,7 +171,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParent() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -198,7 +198,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParentAndChild() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -228,7 +228,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParentAndChildThenUpdate() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -260,7 +260,7 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testVisitorId() {
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),

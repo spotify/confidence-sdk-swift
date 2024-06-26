@@ -2,7 +2,7 @@ import Foundation
 import Combine
 @testable import Confidence
 
-final class EventUploaderMock: ConfidenceClient {
+final class EventUploaderMock: ConfidenceEventsClient {
     var calledRequest: [NetworkEvent]?
     let subject: PassthroughSubject<Int, Never> = PassthroughSubject()
 

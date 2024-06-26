@@ -20,7 +20,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let uploadReqChannel = PassthroughSubject<String, Never>()
     private var cancellables = Set<AnyCancellable>()
     private let flushPolicies: [FlushPolicy]
-    private let uploader: ConfidenceClient
+    private let uploader: ConfidenceEventsClient
     private let clientSecret: String
     private let payloadMerger: PayloadMerger = PayloadMergerImpl()
     private let semaphore = DispatchSemaphore(value: 1)
@@ -28,7 +28,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
     convenience init(
         clientSecret: String,
-        uploader: ConfidenceClient,
+        uploader: ConfidenceEventsClient,
         storage: EventStorage
     ) {
         self.init(
@@ -42,7 +42,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
     init(
         clientSecret: String,
-        uploader: ConfidenceClient,
+        uploader: ConfidenceEventsClient,
         storage: EventStorage,
         flushPolicies: [FlushPolicy],
         writeQueue: DispatchQueue

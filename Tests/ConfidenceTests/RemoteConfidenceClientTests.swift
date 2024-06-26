@@ -10,7 +10,7 @@ class RemoteConfidenceClientTest: XCTestCase {
     }
 
     func testUploadDoesntThrow() async throws {
-        let client = RemoteConfidenceClient(
+        let client = ConfidenceClientEventsRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -27,7 +27,7 @@ class RemoteConfidenceClientTest: XCTestCase {
     }
 
     func testUploadEmptyEventsDoesntThrow() async throws {
-        let client = RemoteConfidenceClient(
+        let client = ConfidenceClientEventsRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -39,7 +39,7 @@ class RemoteConfidenceClientTest: XCTestCase {
 
     func testUploadFirstEventFailsDoesntThrow() async throws {
         MockedClientURLProtocol.mockedOperation = .firstEventFails
-        let client = RemoteConfidenceClient(
+        let client = ConfidenceClientEventsRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),
@@ -57,7 +57,7 @@ class RemoteConfidenceClientTest: XCTestCase {
 
     func testMalformedResponseThrows() async throws {
         MockedClientURLProtocol.mockedOperation = .malformedResponse
-        let client = RemoteConfidenceClient(
+        let client = ConfidenceClientEventsRemote(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
             session: MockedClientURLProtocol.mockedSession(),

@@ -2,7 +2,7 @@ import Foundation
 
 @testable import Confidence
 
-class ConfidenceClientMock: ConfidenceClient {
+class ConfidenceClientMock: ConfidenceEventsClient {
     func upload(events: [NetworkEvent]) async throws -> Bool {
         return true
     }

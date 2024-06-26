@@ -65,14 +65,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    func shutdown() {
-        for cancellable in cancellables {
-            cancellable.cancel()
-        }
-        cancellables.removeAll()
-        currentResolveTask?.cancel()
-    }
-
     public func onContextSet(
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
@@ -121,6 +113,14 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
         return eventHandler.observe()
+    }
+
+    func shutdown() {
+        for cancellable in cancellables {
+            cancellable.cancel()
+        }
+        cancellables.removeAll()
+        currentResolveTask?.cancel()
     }
 
     private func withLock(callback: @escaping (ConfidenceFeatureProvider) -> Void) {

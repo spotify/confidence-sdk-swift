@@ -1,7 +1,7 @@
 import Foundation
 import os
 
-public class RemoteConfidenceClient: ConfidenceClient {
+public class ConfidenceClientEventsRemote: ConfidenceEventsClient {
     private var options: ConfidenceClientOptions
     private let metadata: ConfidenceMetadata
     private var httpClient: HttpClient

@@ -25,7 +25,7 @@ class RemoteResolveConfidenceClientTest: XCTestCase {
     func testResolveMultipleFlagsSucceeds() async throws {
         let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
 
-        let client = RemoteConfidenceResolveClient(
+        let client = ConfidenceClientResolveRemote(
             options: .init(credentials: .clientSecret(secret: "test")),
             session: session,
             applyOnResolve: true,
