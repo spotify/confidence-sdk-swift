@@ -150,15 +150,8 @@ final class FlagApplierWithRetries: FlagApplier {
     }
 
     private func logApplyError(error: Error) {
-        switch error {
-        case ConfidenceError.applyStatusTransitionError, ConfidenceError.cachedValueExpired,
-            ConfidenceError.flagNotFoundInCache:
-            Logger(subsystem: "com.confidence.provider", category: "apply").debug(
-                "Cache data for flag was updated while executing \"apply\", aborting")
-        default:
-            Logger(subsystem: "com.confidence.provider", category: "apply").error(
-                "Error while executing \"apply\": \(error)")
-        }
+        Logger(subsystem: "com.confidence.provider", category: "apply").error(
+            "Error while executing \"apply\": \(error)")
     }
 }
 
