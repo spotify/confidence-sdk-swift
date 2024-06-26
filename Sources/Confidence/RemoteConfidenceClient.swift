@@ -6,11 +6,13 @@ public class RemoteConfidenceClient: ConfidenceClient {
     private let metadata: ConfidenceMetadata
     private var httpClient: HttpClient
     private var baseUrl: String
+    private let debugLogger: DebugLogger?
 
     init(
         options: ConfidenceClientOptions,
         session: URLSession? = nil,
-        metadata: ConfidenceMetadata
+        metadata: ConfidenceMetadata,
+        debugLogger: DebugLogger? = nil
     ) {
         self.options = options
         switch options.region {
@@ -23,6 +25,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
         }
         self.httpClient = NetworkClient(session: session, baseUrl: baseUrl)
         self.metadata = metadata
+        self.debugLogger = debugLogger
     }
 
     func upload(events: [NetworkEvent]) async throws -> Bool {
@@ -46,12 +49,24 @@ public class RemoteConfidenceClient: ConfidenceClient {
                 switch status {
                 case 200:
                     // clean up in case of success
+                    debugLogger?.logMessage(
+                        message: "Event upload: HTTP status 200",
+                        isWarning: false
+                    )
                     return true
                 case 429:
                     // we shouldn't clean up for rate limiting
+                    debugLogger?.logMessage(
+                        message: "Event upload: HTTP status 429",
+                        isWarning: false
+                    )
                     return false
                 case 400...499:
                     // if batch couldn't be processed, we should clean it up
+                    debugLogger?.logMessage(
+                        message: "Event upload: couldn't process batch",
+                        isWarning: false
+                    )
                     return true
                 default:
                     return false

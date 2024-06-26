@@ -61,7 +61,7 @@ public class Confidence: ConfidenceEventSender {
                     self.contextReconciliatedChanges.send(context.hash())
                 } catch {
                     debugLogger?.logMessage(
-                        message: "Error while trying to init Confidence",
+                        message: "\(error)",
                         isWarning: true
                     )
                 }
@@ -90,7 +90,7 @@ public class Confidence: ConfidenceEventSender {
             try await internalFetch()
         } catch {
             debugLogger?.logMessage(
-                message: "Couldn't fetch and activate",
+                message: "\(error)",
                 isWarning: true
             )
         }
@@ -119,7 +119,7 @@ public class Confidence: ConfidenceEventSender {
                 try await internalFetch()
             } catch {
                 debugLogger?.logMessage(
-                    message: "Couldn't async fetch",
+                    message: "\(error )",
                     isWarning: true
                 )
             }
