@@ -42,20 +42,16 @@ internal class DebugLoggerImpl: DebugLogger {
     }
 
     private func log(messageLevel: LoggerLevel, message: String) {
-        if (messageLevel >= loggerLevel) {
+        if messageLevel >= loggerLevel {
             switch messageLevel {
             case .TRACE:
                 Logger.confidence.trace("\(message)")
-                break
             case .DEBUG:
                 Logger.confidence.debug("\(message)")
-                break
             case .WARN:
                 Logger.confidence.warning("\(message)")
-                break
             case .ERROR:
                 Logger.confidence.error("\(message)")
-                break
             case .NONE:
                 // do nothing
                 break
