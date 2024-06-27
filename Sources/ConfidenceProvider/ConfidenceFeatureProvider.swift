@@ -5,64 +5,27 @@ import OpenFeature
 import os
 
 struct Metadata: ProviderMetadata {
-    var name: String? = ConfidenceFeatureProvider.providerId
+    var name: String?
 }
 
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
 public class ConfidenceFeatureProvider: FeatureProvider {
     public static let providerId: String = "SDK_ID_SWIFT_PROVIDER"
-
-    public var metadata: ProviderMetadata = Metadata()
+    public var metadata: ProviderMetadata
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private let initializationStrategy: InitializationStrategy
     private let eventHandler = EventHandler(ProviderEvent.notReady)
     private let confidence: Confidence
+    private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
     private var currentResolveTask: Task<Void, Never>?
-    private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
-
-    /**
-    Creates the `Confidence` object to be used as init parameter for this Provider.
-    */
-    public static func createConfidence(clientSecret: String) -> ConfidenceForOpenFeature {
-        return ConfidenceForOpenFeature.init(confidence: Confidence.Builder.init(clientSecret: clientSecret)
-            .withRegion(region: .global)
-            .withMetadata(metadata: ConfidenceMetadata.init(
-                name: providerId,
-                version: "0.2.2") // x-release-please-version
-            )
-            .build())
-    }
-
-    /**
-    Proxy holder to ensure correct Confidence configuration passed into the Provider's init.
-    Do not instantiate directly.
-    */
-    public class ConfidenceForOpenFeature {
-        internal init(confidence: Confidence) {
-            self.confidence = confidence
-        }
-        let confidence: Confidence
-    }
 
     /**
     Initialize the Provider via a `Confidence` object.
-    The `Confidence` object must be creted via the `createConfidence` function available from this same class,
-    rather then be instantiated directly via `Confidence.init(...)` as you would if not using the OpenFeature integration.
+    The `initializationStrategy` defines when the Provider is ready to read flags, before or after a refresh of the flag evaluation fata.
     */
-    public convenience init(
-        confidenceForOF: ConfidenceForOpenFeature,
-        initializationStrategy: InitializationStrategy = .fetchAndActivate
-    ) {
-        self.init(confidence: confidenceForOF.confidence, session: nil)
-    }
-
-    // Allows to pass a confidence object with injected configurations for testing
-    internal convenience init(
-        confidence: Confidence,
-        initializationStrategy: InitializationStrategy = .fetchAndActivate
-    ) {
+    public convenience init(confidence: Confidence, initializationStrategy: InitializationStrategy = .fetchAndActivate) {
         self.init(confidence: confidence, session: nil)
     }
 
@@ -71,6 +34,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
         session: URLSession?
     ) {
+        self.metadata = Metadata(name: ConfidenceFeatureProvider.providerId)
         self.initializationStrategy = initializationStrategy
         self.confidence = confidence
     }

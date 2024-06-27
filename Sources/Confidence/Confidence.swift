@@ -262,6 +262,9 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    /**
+    Sets the initial Context.
+    */
     public func withContext(_ context: ConfidenceStruct) -> Self {
         return Self.init(
             clientSecret: clientSecret,
@@ -323,9 +326,6 @@ extension Confidence {
             return self
         }
 
-        /**
-        Sets the initial Context.
-        */
         public func withContext(initialContext: ConfidenceStruct) -> Builder {
             self.initialContext = initialContext
             return self
@@ -340,15 +340,6 @@ extension Confidence {
             return self
         }
 
-        /**
-        Overrides the Metadata for the Confidence instance. In normal production scenarios, Metadata is
-        handled automatically by the SDK and this overrides should not be applied.
-        */
-        public func withMetadata(metadata: ConfidenceMetadata) -> Builder {
-            self.metadata = metadata
-            return self
-        }
-
         public func build() -> Confidence {
             var debugLogger: DebugLogger?
             if loggerLevel != LoggerLevel.NONE {
@@ -360,9 +351,9 @@ extension Confidence {
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region)
-            let metadata = metadata ?? ConfidenceMetadata(
-                name: Confidence.sdkId,
-                version: "0.2.2") // x-release-please-version
+            let metadata = ConfidenceMetadata(
+                name: sdkId,
+                version: "0.2.3") // x-release-please-version
             let uploader = RemoteConfidenceClient(
                 options: options,
                 metadata: metadata
