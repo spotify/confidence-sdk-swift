@@ -76,7 +76,7 @@ public class Confidence: ConfidenceEventSender {
     public func activate() throws {
         let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
         self.cache = savedFlags
-        debugLogger?.logFlags(flag: "\(savedFlags)")
+        debugLogger?.logFlags(action: "Activate", flag: "\(savedFlags)")
     }
 
     /**
@@ -105,7 +105,7 @@ public class Confidence: ConfidenceEventSender {
             flags: resolvedFlags.resolvedValues,
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
-        debugLogger?.logFlags(flag: "\(resolution)")
+        debugLogger?.logFlags(action: "Fetch", flag: "\(resolution)")
         try storage.save(data: resolution)
     }
 
@@ -223,7 +223,7 @@ public class Confidence: ConfidenceEventSender {
             var map = confidence.contextSubject.value
             map[key] = value
             confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -234,7 +234,7 @@ public class Confidence: ConfidenceEventSender {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -248,7 +248,7 @@ public class Confidence: ConfidenceEventSender {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -258,7 +258,7 @@ public class Confidence: ConfidenceEventSender {
             map.removeValue(forKey: key)
             confidence.contextSubject.value = map
             confidence.removedContextKeys.insert(key)
-            confidence.debugLogger?.logContext(context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -282,7 +282,7 @@ extension Confidence {
         internal let clientSecret: String
         internal let eventStorage: EventStorage
         internal let visitorId = VisitorUtil().getId()
-        internal let loggerLevel: LoggerLevel?
+        internal let loggerLevel: LoggerLevel
 
         // Can be configured
         internal var region: ConfidenceRegion = .global
@@ -297,7 +297,7 @@ extension Confidence {
         /**
         Initializes the builder with the given credentails.
         */
-        public init(clientSecret: String, loggerLevel: LoggerLevel? = nil) {
+        public init(clientSecret: String, loggerLevel: LoggerLevel = .WARN) {
             self.clientSecret = clientSecret
             do {
                 eventStorage = try EventStorageImpl()
@@ -352,8 +352,8 @@ extension Confidence {
         public func build() -> Confidence {
             var debugLogger: DebugLogger?
             if loggerLevel != LoggerLevel.NONE {
-                debugLogger = DebugLoggerImpl()
-                debugLogger?.logContext(context: initialContext)
+                debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
+                debugLogger?.logContext(action: "InitialContext", context: initialContext)
             } else {
                 debugLogger = nil
             }

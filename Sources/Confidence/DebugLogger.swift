@@ -2,10 +2,10 @@ import Foundation
 import OSLog
 
 internal protocol DebugLogger {
-    func logEvent(event: ConfidenceEvent, action: String)
+    func logEvent(action: String, event: ConfidenceEvent)
     func logMessage(message: String, isWarning: Bool)
-    func logFlags(flag: String)
-    func logContext(context: ConfidenceStruct)
+    func logFlags(action: String, flag: String)
+    func logContext(action: String, context: ConfidenceStruct)
 }
 
 private extension Logger {
@@ -15,28 +15,59 @@ private extension Logger {
 }
 
 internal class DebugLoggerImpl: DebugLogger {
-    func logMessage(message: String, isWarning: Bool) {
-        if !isWarning {
-            Logger.confidence.debug("\(message)")
+    private let loggerLevel: LoggerLevel
+
+    init(loggerLevel: LoggerLevel) {
+        self.loggerLevel = loggerLevel
+    }
+
+    func logMessage(message: String, isWarning: Bool = false) {
+        if isWarning {
+            log(messageLevel: .WARN, message: message)
         } else {
-            Logger.confidence.warning("\(message)")
+            log(messageLevel: .DEBUG, message: message)
         }
     }
 
-    func logEvent(event: ConfidenceEvent, action: String) {
-        Logger.confidence.debug("\(action) \(event.name) \(event.payload)")
+    func logEvent(action: String, event: ConfidenceEvent) {
+        log(messageLevel: .DEBUG, message: "\(action) \(event.name) \(event.payload)")
     }
 
-    func logFlags(flag: String) {
-        Logger.confidence.debug("\(flag)")
+    func logFlags(action: String, flag: String) {
+        log(messageLevel: .TRACE, message: "\(action) \(flag)")
     }
 
-    func logContext(context: ConfidenceStruct) {
-        Logger.confidence.debug("\(context)")
+    func logContext(action: String, context: ConfidenceStruct) {
+        log(messageLevel: .TRACE, message: "\(action) \(context)")
+    }
+
+    private func log(messageLevel: LoggerLevel, message: String) {
+        if (messageLevel >= loggerLevel) {
+            switch messageLevel {
+            case .TRACE:
+                Logger.confidence.trace("\(message)")
+                break
+            case .DEBUG:
+                Logger.confidence.debug("\(message)")
+                break
+            case .WARN:
+                Logger.confidence.warning("\(message)")
+                break
+            case .ERROR:
+                Logger.confidence.error("\(message)")
+                break
+            case .NONE:
+                // do nothing
+                break
+            }
+        }
     }
 }
 
-public enum LoggerLevel {
+public enum LoggerLevel: Comparable {
+    case TRACE
     case DEBUG
+    case WARN
+    case ERROR
     case NONE
 }
