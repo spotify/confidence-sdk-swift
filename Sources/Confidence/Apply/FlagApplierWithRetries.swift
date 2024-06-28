@@ -10,6 +10,7 @@ final class FlagApplierWithRetries: FlagApplier {
     private let options: ConfidenceClientOptions
     private let cacheDataInteractor: CacheDataActor
     private let metadata: ConfidenceMetadata
+    private let debugLogger: DebugLogger?
 
     init(
         httpClient: HttpClient,
@@ -17,12 +18,14 @@ final class FlagApplierWithRetries: FlagApplier {
         options: ConfidenceClientOptions,
         metadata: ConfidenceMetadata,
         cacheDataInteractor: CacheDataActor? = nil,
-        triggerBatch: Bool = true
+        triggerBatch: Bool = true,
+        debugLogger: DebugLogger? = nil
     ) {
         self.storage = storage
         self.httpClient = httpClient
         self.options = options
         self.metadata = metadata
+        self.debugLogger = debugLogger
 
         let storedData = try? storage.load(defaultValue: CacheData.empty())
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(cacheData: storedData ?? .empty())
@@ -48,6 +51,7 @@ final class FlagApplierWithRetries: FlagApplier {
             return
         }
 
+        debugLogger?.logFlags(action: "Apply", flag: flagName)
         self.writeToFile(data: data)
         await triggerBatch()
     }
