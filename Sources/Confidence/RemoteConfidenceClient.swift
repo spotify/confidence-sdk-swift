@@ -58,17 +58,21 @@ public class RemoteConfidenceClient: ConfidenceClient {
                     // we shouldn't clean up for rate limiting
                     debugLogger?.logMessage(
                         message: "Event upload: HTTP status 429",
-                        isWarning: false
+                        isWarning: true
                     )
                     return false
                 case 400...499:
                     // if batch couldn't be processed, we should clean it up
                     debugLogger?.logMessage(
                         message: "Event upload: couldn't process batch",
-                        isWarning: false
+                        isWarning: true
                     )
                     return true
                 default:
+                    debugLogger?.logMessage(
+                        message: "Event upload error. Status code \(status)",
+                        isWarning: true
+                    )
                     return false
                 }
             case .failure(let errorData):
@@ -78,6 +82,10 @@ public class RemoteConfidenceClient: ConfidenceClient {
     }
 
     private func handleError(error: Error) -> Error {
+        debugLogger?.logMessage(
+            message: "Event upload error: \(error.localizedDescription)",
+            isWarning: true
+        )
         if error is ConfidenceError {
             return error
         } else {

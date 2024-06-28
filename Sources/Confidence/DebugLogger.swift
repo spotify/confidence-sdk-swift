@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 
 internal protocol DebugLogger {
-    func logEvent(action: String, event: ConfidenceEvent)
+    func logEvent(action: String, event: ConfidenceEvent?)
     func logMessage(message: String, isWarning: Bool)
     func logFlags(action: String, flag: String)
     func logContext(action: String, context: ConfidenceStruct)
@@ -29,16 +29,16 @@ internal class DebugLoggerImpl: DebugLogger {
         }
     }
 
-    func logEvent(action: String, event: ConfidenceEvent) {
-        log(messageLevel: .DEBUG, message: "\(action) \(event.name) \(event.payload)")
+    func logEvent(action: String, event: ConfidenceEvent?) {
+        log(messageLevel: .DEBUG, message: "[\(action)] \(event?.name ?? "")")
     }
 
     func logFlags(action: String, flag: String) {
-        log(messageLevel: .TRACE, message: "\(action) \(flag)")
+        log(messageLevel: .TRACE, message: "[\(action)] \(flag)")
     }
 
     func logContext(action: String, context: ConfidenceStruct) {
-        log(messageLevel: .TRACE, message: "\(action) \(context)")
+        log(messageLevel: .TRACE, message: "[\(action)] \(context)")
     }
 
     private func log(messageLevel: LoggerLevel, message: String) {

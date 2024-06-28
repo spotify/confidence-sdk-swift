@@ -69,7 +69,6 @@ final class EventSenderEngineImpl: EventSenderEngine {
                 if event.name != manualFlushEvent.name { // skip storing flush events.
                     do {
                         try self.storage.writeEvent(event: event)
-                        debugLogger?.logEvent(action: "Event written to disk ", event: event)
                     } catch {
                     }
                 }
@@ -139,12 +138,12 @@ final class EventSenderEngineImpl: EventSenderEngine {
             payload: try payloadMerger.merge(context: context, data: data),
             eventTime: Date.backport.now)
         writeReqChannel.send(event)
-        debugLogger?.logEvent(action: "Emitting event ", event: event)
+        debugLogger?.logEvent(action: "Emitting event", event: event)
     }
 
     func flush() {
         writeReqChannel.send(manualFlushEvent)
-        debugLogger?.logEvent(action: "Event flushed ", event: manualFlushEvent)
+        debugLogger?.logEvent(action: "Event flushed", event: nil)
     }
 
     func shutdown() {

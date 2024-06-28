@@ -76,7 +76,7 @@ public class Confidence: ConfidenceEventSender {
     public func activate() throws {
         let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
         self.cache = savedFlags
-        debugLogger?.logFlags(action: "Activate", flag: "\(savedFlags)")
+        debugLogger?.logFlags(action: "Activate", flag: "")
     }
 
     /**
@@ -105,7 +105,7 @@ public class Confidence: ConfidenceEventSender {
             flags: resolvedFlags.resolvedValues,
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
-        debugLogger?.logFlags(action: "Fetch", flag: "\(resolution)")
+        debugLogger?.logFlags(action: "Fetch", flag: "")
         try storage.save(data: resolution)
     }
 
@@ -363,7 +363,8 @@ extension Confidence {
                 httpClient: httpClient,
                 storage: DefaultStorage(filePath: "confidence.flags.apply"),
                 options: options,
-                metadata: metadata
+                metadata: metadata,
+                debugLogger: debugLogger
             )
             let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(
                 options: options,
