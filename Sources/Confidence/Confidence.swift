@@ -15,6 +15,7 @@ public class Confidence: ConfidenceEventSender {
     private var storage: Storage
     private var cancellables = Set<AnyCancellable>()
     private var currentFetchTask: Task<(), Never>?
+    private let debugLogger: DebugLogger?
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
@@ -31,7 +32,8 @@ public class Confidence: ConfidenceEventSender {
         storage: Storage,
         context: ConfidenceStruct = [:],
         parent: ConfidenceEventSender? = nil,
-        visitorId: String? = nil
+        visitorId: String? = nil,
+        debugLogger: DebugLogger?
     ) {
         self.eventSenderEngine = eventSenderEngine
         self.clientSecret = clientSecret
@@ -42,6 +44,7 @@ public class Confidence: ConfidenceEventSender {
         self.storage = storage
         self.flagApplier = flagApplier
         self.remoteFlagResolver = remoteFlagResolver
+        self.debugLogger = debugLogger
         if let visitorId {
             putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
@@ -57,7 +60,10 @@ public class Confidence: ConfidenceEventSender {
                     try await self.fetchAndActivate()
                     self.contextReconciliatedChanges.send(context.hash())
                 } catch {
-                    // TODO: Log errors for debugging
+                    debugLogger?.logMessage(
+                        message: "\(error)",
+                        isWarning: true
+                    )
                 }
             }
         }
@@ -70,6 +76,7 @@ public class Confidence: ConfidenceEventSender {
     public func activate() throws {
         let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
         self.cache = savedFlags
+        debugLogger?.logFlags(action: "Activate", flag: "")
     }
 
     /**
@@ -82,7 +89,10 @@ public class Confidence: ConfidenceEventSender {
         do {
             try await internalFetch()
         } catch {
-            // TODO: Log errors for debugging
+            debugLogger?.logMessage(
+                message: "\(error)",
+                isWarning: true
+            )
         }
         try activate()
     }
@@ -95,6 +105,7 @@ public class Confidence: ConfidenceEventSender {
             flags: resolvedFlags.resolvedValues,
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
+        debugLogger?.logFlags(action: "Fetch", flag: "")
         try storage.save(data: resolution)
     }
 
@@ -107,7 +118,10 @@ public class Confidence: ConfidenceEventSender {
             do {
                 try await internalFetch()
             } catch {
-                // TODO: Log errors for debugging
+                debugLogger?.logMessage(
+                    message: "\(error )",
+                    isWarning: true
+                )
             }
         }
     }
@@ -209,6 +223,7 @@ public class Confidence: ConfidenceEventSender {
             var map = confidence.contextSubject.value
             map[key] = value
             confidence.contextSubject.value = map
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -219,6 +234,7 @@ public class Confidence: ConfidenceEventSender {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -232,6 +248,7 @@ public class Confidence: ConfidenceEventSender {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -241,6 +258,7 @@ public class Confidence: ConfidenceEventSender {
             map.removeValue(forKey: key)
             confidence.contextSubject.value = map
             confidence.removedContextKeys.insert(key)
+            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.contextSubject.value)
         }
     }
 
@@ -256,7 +274,8 @@ public class Confidence: ConfidenceEventSender {
             remoteFlagResolver: remoteFlagResolver,
             storage: storage,
             context: context,
-            parent: self)
+            parent: self,
+            debugLogger: debugLogger)
     }
 }
 
@@ -266,6 +285,7 @@ extension Confidence {
         internal let clientSecret: String
         internal let eventStorage: EventStorage
         internal let visitorId = VisitorUtil().getId()
+        internal let loggerLevel: LoggerLevel
 
         // Can be configured
         internal var region: ConfidenceRegion = .global
@@ -280,13 +300,14 @@ extension Confidence {
         /**
         Initializes the builder with the given credentails.
         */
-        public init(clientSecret: String) {
+        public init(clientSecret: String, loggerLevel: LoggerLevel = .WARN) {
             self.clientSecret = clientSecret
             do {
                 eventStorage = try EventStorageImpl()
             } catch {
                 eventStorage = EventStorageInMemory()
             }
+            self.loggerLevel = loggerLevel
         }
 
         internal func withFlagResolverClient(flagResolver: ConfidenceResolveClient) -> Builder {
@@ -320,6 +341,13 @@ extension Confidence {
         }
 
         public func build() -> Confidence {
+            var debugLogger: DebugLogger?
+            if loggerLevel != LoggerLevel.NONE {
+                debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
+                debugLogger?.logContext(action: "InitialContext", context: initialContext)
+            } else {
+                debugLogger = nil
+            }
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region)
@@ -335,7 +363,8 @@ extension Confidence {
                 httpClient: httpClient,
                 storage: DefaultStorage(filePath: "confidence.flags.apply"),
                 options: options,
-                metadata: metadata
+                metadata: metadata,
+                debugLogger: debugLogger
             )
             let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(
                 options: options,
@@ -345,7 +374,9 @@ extension Confidence {
             let eventSenderEngine = EventSenderEngineImpl(
                 clientSecret: clientSecret,
                 uploader: uploader,
-                storage: eventStorage)
+                storage: eventStorage,
+                debugLogger: debugLogger
+            )
             return Confidence(
                 clientSecret: clientSecret,
                 region: region,
@@ -355,7 +386,8 @@ extension Confidence {
                 storage: storage ?? DefaultStorage(filePath: "confidence.flags.resolve"),
                 context: initialContext,
                 parent: nil,
-                visitorId: visitorId
+                visitorId: visitorId,
+                debugLogger: debugLogger
             )
         }
     }
