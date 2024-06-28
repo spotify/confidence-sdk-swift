@@ -113,6 +113,11 @@ To set context data to be appended to all tracked events, here as example:
 confidence.putContext(context: ["os_version": ConfidenceValue(string: "17.0")])
 ```
 
+### Logging
+By default, the Confidence SDK will log errors and warnings. You can change the preferred log level by passing a `loggerLevel` to the `Confidence.Builder` constructor.
+
+To turn off logging completely, you can pass `LoggingLevel.NONE` to the `Confidence.Builder`.
+
 # OpenFeature Provider
 If you want to use OpenFeature, an OpenFeature Provider for the [OpenFeature SDK](https://github.com/open-feature/kotlin-swift) is also available.
 
