@@ -40,7 +40,7 @@ extension HTTPURLResponse {
 
         switch self.status {
         case .notFound, .badRequest:
-            return ConfidenceError.badRequest(message: error?.message ?? "")
+            return ConfidenceError.badRequest(message: error?.message)
         default:
             return defaultError
         }

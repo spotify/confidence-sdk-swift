@@ -9,7 +9,7 @@ extension HTTPURLResponse {
         case .notFound:
             return ConfidenceError.flagNotFoundError(key: flag)
         case .badRequest:
-            return ConfidenceError.badRequest(message: error?.message ?? "")
+            return ConfidenceError.badRequest(message: error?.message)
         default:
             return defaultError
         }
