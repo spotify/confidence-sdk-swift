@@ -114,7 +114,7 @@ confidence.putContext(context: ["os_version": ConfidenceValue(string: "17.0")])
 ```
 
 ### Logging
-By default, the Confidence SDK will log errors and warnings. You can change the preferred log level by passing a `loggerLevel` to the `Confidence.Builder` constructor.
+By default, the Confidence SDK will log errors and warnings locally to the console. You can change the preferred log level by passing a `loggerLevel` to the `Confidence.Builder` constructor.
 
 To turn off logging completely, you can pass `LoggingLevel.NONE` to the `Confidence.Builder`.
 
