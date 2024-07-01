@@ -262,10 +262,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    /**
-    Sets the initial Context.
-    */
-    public func withContext(_ context: ConfidenceStruct) -> Self {
+    public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {
         return Self.init(
             clientSecret: clientSecret,
             region: region,
