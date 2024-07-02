@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.4](https://github.com/spotify/confidence-sdk-swift/compare/0.2.3...0.2.4) (2024-07-02)
+
+
+### 🐛 Bug Fixes
+
+* Readme update ([#145](https://github.com/spotify/confidence-sdk-swift/issues/145)) ([2ffc41d](https://github.com/spotify/confidence-sdk-swift/commit/2ffc41d0dd77a6b801bc2b8232663516ecfbe70c))
+* Removes flag resolving from Confidence child instances ([#149](https://github.com/spotify/confidence-sdk-swift/issues/149)) ([543c380](https://github.com/spotify/confidence-sdk-swift/commit/543c3808a73ca03be0ff37b210da63d86a08d8ad))
+
+
+### ✨ New Features
+
+* add debuglogger to confidence ([#144](https://github.com/spotify/confidence-sdk-swift/issues/144)) ([c8fe939](https://github.com/spotify/confidence-sdk-swift/commit/c8fe93988413eddeef765745cd498cc8e313ba82))
+
+
+### 📚 Documentation
+
+* Smaller clarification on logging ([#150](https://github.com/spotify/confidence-sdk-swift/issues/150)) ([4be8b1b](https://github.com/spotify/confidence-sdk-swift/commit/4be8b1ba0de65fea799ab926a14627d5d3898109))
+
+
+### 🔄 Refactoring
+
+* Remove unused errors ([#148](https://github.com/spotify/confidence-sdk-swift/issues/148)) ([82d69a0](https://github.com/spotify/confidence-sdk-swift/commit/82d69a0f7087e7147de87071bf5cf52e9bfbfc3d))
+
 ## [0.2.3](https://github.com/spotify/confidence-sdk-swift/compare/0.2.2...0.2.3) (2024-06-25)
 
 
