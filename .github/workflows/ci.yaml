@@ -22,6 +22,19 @@ jobs:
         CLIENT_TOKEN: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
       run: scripts/run_tests.sh $CLIENT_TOKEN
 
+  UITests:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: webfactory/ssh-agent
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.SDK_REPO_PRIVATE_KEY }}
+    - name: Build and UITest
+      env:
+        CLIENT_TOKEN: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
+      run: ConfidenceDemoApp/scripts/run_tests.sh $CLIENT_TOKEN
+
   SwiftLint:
     runs-on: ubuntu-latest
     steps:
