@@ -8,24 +8,19 @@
 
 /* Begin PBXBuildFile section */
 		733219BF2BE3C11100747AC2 /* ConfidenceOpenFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */; };
+		73B29E952C354CA20007FE96 /* ConfidenceDemoAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73B29E942C354CA20007FE96 /* ConfidenceDemoAppUITests.swift */; };
+		73B29E972C354CA20007FE96 /* ConfidenceDemoAppUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73B29E962C354CA20007FE96 /* ConfidenceDemoAppUITestsLaunchTests.swift */; };
+		73B29E9E2C3567690007FE96 /* Confidence in Frameworks */ = {isa = PBXBuildFile; productRef = 73B29E9D2C3567690007FE96 /* Confidence */; };
+		73B29E9F2C356A320007FE96 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
+		73B29EA02C356A670007FE96 /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
 		C770C99D2A739FBC00C2AC8C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9992A739FBC00C2AC8C /* Assets.xcassets */; };
-		C770C99F2A739FCE00C2AC8C /* ConfidenceDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C99E2A739FCE00C2AC8C /* ConfidenceDemoTests.swift */; };
-		C770C9A22A739FDF00C2AC8C /* ConfidenceDemoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9A02A739FDF00C2AC8C /* ConfidenceDemoUITests.swift */; };
-		C770C9A32A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9A12A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		C770C9792A739FA100C2AC8C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C770C9602A739FA000C2AC8C /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C770C9672A739FA000C2AC8C;
-			remoteInfo = ConfidenceDemoApp;
-		};
-		C770C9832A739FA100C2AC8C /* PBXContainerItemProxy */ = {
+		73B29E982C354CA20007FE96 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C770C9602A739FA000C2AC8C /* Project object */;
 			proxyType = 1;
@@ -35,21 +30,27 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		73B29E922C354CA20007FE96 /* ConfidenceDemoAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		73B29E942C354CA20007FE96 /* ConfidenceDemoAppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoAppUITests.swift; sourceTree = "<group>"; };
+		73B29E962C354CA20007FE96 /* ConfidenceDemoAppUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoAppUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConfidenceDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C770C9782A739FA100C2AC8C /* ConfidenceDemoAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C770C9822A739FA100C2AC8C /* ConfidenceDemoAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoApp.swift; sourceTree = "<group>"; };
 		C770C9982A739FBC00C2AC8C /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C770C9992A739FBC00C2AC8C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		C770C99E2A739FCE00C2AC8C /* ConfidenceDemoTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoTests.swift; sourceTree = "<group>"; };
-		C770C9A02A739FDF00C2AC8C /* ConfidenceDemoUITests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoUITests.swift; sourceTree = "<group>"; };
-		C770C9A12A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfidenceDemoUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		C770C9A92A73A04B00C2AC8C /* confidence-sdk-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "confidence-sdk-swift"; path = ..; sourceTree = "<group>"; };
 		C770C9AA2A73A06000C2AC8C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		73B29E8F2C354CA20007FE96 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73B29E9E2C3567690007FE96 /* Confidence in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C770C9652A739FA000C2AC8C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -58,30 +59,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C770C9752A739FA100C2AC8C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C770C97F2A739FA100C2AC8C /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		73B29E932C354CA20007FE96 /* ConfidenceDemoAppUITests */ = {
+			isa = PBXGroup;
+			children = (
+				73B29E942C354CA20007FE96 /* ConfidenceDemoAppUITests.swift */,
+				73B29E962C354CA20007FE96 /* ConfidenceDemoAppUITestsLaunchTests.swift */,
+			);
+			path = ConfidenceDemoAppUITests;
+			sourceTree = "<group>";
+		};
 		C770C95F2A739FA000C2AC8C = {
 			isa = PBXGroup;
 			children = (
 				C770C9A82A73A04B00C2AC8C /* Packages */,
 				C770C96A2A739FA000C2AC8C /* ConfidenceDemoApp */,
-				C770C97B2A739FA100C2AC8C /* ConfidenceDemoAppTests */,
-				C770C9852A739FA100C2AC8C /* ConfidenceDemoAppUITests */,
+				73B29E932C354CA20007FE96 /* ConfidenceDemoAppUITests */,
 				C770C9692A739FA000C2AC8C /* Products */,
 				C770C9AB2A73A06600C2AC8C /* Frameworks */,
 			);
@@ -91,8 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */,
-				C770C9782A739FA100C2AC8C /* ConfidenceDemoAppTests.xctest */,
-				C770C9822A739FA100C2AC8C /* ConfidenceDemoAppUITests.xctest */,
+				73B29E922C354CA20007FE96 /* ConfidenceDemoAppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,23 +101,6 @@
 				C770C9952A739FBC00C2AC8C /* Preview Content */,
 			);
 			path = ConfidenceDemoApp;
-			sourceTree = "<group>";
-		};
-		C770C97B2A739FA100C2AC8C /* ConfidenceDemoAppTests */ = {
-			isa = PBXGroup;
-			children = (
-				C770C99E2A739FCE00C2AC8C /* ConfidenceDemoTests.swift */,
-			);
-			path = ConfidenceDemoAppTests;
-			sourceTree = "<group>";
-		};
-		C770C9852A739FA100C2AC8C /* ConfidenceDemoAppUITests */ = {
-			isa = PBXGroup;
-			children = (
-				C770C9A02A739FDF00C2AC8C /* ConfidenceDemoUITests.swift */,
-				C770C9A12A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift */,
-			);
-			path = ConfidenceDemoAppUITests;
 			sourceTree = "<group>";
 		};
 		C770C9952A739FBC00C2AC8C /* Preview Content */ = {
@@ -152,6 +129,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		73B29E912C354CA20007FE96 /* ConfidenceDemoAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 73B29E9A2C354CA20007FE96 /* Build configuration list for PBXNativeTarget "ConfidenceDemoAppUITests" */;
+			buildPhases = (
+				73B29E8E2C354CA20007FE96 /* Sources */,
+				73B29E8F2C354CA20007FE96 /* Frameworks */,
+				73B29E902C354CA20007FE96 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				73B29E992C354CA20007FE96 /* PBXTargetDependency */,
+			);
+			name = ConfidenceDemoAppUITests;
+			packageProductDependencies = (
+				73B29E9D2C3567690007FE96 /* Confidence */,
+			);
+			productName = ConfidenceDemoAppUITests;
+			productReference = 73B29E922C354CA20007FE96 /* ConfidenceDemoAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		C770C9672A739FA000C2AC8C /* ConfidenceDemoApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C770C98C2A739FA100C2AC8C /* Build configuration list for PBXNativeTarget "ConfidenceDemoApp" */;
@@ -172,42 +170,6 @@
 			productReference = C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */;
 			productType = "com.apple.product-type.application";
 		};
-		C770C9772A739FA100C2AC8C /* ConfidenceDemoAppTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C770C98F2A739FA100C2AC8C /* Build configuration list for PBXNativeTarget "ConfidenceDemoAppTests" */;
-			buildPhases = (
-				C770C9742A739FA100C2AC8C /* Sources */,
-				C770C9752A739FA100C2AC8C /* Frameworks */,
-				C770C9762A739FA100C2AC8C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C770C97A2A739FA100C2AC8C /* PBXTargetDependency */,
-			);
-			name = ConfidenceDemoAppTests;
-			productName = ConfidenceDemoAppTests;
-			productReference = C770C9782A739FA100C2AC8C /* ConfidenceDemoAppTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		C770C9812A739FA100C2AC8C /* ConfidenceDemoAppUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C770C9922A739FA100C2AC8C /* Build configuration list for PBXNativeTarget "ConfidenceDemoAppUITests" */;
-			buildPhases = (
-				C770C97E2A739FA100C2AC8C /* Sources */,
-				C770C97F2A739FA100C2AC8C /* Frameworks */,
-				C770C9802A739FA100C2AC8C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C770C9842A739FA100C2AC8C /* PBXTargetDependency */,
-			);
-			name = ConfidenceDemoAppUITests;
-			productName = ConfidenceDemoAppUITests;
-			productReference = C770C9822A739FA100C2AC8C /* ConfidenceDemoAppUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -215,22 +177,16 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1420;
+				LastSwiftUpdateCheck = 1510;
 				LastUpgradeCheck = 1420;
 				TargetAttributes = {
+					73B29E912C354CA20007FE96 = {
+						CreatedOnToolsVersion = 15.1;
+						TestTargetID = C770C9672A739FA000C2AC8C;
+					};
 					C770C9672A739FA000C2AC8C = {
 						CreatedOnToolsVersion = 14.2;
 						LastSwiftMigration = 1420;
-					};
-					C770C9772A739FA100C2AC8C = {
-						CreatedOnToolsVersion = 14.2;
-						LastSwiftMigration = 1420;
-						TestTargetID = C770C9672A739FA000C2AC8C;
-					};
-					C770C9812A739FA100C2AC8C = {
-						CreatedOnToolsVersion = 14.2;
-						LastSwiftMigration = 1420;
-						TestTargetID = C770C9672A739FA000C2AC8C;
 					};
 				};
 			};
@@ -248,13 +204,19 @@
 			projectRoot = "";
 			targets = (
 				C770C9672A739FA000C2AC8C /* ConfidenceDemoApp */,
-				C770C9772A739FA100C2AC8C /* ConfidenceDemoAppTests */,
-				C770C9812A739FA100C2AC8C /* ConfidenceDemoAppUITests */,
+				73B29E912C354CA20007FE96 /* ConfidenceDemoAppUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		73B29E902C354CA20007FE96 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C770C9662A739FA000C2AC8C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -264,23 +226,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C770C9762A739FA100C2AC8C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C770C9802A739FA100C2AC8C /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		73B29E8E2C354CA20007FE96 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73B29EA02C356A670007FE96 /* ConfidenceDemoApp.swift in Sources */,
+				73B29E9F2C356A320007FE96 /* ContentView.swift in Sources */,
+				73B29E952C354CA20007FE96 /* ConfidenceDemoAppUITests.swift in Sources */,
+				73B29E972C354CA20007FE96 /* ConfidenceDemoAppUITestsLaunchTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C770C9642A739FA000C2AC8C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -290,39 +249,68 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C770C9742A739FA100C2AC8C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C770C99F2A739FCE00C2AC8C /* ConfidenceDemoTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C770C97E2A739FA100C2AC8C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C770C9A22A739FDF00C2AC8C /* ConfidenceDemoUITests.swift in Sources */,
-				C770C9A32A739FDF00C2AC8C /* ConfidenceDemoUITestsLaunchTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		C770C97A2A739FA100C2AC8C /* PBXTargetDependency */ = {
+		73B29E992C354CA20007FE96 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C770C9672A739FA000C2AC8C /* ConfidenceDemoApp */;
-			targetProxy = C770C9792A739FA100C2AC8C /* PBXContainerItemProxy */;
-		};
-		C770C9842A739FA100C2AC8C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = C770C9672A739FA000C2AC8C /* ConfidenceDemoApp */;
-			targetProxy = C770C9832A739FA100C2AC8C /* PBXContainerItemProxy */;
+			targetProxy = 73B29E982C354CA20007FE96 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		73B29E9B2C354CA20007FE96 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.test.ConfidenceDemoAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ConfidenceDemoApp;
+			};
+			name = Debug;
+		};
+		73B29E9C2C354CA20007FE96 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.test.ConfidenceDemoAppUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = ConfidenceDemoApp;
+			};
+			name = Release;
+		};
 		C770C98A2A739FA100C2AC8C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -498,107 +486,18 @@
 			};
 			name = Release;
 		};
-		C770C9902A739FA100C2AC8C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "test.Confidence-Demo.ConfidenceDemoAppTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ConfidenceDemoApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ConfidenceDemoApp";
-			};
-			name = Debug;
-		};
-		C770C9912A739FA100C2AC8C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "test.Confidence-Demo.ConfidenceDemoAppTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ConfidenceDemoApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ConfidenceDemoApp";
-			};
-			name = Release;
-		};
-		C770C9932A739FA100C2AC8C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "test.Confidence-Demo.ConfidenceDemoAppUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ConfidenceDemoApp;
-			};
-			name = Debug;
-		};
-		C770C9942A739FA100C2AC8C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@loader_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "test.Confidence-Demo.ConfidenceDemoAppUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ConfidenceDemoApp;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		73B29E9A2C354CA20007FE96 /* Build configuration list for PBXNativeTarget "ConfidenceDemoAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73B29E9B2C354CA20007FE96 /* Debug */,
+				73B29E9C2C354CA20007FE96 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C770C9632A739FA000C2AC8C /* Build configuration list for PBXProject "ConfidenceDemoApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -617,30 +516,16 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C770C98F2A739FA100C2AC8C /* Build configuration list for PBXNativeTarget "ConfidenceDemoAppTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C770C9902A739FA100C2AC8C /* Debug */,
-				C770C9912A739FA100C2AC8C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C770C9922A739FA100C2AC8C /* Build configuration list for PBXNativeTarget "ConfidenceDemoAppUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C770C9932A739FA100C2AC8C /* Debug */,
-				C770C9942A739FA100C2AC8C /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ConfidenceOpenFeature;
+		};
+		73B29E9D2C3567690007FE96 /* Confidence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Confidence;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

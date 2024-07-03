@@ -22,6 +22,7 @@ struct ContentView: View {
                     .foregroundColor(color.color)
                     .padding(10)
                 Text(text.text)
+                    .accessibilityIdentifier("flag_text")
                 Button("Get remote flag value") {
                     text.text = confidence.getValue(key: "swift-demoapp.color", defaultValue: "ERROR")
                     if text.text == "Green" {
@@ -31,7 +32,7 @@ struct ContentView: View {
                     } else {
                         color.color = .red
                     }
-                }
+                }.accessibilityIdentifier("flag_button")
                 Button("Flush 🚽") {
                     confidence.flush()
                 }
