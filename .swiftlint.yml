@@ -5,6 +5,7 @@ excluded:
   - ${PWD}/.build
   - ${PWD}/Tools/*/.build
   - ${PWD}/Sources/ConfidenceProvider/FlagResolver/
+  - ${PWD}/ConfidenceDemoApp/
 
 disabled_rules:
   - discarded_notification_center_observer
