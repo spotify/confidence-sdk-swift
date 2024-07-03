@@ -9,3 +9,4 @@ DerivedData/
 .build
 .mockingbird
 project.json
+scripts/raw_api.json

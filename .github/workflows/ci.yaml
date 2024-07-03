@@ -9,6 +9,13 @@ on:
       - 'main'
 
 jobs:
+  API-diff:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run public API diff
+      run: scripts/api_diff.sh
+
   Tests:
     runs-on: macOS-latest
     steps:
