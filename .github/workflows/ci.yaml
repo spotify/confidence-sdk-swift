@@ -12,6 +12,8 @@ jobs:
   API-diff:
     runs-on: macOS-latest
     steps:
+    - name: install sourcekitten
+      run: brew install sourcekitten
     - uses: actions/checkout@v3
     - name: Run public API diff
       run: scripts/api_diff.sh
