@@ -1,0 +1,43 @@
+[
+  {
+    "className": "ConfidenceFeatureProvider",
+    "apiFunctions": [
+      {
+        "name": "init(confidence:initializationStrategy:)",
+        "declaration": "public convenience init(confidence: Confidence, initializationStrategy: InitializationStrategy = .fetchAndActivate)"
+      },
+      {
+        "name": "initialize(initialContext:)",
+        "declaration": "public func initialize(initialContext: OpenFeature.EvaluationContext?)"
+      },
+      {
+        "name": "onContextSet(oldContext:newContext:)",
+        "declaration": "public func onContextSet(\n    oldContext: OpenFeature.EvaluationContext?,\n    newContext: OpenFeature.EvaluationContext\n)"
+      },
+      {
+        "name": "getBooleanEvaluation(key:defaultValue:context:)",
+        "declaration": "public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws\n-> OpenFeature.ProviderEvaluation<Bool>"
+      },
+      {
+        "name": "getStringEvaluation(key:defaultValue:context:)",
+        "declaration": "public func getStringEvaluation(key: String, defaultValue: String, context: EvaluationContext?) throws\n-> OpenFeature.ProviderEvaluation<String>"
+      },
+      {
+        "name": "getIntegerEvaluation(key:defaultValue:context:)",
+        "declaration": "public func getIntegerEvaluation(key: String, defaultValue: Int64, context: EvaluationContext?) throws\n-> OpenFeature.ProviderEvaluation<Int64>"
+      },
+      {
+        "name": "getDoubleEvaluation(key:defaultValue:context:)",
+        "declaration": "public func getDoubleEvaluation(key: String, defaultValue: Double, context: EvaluationContext?) throws\n-> OpenFeature.ProviderEvaluation<Double>"
+      },
+      {
+        "name": "getObjectEvaluation(key:defaultValue:context:)",
+        "declaration": "public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)\nthrows -> OpenFeature.ProviderEvaluation<OpenFeature.Value>"
+      },
+      {
+        "name": "observe()",
+        "declaration": "public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never>"
+      }
+    ]
+  }
+]
