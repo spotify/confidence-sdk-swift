@@ -12,6 +12,11 @@ Functionalities:
 - Automatic data collection about which flags have been accessed by the application
 - Event tracking for instrumenting your application
 
+### Swift 6 support: strict concurrency
+
+If your app is using some of the features of Swift 6, we recommend setting the **Strict Concurrency Checking** to 
+**Minimal**.
+
 ## Dependency Setup
 
 ### Swift Package Manager
