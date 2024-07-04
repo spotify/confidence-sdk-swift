@@ -293,6 +293,7 @@ extension Confidence {
         internal var flagApplier: FlagApplier?
         internal var storage: Storage?
         internal var flagResolver: ConfidenceResolveClient?
+        internal var debugLogger: DebugLogger?
 
         /**
         Initializes the builder with the given credentails.
@@ -323,6 +324,11 @@ extension Confidence {
             return self
         }
 
+        internal func withDebugLogger(debugLogger: DebugLogger) -> Builder {
+            self.debugLogger = debugLogger
+            return self
+        }
+
         public func withContext(initialContext: ConfidenceStruct) -> Builder {
             self.initialContext = initialContext
             return self
@@ -338,12 +344,11 @@ extension Confidence {
         }
 
         public func build() -> Confidence {
-            var debugLogger: DebugLogger?
-            if loggerLevel != LoggerLevel.NONE {
-                debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
-                debugLogger?.logContext(action: "InitialContext", context: initialContext)
-            } else {
-                debugLogger = nil
+            if debugLogger == nil {
+                if loggerLevel != LoggerLevel.NONE {
+                    debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
+                    debugLogger?.logContext(action: "InitialContext", context: initialContext)
+                }
             }
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
@@ -353,7 +358,8 @@ extension Confidence {
                 version: "0.2.4") // x-release-please-version
             let uploader = RemoteConfidenceClient(
                 options: options,
-                metadata: metadata
+                metadata: metadata,
+                debugLogger: debugLogger
             )
             let httpClient = NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region))
             let flagApplier = flagApplier ?? FlagApplierWithRetries(
