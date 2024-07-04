@@ -17,7 +17,7 @@ rm $script_dir/raw_api.json
 # Compare the public API with the previous public API and exit with 1 if there are changes
 echo "Comparing genereated public API with previous public API"
 set +e
-git diff --no-index --exit-code $script_dir/public_api.json $script_dir/current_public_api.json
+git diff --no-index --exit-code $root_dir/api/public_api.json $script_dir/current_public_api.json
 # Capture the exit code of the git diff command
 diff_exit_code=$?
 set -e
