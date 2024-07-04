@@ -1,13 +1,13 @@
 import Foundation
 
-public struct NetworkStruct: Equatable {
+struct NetworkStruct: Equatable {
     public init(fields: [String: NetworkValue]) {
         self.fields = fields
     }
     public var fields: [String: NetworkValue]
 }
 
-public enum NetworkValue: Equatable {
+enum NetworkValue: Equatable {
     case null
     case string(String)
     case number(Double)
