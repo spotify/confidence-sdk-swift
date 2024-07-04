@@ -5,19 +5,26 @@ set -e
 script_dir=$(dirname $0)
 root_dir="$script_dir/../"
 
+# exit if param is not supplied
+if [ -z "$1" ]; then
+    echo "Please provide the module name as a parameter."
+    exit 1
+fi
+MODULE=$1 
+
 # Generate the json file with:
-sourcekitten doc --module-name Confidence -- -scheme Confidence-Package -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' > $script_dir/raw_api.json
+sourcekitten doc --module-name ${MODULE} -- -scheme Confidence-Package -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' > $script_dir/${MODULE}_raw_api.json
 
 # Extract the public API from the raw api json file
-python3 $script_dir/extract_public_funcs.py $script_dir/raw_api.json $script_dir/current_public_api.json
+python3 $script_dir/extract_public_funcs.py $script_dir/${MODULE}_raw_api.json $script_dir/${MODULE}_current_public_api.json
 
 # Clean up the raw api json file
-rm $script_dir/raw_api.json
+rm $script_dir/${MODULE}_raw_api.json
 
 # Compare the public API with the previous public API and exit with 1 if there are changes
 echo "Comparing genereated public API with previous public API"
 set +e
-git diff --no-index --exit-code $root_dir/api/public_api.json $script_dir/current_public_api.json
+git diff --no-index --exit-code $root_dir/api/${MODULE}_public_api.json $script_dir/${MODULE}_current_public_api.json
 # Capture the exit code of the git diff command
 diff_exit_code=$?
 set -e
@@ -36,7 +43,7 @@ If the changes are unintended, please investigate the changes and update the sou
 fi
 
 # Clean up the current public api json file
-rm $script_dir/current_public_api.json
+rm $script_dir/${MODULE}_current_public_api.json
 
 # Exit with the diff's exit code to maintain the intended behavior
 exit $diff_exit_code

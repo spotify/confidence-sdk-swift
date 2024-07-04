@@ -10,6 +10,9 @@ on:
 
 jobs:
   API-diff:
+    strategy:
+      matrix:
+        module: ["ConfidenceProvider", "Confidence"]
     runs-on: macOS-latest
     steps:
     - name: install sourcekitten
@@ -20,7 +23,7 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SDK_REPO_PRIVATE_KEY }}
     - name: Run public API diff
-      run: scripts/api_diff.sh
+      run: scripts/api_diff.sh ${{ matrix.module }}
 
   Tests:
     runs-on: macOS-latest
