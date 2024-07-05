@@ -286,7 +286,6 @@ extension Confidence {
 
         // Can be configured
         internal var region: ConfidenceRegion = .global
-        internal var metadata: ConfidenceMetadata?
         internal var initialContext: ConfidenceStruct = [:]
 
         // Injectable for testing
