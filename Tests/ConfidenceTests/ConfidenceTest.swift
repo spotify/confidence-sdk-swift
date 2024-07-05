@@ -126,16 +126,13 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
+        let emptyEvaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: "value"
+        )
 
-        XCTAssertThrowsError(
-            try confidence.getEvaluation(
-                key: "flag.size",
-                defaultValue: "value"
-            )) { error in
-                XCTAssertEqual(
-                    error as? ConfidenceError,
-                    ConfidenceError.flagNotFoundError(key: "flag"))
-        }
+        XCTAssertEqual(emptyEvaluation.value, "value")
+        XCTAssertEqual(emptyEvaluation.errorCode, .flagNotFound)
 
         client.resolvedValues = [
             ResolvedValue(
@@ -153,7 +150,7 @@ class ConfidenceTest: XCTestCase {
         await fulfillment(of: [expectation], timeout: 1)
         cancellable.cancel()
 
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
 
@@ -194,7 +191,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
 
@@ -273,7 +270,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
 
@@ -314,11 +311,11 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
 
-        _ = try confidence.getEvaluation(
+        _ = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
 
@@ -364,7 +361,7 @@ class ConfidenceTest: XCTestCase {
 
         try await confidence.fetchAndActivate()
         confidence.putContext(context: ["hello": .init(string: "world")])
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
 
@@ -405,7 +402,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0.0)
 
@@ -446,7 +443,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: false)
 
@@ -487,7 +484,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: [:])
 
@@ -528,7 +525,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 42)
 
@@ -543,7 +540,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testProviderThrowsFlagNotFound() async throws {
+    func testProviderFlagNotFound() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
@@ -562,15 +559,16 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        XCTAssertThrowsError(
-            try confidence.getEvaluation(
-                key: "flag.size",
-                defaultValue: 42
-            )
-        ) { error in
-            XCTAssertEqual(error as? ConfidenceError, ConfidenceError.flagNotFoundError(key: "flag"))
-        }
+        let evaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: 42
+        )
 
+        XCTAssertEqual(evaluation.value, 42)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertEqual(evaluation.errorCode, .flagNotFound)
+        XCTAssertEqual(evaluation.errorMessage, "Flag 'flag' not found in local cache")
         XCTAssertEqual(client.resolveStats, 1)
     }
 
@@ -595,7 +593,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 42)
 

@@ -17,7 +17,7 @@ class LocalStorageResolverTest: XCTestCase {
         )
 
         XCTAssertNoThrow(
-            try flagResolution.evaluate(
+            flagResolution.evaluate(
                 flagName: "flag_name.string", defaultValue: "default", context: [:])
         )
     }
@@ -30,13 +30,12 @@ class LocalStorageResolverTest: XCTestCase {
         )
         let context =
             ["hey": ConfidenceValue(string: "old value")]
-        let flagResolution =
-            FlagResolution(context: context, flags: [resolvedValue], resolveToken: "")
-        XCTAssertThrowsError(
-            try flagResolution.evaluate(flagName: "new_flag_name", defaultValue: "default", context: context)
-        ) { error in
-            XCTAssertEqual(
-                error as? ConfidenceError, .flagNotFoundError(key: "new_flag_name"))
-        }
+        let flagResolution = FlagResolution(context: context, flags: [resolvedValue], resolveToken: "")
+        let evaluation = flagResolution.evaluate(flagName: "new_flag_name", defaultValue: "default", context: context)
+        XCTAssertEqual(evaluation.value, "default")
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertEqual(evaluation.errorCode, .flagNotFound)
+        XCTAssertEqual(evaluation.errorMessage, "Flag 'new_flag_name' not found in local cache")
     }
 }

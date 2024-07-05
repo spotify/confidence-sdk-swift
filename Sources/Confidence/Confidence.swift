@@ -126,8 +126,8 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
-        try self.cache.evaluate(
+    public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T> {
+        self.cache.evaluate(
             flagName: key,
             defaultValue: defaultValue,
             context: getContext(),
@@ -136,11 +136,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func getValue<T>(key: String, defaultValue: T) -> T {
-        do {
-            return try getEvaluation(key: key, defaultValue: defaultValue).value
-        } catch {
-            return defaultValue
-        }
+        return getEvaluation(key: key, defaultValue: defaultValue).value
     }
 
     func isStorageEmpty() -> Bool {

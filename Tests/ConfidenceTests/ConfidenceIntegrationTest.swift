@@ -30,8 +30,8 @@ class ConfidenceIntegrationTests: XCTestCase {
             .withContext(initialContext: ctx)
             .build()
         try await confidence.fetchAndActivate()
-        let intResult = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: "1")
-        let boolResult = try confidence.getEvaluation(key: "\(resolveFlag).my-boolean", defaultValue: false)
+        let intResult = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: "1")
+        let boolResult = confidence.getEvaluation(key: "\(resolveFlag).my-boolean", defaultValue: false)
 
 
         XCTAssertEqual(intResult.reason, .match)
@@ -104,7 +104,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .build()
         try await confidence.fetchAndActivate()
 
-        let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
@@ -132,7 +132,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .build()
         try await confidence.fetchAndActivate()
         // When evaluation of the flag happens using date context
-        let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
@@ -162,7 +162,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .build()
         try await confidence.fetchAndActivate()
         // When evaluation of the flag happens using date context
-        let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)
         XCTAssertEqual(result.value, 1)
         XCTAssertEqual(result.reason, .noSegmentMatch)

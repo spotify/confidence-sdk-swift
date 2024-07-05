@@ -92,31 +92,31 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<Bool>
     {
-        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getStringEvaluation(key: String, defaultValue: String, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<String>
     {
-        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getIntegerEvaluation(key: String, defaultValue: Int64, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<Int64>
     {
-        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getDoubleEvaluation(key: String, defaultValue: Double, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<Double>
     {
-        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)
     throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
-        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
