@@ -80,8 +80,9 @@ class ConfidenceIntegrationTests: XCTestCase {
         )
 
         confidence.flush()
-        try logger.waitUploadSuccessCount(value: 1, timeout: 5.0)
-        XCTAssertEqual(logger.getUploadSuccessCount(), 1)
+        try logger.waitUploadBatchSuccessCount(value: 1, timeout: 5.0)
+        XCTAssertEqual(logger.getUploadBatchSuccessCount(), 1)
+        XCTAssertEqual(logger.uploadedEvents, ["all-types"])
     }
 
     func testConfidenceFeatureApplies() async throws {

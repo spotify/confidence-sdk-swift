@@ -3,15 +3,17 @@ import Foundation
 @testable import Confidence
 
 internal class DebugLoggerFake: DebugLogger {
-    private let uploadSuccessCounter = ThreadSafeCounter()
+    private let uploadBatchSuccessCounter = ThreadSafeCounter()
+    public var uploadedEvents: [String] = [] // Holds the "eventDefinition" name of each uploaded event
 
     func logEvent(action: String, event: ConfidenceEvent?) {
         // no-op
     }
 
     func logMessage(message: String, isWarning: Bool) {
-        if message == "Event upload: HTTP status 200" {
-            uploadSuccessCounter.increment()
+        if message.starts(with: "Event upload: HTTP status 200") {
+            uploadedEvents.append(contentsOf: parseEvents(fromString: message))
+            uploadBatchSuccessCounter.increment()
         }
     }
 
@@ -23,12 +25,30 @@ internal class DebugLoggerFake: DebugLogger {
         // no-op
     }
 
-    func getUploadSuccessCount() -> Int {
-        return uploadSuccessCounter.get()
+    func getUploadBatchSuccessCount() -> Int {
+        return uploadBatchSuccessCounter.get()
     }
 
-    func waitUploadSuccessCount(value: Int32, timeout: TimeInterval) throws {
-        try uploadSuccessCounter.waitUntil(value: value, timeout: timeout)
+    func waitUploadBatchSuccessCount(value: Int32, timeout: TimeInterval) throws {
+        try uploadBatchSuccessCounter.waitUntil(value: value, timeout: timeout)
+    }
+
+    /**
+    Example
+    Input: "Event upload: HTTP status 200. Events: event-name1, event-name2"
+    Output: ["event-name1", "event-name2"]
+    */
+    private func parseEvents(fromString message: String) -> [String] {
+        guard let eventsStart = message.range(of: "Events:") else {
+            return []
+        }
+
+        let startIndex = message.index(eventsStart.upperBound, offsetBy: 1)
+        let endIndex = message.endIndex
+        let eventsString = message[startIndex..<endIndex]
+
+        return eventsString.components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     }
 
     private class ThreadSafeCounter {
@@ -50,8 +70,8 @@ internal class DebugLoggerFake: DebugLogger {
         func waitUntil(value: Int32, timeout: TimeInterval) throws {
             let deadline = DispatchTime.now() + timeout
 
-            // TODO There might be more efficient ways than a while true loop
             repeat {
+                Thread.sleep(forTimeInterval: 0.1) // Shortcut to reduce CPU usage, probably needs refactoring
                 guard deadline > DispatchTime.now() else {
                     throw TimeoutError(message: "Timed out waiting for counter to reach \(value)")
                 }

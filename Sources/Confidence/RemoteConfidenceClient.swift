@@ -46,11 +46,14 @@ public class RemoteConfidenceClient: ConfidenceClient {
             switch result {
             case .success(let successData):
                 let status = successData.response.statusCode
+                let eventNames = events.map { event in
+                    event.eventDefinition
+                }
                 switch status {
                 case 200:
                     // clean up in case of success
                     debugLogger?.logMessage(
-                        message: "Event upload: HTTP status 200",
+                        message: "Event upload: HTTP status 200. Events: \(eventNames.joined(separator: ","))",
                         isWarning: false
                     )
                     return true
