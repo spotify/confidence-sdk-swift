@@ -1,6 +1,6 @@
 import Foundation
 
-public class RemoteConfidenceResolveClient: ConfidenceResolveClient {
+class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private var options: ConfidenceClientOptions
     private let metadata: ConfidenceMetadata

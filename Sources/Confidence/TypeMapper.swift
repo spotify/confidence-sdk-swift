@@ -1,6 +1,6 @@
 import Foundation
 
-public enum TypeMapper {
+enum TypeMapper {
     static internal func convert(structure: ConfidenceStruct) -> NetworkStruct {
         return NetworkStruct(fields: structure.compactMapValues(convert))
     }

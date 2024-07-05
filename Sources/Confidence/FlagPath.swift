@@ -1,10 +1,10 @@
 import Foundation
 
-public struct FlagPath {
+struct FlagPath {
     var flag: String
     var path: [String]
 
-    public static func getPath(for path: String) throws -> FlagPath {
+    static func getPath(for path: String) throws -> FlagPath {
         let parts = path.components(separatedBy: ".")
 
         guard let flag = parts.first else {
