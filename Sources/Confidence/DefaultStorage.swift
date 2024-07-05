@@ -1,6 +1,6 @@
 import Foundation
 
-public class DefaultStorage: Storage {
+class DefaultStorage: Storage {
     private let storageQueue = DispatchQueue(label: "com.confidence.storage")
     private let resolverCacheBundleId = "com.confidence.cache"
     private let filePath: String

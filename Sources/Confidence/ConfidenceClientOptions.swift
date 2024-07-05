@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ConfidenceClientOptions {
+struct ConfidenceClientOptions {
     public var credentials: ConfidenceClientCredentials
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
@@ -16,7 +16,7 @@ public struct ConfidenceClientOptions {
     }
 }
 
-public enum ConfidenceClientCredentials {
+enum ConfidenceClientCredentials {
     case clientSecret(secret: String)
 
     public func getSecret() -> String {

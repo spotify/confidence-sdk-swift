@@ -1,6 +1,6 @@
 import Foundation
 
-final public class NetworkClient: HttpClient {
+final class NetworkClient: HttpClient {
     private let headers: [String: String]
     private let retry: Retry
     private let session: URLSession
