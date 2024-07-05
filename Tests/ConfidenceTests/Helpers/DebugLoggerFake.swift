@@ -2,7 +2,7 @@ import Foundation
 
 @testable import Confidence
 
-internal class DebugLoggerTests: DebugLogger {
+internal class DebugLoggerFake: DebugLogger {
     private let uploadSuccessCounter = ThreadSafeCounter()
 
     func logEvent(action: String, event: ConfidenceEvent?) {

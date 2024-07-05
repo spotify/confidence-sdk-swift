@@ -49,7 +49,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             throw TestError.missingClientToken
         }
 
-        let logger = DebugLoggerTests()
+        let logger = DebugLoggerFake()
         let confidence = Confidence.Builder(clientSecret: clientToken)
             .withDebugLogger(debugLogger: logger)
             .build()
