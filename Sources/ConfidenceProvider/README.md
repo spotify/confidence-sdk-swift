@@ -30,7 +30,7 @@ import OpenFeature
 let confidence = Confidence.Builder(clientSecret: "mysecret").build()
 let provider = ConfidenceFeatureProvider(confidence: confidence)
 let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
-OpenFeatureAPI.shared.setProvider(provider: provider, initialContext:)
+OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
 ```
 
 The evaluation context is the way for the client to specify contextual data that Confidence uses to evaluate rules defined on the flag.
