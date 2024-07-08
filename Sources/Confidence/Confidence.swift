@@ -81,13 +81,13 @@ public class Confidence: ConfidenceEventSender {
 
     /**
     Fetches latest flag evaluations and store them on disk. Regardless of the fetch outcome (success or failure), this
-    function activates the cache after the fetch.
+    function activates the cache after the fetch. Timeout for this function is configurable.
     Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
     Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data on disk.
     */
-    public func fetchAndActivate() async throws {
+    public func fetchAndActivate(fetchTimeoutSec: Int = 10) async throws {
         do {
-            try await internalFetch()
+            try await internalFetch(fetchTimeoutSec: fetchTimeoutSec)
         } catch {
             debugLogger?.logMessage(
                 message: "\(error)",
@@ -97,9 +97,9 @@ public class Confidence: ConfidenceEventSender {
         try activate()
     }
 
-    func internalFetch() async throws {
+    func internalFetch(fetchTimeoutSec: Int? = nil) async throws {
         let context = getContext()
-        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
+        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context, withTimeout: fetchTimeoutSec)
         let resolution = FlagResolution(
             context: context,
             flags: resolvedFlags.resolvedValues,
@@ -116,7 +116,7 @@ public class Confidence: ConfidenceEventSender {
     public func asyncFetch() {
         Task {
             do {
-                try await internalFetch()
+                try await internalFetch(fetchTimeoutSec: nil)
             } catch {
                 debugLogger?.logMessage(
                     message: "\(error )",

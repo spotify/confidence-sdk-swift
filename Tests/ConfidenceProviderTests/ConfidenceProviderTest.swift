@@ -12,7 +12,7 @@ class ConfidenceProviderTest: XCTestCase {
 
     func testErrorFetchOnInit() async throws {
         class FakeClient: ConfidenceResolveClient {
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            func resolve(ctx: ConfidenceStruct, withTimeout: Int?) async throws -> ResolvesResult {
                 throw ConfidenceError.internalError(message: "test")
             }
         }
