@@ -236,16 +236,12 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
+        let value = try confidence.getValue(
             key: "flag.size",
             defaultValue: 0 as Int64)
 
         XCTAssertEqual(client.resolveStats, 1)
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(value, 3)
         XCTAssertEqual(client.resolveStats, 1)
         await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
