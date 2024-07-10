@@ -86,6 +86,7 @@ extension FlagResolution {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue) -> T? {
         if let value = self as? T {
             return value
@@ -97,7 +98,16 @@ extension FlagResolution {
         case .string:
             return value.asString() as? T
         case .integer:
-            return value.asInteger() as? T
+            if let intValue = value.asInteger() as? T {
+                return intValue
+            }
+            if T.self == Int32.self, let intValue = value.asInteger() {
+                return Int32(intValue) as? T
+            }
+            if T.self == Int64.self, let intValue = value.asInteger() {
+                return Int64(intValue) as? T
+            }
+            return nil
         case .double:
             return value.asDouble() as? T
         case .date:
