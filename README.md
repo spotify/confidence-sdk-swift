@@ -96,7 +96,7 @@ In the case of an error, the default value will be returned and the `Evaluation`
 
 ```swift
 let message: String = confidence.getValue(key: "flag-name.message", defaultValue: "default message") 
-let messageFlag: Evaluation<String> = try confidence.getEvaluation(key: "flag-name.message", defaultValue: "default message")
+let messageFlag: Evaluation<String> = confidence.getEvaluation(key: "flag-name.message", defaultValue: "default message")
 
 let messageValue = messageFlag.value
 // message and messageValue are the same

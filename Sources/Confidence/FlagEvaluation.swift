@@ -11,6 +11,8 @@ public struct Evaluation<T> {
 public enum ErrorCode {
     case providerNotReady
     case invalidContext
+    case flagNotFound
+    case evaluationError
 }
 
 struct FlagResolution: Encodable, Decodable, Equatable {
@@ -21,70 +23,85 @@ struct FlagResolution: Encodable, Decodable, Equatable {
 }
 
 extension FlagResolution {
+    // swiftlint:disable function_body_length
     func evaluate<T>(
         flagName: String,
         defaultValue: T,
         context: ConfidenceStruct,
         flagApplier: FlagApplier? = nil
-    ) throws -> Evaluation<T> {
-        let parsedKey = try FlagPath.getPath(for: flagName)
-        if self == FlagResolution.EMPTY {
-            throw ConfidenceError.flagNotFoundError(key: parsedKey.flag)
-        }
-        let resolvedFlag = self.flags.first { resolvedFlag in  resolvedFlag.flag == parsedKey.flag }
-        guard let resolvedFlag = resolvedFlag else {
-            throw ConfidenceError.flagNotFoundError(key: parsedKey.flag)
-        }
-
-        if resolvedFlag.resolveReason != .targetingKeyError {
-            Task {
-                await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+    ) -> Evaluation<T> {
+        do {
+            let parsedKey = try FlagPath.getPath(for: flagName)
+            let resolvedFlag = self.flags.first { resolvedFlag in  resolvedFlag.flag == parsedKey.flag }
+            guard let resolvedFlag = resolvedFlag else {
+                return Evaluation(
+                    value: defaultValue,
+                    variant: nil,
+                    reason: .error,
+                    errorCode: .flagNotFound,
+                    errorMessage: "Flag '\(parsedKey.flag)' not found in local cache"
+                )
             }
-        } else {
+
+            if resolvedFlag.resolveReason != .targetingKeyError {
+                Task {
+                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                }
+            } else {
+                return Evaluation(
+                    value: defaultValue,
+                    variant: nil,
+                    reason: .targetingKeyError,
+                    errorCode: .invalidContext,
+                    errorMessage: "Invalid targeting key"
+                )
+            }
+
+            guard let value = resolvedFlag.value else {
+                return Evaluation(
+                    value: defaultValue,
+                    variant: resolvedFlag.variant,
+                    reason: resolvedFlag.resolveReason,
+                    errorCode: nil,
+                    errorMessage: nil
+                )
+            }
+
+            let parsedValue = try getValue(path: parsedKey.path, value: value)
+            let pathValue: T = getTyped(value: parsedValue) ?? defaultValue
+
+            if resolvedFlag.resolveReason == .match {
+                var resolveReason: ResolveReason = .match
+                if self.context != context {
+                    resolveReason = .stale
+                }
+                return Evaluation(
+                    value: pathValue,
+                    variant: resolvedFlag.variant,
+                    reason: resolveReason,
+                    errorCode: nil,
+                    errorMessage: nil
+                )
+            } else {
+                return Evaluation(
+                    value: defaultValue,
+                    variant: resolvedFlag.variant,
+                    reason: resolvedFlag.resolveReason,
+                    errorCode: nil,
+                    errorMessage: nil
+                )
+            }
+        } catch {
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
-                reason: .targetingKeyError,
-                errorCode: .invalidContext,
-                errorMessage: "Invalid targeting key"
-            )
-        }
-
-        guard let value = resolvedFlag.value else {
-            return Evaluation(
-                value: defaultValue,
-                variant: resolvedFlag.variant,
-                reason: resolvedFlag.resolveReason,
-                errorCode: nil,
-                errorMessage: nil
-            )
-        }
-
-        let parsedValue = try getValue(path: parsedKey.path, value: value)
-        let pathValue: T = getTyped(value: parsedValue) ?? defaultValue
-
-        if resolvedFlag.resolveReason == .match {
-            var resolveReason: ResolveReason = .match
-            if self.context != context {
-                resolveReason = .stale
-            }
-            return Evaluation(
-                value: pathValue,
-                variant: resolvedFlag.variant,
-                reason: resolveReason,
-                errorCode: nil,
-                errorMessage: nil
-            )
-        } else {
-            return Evaluation(
-                value: defaultValue,
-                variant: resolvedFlag.variant,
-                reason: resolvedFlag.resolveReason,
-                errorCode: nil,
-                errorMessage: nil
+                reason: .error,
+                errorCode: .evaluationError,
+                errorMessage: error.localizedDescription
             )
         }
     }
+    // swiftlint:enable function_body_length
 
     // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue) -> T? {
