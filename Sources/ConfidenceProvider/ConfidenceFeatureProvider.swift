@@ -92,31 +92,31 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<Bool>
     {
-        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getStringEvaluation(key: String, defaultValue: String, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<String>
     {
-        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getIntegerEvaluation(key: String, defaultValue: Int64, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<Int64>
     {
-        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getDoubleEvaluation(key: String, defaultValue: Double, context: EvaluationContext?) throws
     -> OpenFeature.ProviderEvaluation<Double>
     {
-        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)
     throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
-        confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
@@ -134,8 +134,20 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 }
 
 extension Evaluation {
-    func toProviderEvaluation() -> ProviderEvaluation<T> {
-        ProviderEvaluation(
+    func toProviderEvaluation() throws -> ProviderEvaluation<T> {
+        if let errorCode = self.errorCode {
+            switch errorCode {
+            case .providerNotReady:
+                throw OpenFeatureError.providerNotReadyError
+            case .invalidContext:
+                throw OpenFeatureError.invalidContextError
+            case .flagNotFound:
+                throw OpenFeatureError.flagNotFoundError(key: self.errorMessage ?? "unknown key")
+            case .evaluationError:
+                throw OpenFeatureError.generalError(message: self.errorMessage ?? "unknown error")
+            }
+        }
+        return ProviderEvaluation(
             value: self.value,
             variant: self.variant,
             reason: self.reason.rawValue,
