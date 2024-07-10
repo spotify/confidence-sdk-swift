@@ -210,6 +210,44 @@ class ConfidenceTest: XCTestCase {
     }
 
 
+    func testResolveIntegerFlagWithInt64() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let value = try confidence.getValue(
+            key: "flag.size",
+            defaultValue: 0 as Int64)
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(value, 3)
+        XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+
     func testResolveAndApplyIntegerFlagNoSegmentMatch() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
