@@ -23,6 +23,9 @@ public struct Event {
 ConfidenceContextProducer implementer pushses context changes in a Publisher fashion
 */
 public protocol ConfidenceContextProducer: ConfidenceProducer {
+    /**
+    Publish context data.
+    */
     func produceContexts() -> AnyPublisher<ConfidenceStruct, Never>
 }
 
@@ -30,5 +33,8 @@ public protocol ConfidenceContextProducer: ConfidenceProducer {
 ConfidenceContextProducer implementer emit events in a Publisher fashion
 */
 public protocol ConfidenceEventProducer: ConfidenceProducer {
+    /**
+    Publish events.
+    */
     func produceEvents() -> AnyPublisher<Event, Never>
 }
