@@ -19,12 +19,13 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         self.metadata = metadata
         self.httpClient = NetworkClient(
             session: session,
-            baseUrl: BaseUrlMapper.from(region: options.region))
+            baseUrl: BaseUrlMapper.from(region: options.region),
+            timeoutIntervalForRequests: options.timeoutIntervalForRequest)
     }
 
     // MARK: Resolver
 
-    public func resolve(flags: [String], ctx: ConfidenceStruct, withTimeout: Int? = nil) async throws -> ResolvesResult {
+    public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
             evaluationContext: TypeMapper.convert(structure: ctx),
@@ -34,39 +35,28 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         )
 
         do {
-            let resolveTask = Task {
-                let resolve: HttpClientResult<ResolveFlagsResponse> =
-                try await self.httpClient.post(path: ":resolve", data: request)
-                try Task.checkCancellation()
-                return resolve
-            }
-
-            _ = Task {
-                try await Task.sleep(nanoseconds: UInt64(withTimeout ?? 0) * NSEC_PER_SEC)
-                resolveTask.cancel()
-            }
-
-            let result = try await resolveTask.value
-            switch result {
-            case .success(let successData):
-                guard successData.response.status == .ok else {
-                    throw successData.response.mapStatusToError(error: successData.decodedError)
+                    let result: HttpClientResult<ResolveFlagsResponse> =
+                    try await self.httpClient.post(path: ":resolve", data: request)
+                    switch result {
+                    case .success(let successData):
+                        guard successData.response.status == .ok else {
+                            throw successData.response.mapStatusToError(error: successData.decodedError)
+                        }
+                        guard let response = successData.decodedData else {
+                            throw ConfidenceError.parseError(message: "Unable to parse request response")
+                        }
+                        let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+                            try convert(resolvedFlag: resolvedFlag)
+                        }
+                        return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+                    case .failure(let errorData):
+                        throw handleError(error: errorData)
+                    }
                 }
-                guard let response = successData.decodedData else {
-                    throw ConfidenceError.parseError(message: "Unable to parse request response")
-                }
-                let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                    try convert(resolvedFlag: resolvedFlag)
-                }
-                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-            case .failure(let errorData):
-                throw handleError(error: errorData)
-            }
-        }
     }
 
-    public func resolve(ctx: ConfidenceStruct, withTimeout: Int? = nil) async throws -> ResolvesResult {
-        return try await resolve(flags: [], ctx: ctx, withTimeout: withTimeout)
+    public func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+        return try await resolve(flags: [], ctx: ctx)
     }
 
     // MARK: Private

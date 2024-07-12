@@ -81,13 +81,13 @@ public class Confidence: ConfidenceEventSender {
 
     /**
     Fetches latest flag evaluations and store them on disk. Regardless of the fetch outcome (success or failure), this
-    function activates the cache after the fetch. Timeout for this function is configurable.
+    function activates the cache after the fetch.
     Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
     Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data on disk.
     */
-    public func fetchAndActivate(fetchTimeoutSec: Int = 10) async throws {
+    public func fetchAndActivate() async throws {
         do {
-            try await internalFetch(fetchTimeoutSec: fetchTimeoutSec)
+            try await internalFetch()
         } catch {
             debugLogger?.logMessage(
                 message: "\(error)",
@@ -97,9 +97,9 @@ public class Confidence: ConfidenceEventSender {
         try activate()
     }
 
-    func internalFetch(fetchTimeoutSec: Int? = nil) async throws {
+    func internalFetch() async throws {
         let context = getContext()
-        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context, withTimeout: fetchTimeoutSec)
+        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
         let resolution = FlagResolution(
             context: context,
             flags: resolvedFlags.resolvedValues,
@@ -116,7 +116,7 @@ public class Confidence: ConfidenceEventSender {
     public func asyncFetch() {
         Task {
             do {
-                try await internalFetch(fetchTimeoutSec: nil)
+                try await internalFetch()
             } catch {
                 debugLogger?.logMessage(
                     message: "\(error )",
@@ -272,7 +272,8 @@ public class Confidence: ConfidenceEventSender {
             storage: storage,
             context: context,
             parent: self,
-            debugLogger: debugLogger)
+            debugLogger: debugLogger
+        )
     }
 }
 
@@ -288,6 +289,7 @@ extension Confidence {
         internal var region: ConfidenceRegion = .global
         internal var metadata: ConfidenceMetadata?
         internal var initialContext: ConfidenceStruct = [:]
+        internal var timeout: Double = 0
 
         // Injectable for testing
         internal var flagApplier: FlagApplier?
@@ -337,6 +339,11 @@ extension Confidence {
             return self
         }
 
+        public func withTimeout(timeout: Double) -> Builder {
+            self.timeout = timeout
+            return self
+        }
+
         public func build() -> Confidence {
             var debugLogger: DebugLogger?
             if loggerLevel != LoggerLevel.NONE {
@@ -347,7 +354,8 @@ extension Confidence {
             }
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                region: region)
+                region: region,
+                timeoutIntervalForRequest: timeout)
             let metadata = ConfidenceMetadata(
                 name: sdkId,
                 version: "0.2.4") // x-release-please-version
@@ -355,7 +363,10 @@ extension Confidence {
                 options: options,
                 metadata: metadata
             )
-            let httpClient = NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region))
+            let httpClient = NetworkClient(
+                baseUrl: BaseUrlMapper.from(region: options.region),
+                timeoutIntervalForRequests: options.timeoutIntervalForRequest
+            )
             let flagApplier = flagApplier ?? FlagApplierWithRetries(
                 httpClient: httpClient,
                 storage: DefaultStorage(filePath: "confidence.flags.apply"),
