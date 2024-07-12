@@ -222,7 +222,6 @@ public enum ConfidenceValueType: CaseIterable {
     case null
 }
 
-
 /// Serializable data structure meant for event sending via Confidence
 private enum ConfidenceValueInternal: Equatable, Codable {
     case boolean(Bool)

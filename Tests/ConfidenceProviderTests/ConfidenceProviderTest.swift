@@ -111,10 +111,11 @@ class ConfidenceProviderTest: XCTestCase {
         let evaluation = try provider.getIntegerEvaluation(key: "flagName.int", defaultValue: -1, context: context)
         XCTAssertEqual(evaluation.value, 42)
 
-        XCTAssertThrowsError(try provider.getIntegerEvaluation(
-            key: "flagNotFound.something",
-            defaultValue: -1,
-            context: context))
+        XCTAssertThrowsError(
+            try provider.getIntegerEvaluation(
+                key: "flagNotFound.something",
+                defaultValue: -1,
+                context: context))
         { error in
             if let specificError = error as? OpenFeatureError {
                 XCTAssertEqual(specificError.errorCode(), ErrorCode.flagNotFound)
