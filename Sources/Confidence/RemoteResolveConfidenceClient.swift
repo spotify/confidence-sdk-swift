@@ -35,24 +35,24 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         )
 
         do {
-                    let result: HttpClientResult<ResolveFlagsResponse> =
-                    try await self.httpClient.post(path: ":resolve", data: request)
-                    switch result {
-                    case .success(let successData):
-                        guard successData.response.status == .ok else {
-                            throw successData.response.mapStatusToError(error: successData.decodedError)
-                        }
-                        guard let response = successData.decodedData else {
-                            throw ConfidenceError.parseError(message: "Unable to parse request response")
-                        }
-                        let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
-                            try convert(resolvedFlag: resolvedFlag)
-                        }
-                        return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
-                    case .failure(let errorData):
-                        throw handleError(error: errorData)
-                    }
+            let result: HttpClientResult<ResolveFlagsResponse> =
+            try await self.httpClient.post(path: ":resolve", data: request)
+            switch result {
+            case .success(let successData):
+                guard successData.response.status == .ok else {
+                    throw successData.response.mapStatusToError(error: successData.decodedError)
                 }
+                guard let response = successData.decodedData else {
+                    throw ConfidenceError.parseError(message: "Unable to parse request response")
+                }
+                let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
+                    try convert(resolvedFlag: resolvedFlag)
+                }
+                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+            case .failure(let errorData):
+                throw handleError(error: errorData)
+            }
+        }
     }
 
     public func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
