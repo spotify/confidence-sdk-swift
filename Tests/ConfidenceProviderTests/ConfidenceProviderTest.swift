@@ -7,10 +7,8 @@ import XCTest
 @testable import Confidence
 
 class ConfidenceProviderTest: XCTestCase {
-    private var readyExpectation = XCTestExpectation(description: "Ready")
-    private var errorExpectation = XCTestExpectation(description: "Error")
-
     func testErrorFetchOnInit() async throws {
+        let readyExpectation = XCTestExpectation(description: "Ready")
         class FakeClient: ConfidenceResolveClient {
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 throw ConfidenceError.internalError(message: "test")
@@ -28,7 +26,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
             if event == .ready {
-                self.readyExpectation.fulfill()
+                readyExpectation.fulfill()
             } else {
                 print(event)
             }
@@ -38,6 +36,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testErrorStorageOnInit() async throws {
+        let errorExpectation = XCTestExpectation(description: "Error")
         class FakeStorage: Storage {
             func save(data: Encodable) throws {
                 // no-op
@@ -66,12 +65,104 @@ class ConfidenceProviderTest: XCTestCase {
 
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
             if event == .error {
-                self.errorExpectation.fulfill()
+                errorExpectation.fulfill()
             } else {
                 print(event)
             }
         }
         await fulfillment(of: [errorExpectation], timeout: 5.0)
         cancellable.cancel()
+    }
+
+    func testProviderThrowsOpenFeatureErrors() async throws {
+        let context = MutableContext(targetingKey: "t")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                variant: "variant1",
+                value: .init(structure: ["int": .init(integer: 42)]),
+                flag: "flagName",
+                resolveReason: .match)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "t")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            } else {
+                print(event)
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+        let evaluation = try provider.getIntegerEvaluation(key: "flagName.int", defaultValue: -1, context: context)
+        XCTAssertEqual(evaluation.value, 42)
+
+        XCTAssertThrowsError(
+            try provider.getIntegerEvaluation(
+                key: "flagNotFound.something",
+                defaultValue: -1,
+                context: context))
+        { error in
+            if let specificError = error as? OpenFeatureError {
+                XCTAssertEqual(specificError.errorCode(), ErrorCode.flagNotFound)
+            } else {
+                XCTFail("expected a flag not found error")
+            }
+        }
+    }
+}
+
+private class StorageMock: Storage {
+    var data = ""
+    var saveExpectation: XCTestExpectation?
+    private let storageQueue = DispatchQueue(label: "com.confidence.storagemock")
+
+    convenience init(data: Encodable) throws {
+        self.init()
+        try self.save(data: data)
+    }
+
+    func save(data: Encodable) throws {
+        try storageQueue.sync {
+            let dataB = try JSONEncoder().encode(data)
+            self.data = String(decoding: dataB, as: UTF8.self)
+
+            saveExpectation?.fulfill()
+        }
+    }
+
+    func load<T>(defaultValue: T) throws -> T where T: Decodable {
+        try storageQueue.sync {
+            if data.isEmpty {
+                return defaultValue
+            }
+            return try JSONDecoder().decode(T.self, from: try XCTUnwrap(data.data(using: .utf8)))
+        }
+    }
+
+    func clear() throws {
+        storageQueue.sync {
+            data = ""
+        }
+    }
+
+    func isEmpty() -> Bool {
+        storageQueue.sync {
+            return data.isEmpty
+        }
     }
 }

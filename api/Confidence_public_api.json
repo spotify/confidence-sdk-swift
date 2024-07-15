@@ -16,7 +16,7 @@
       },
       {
         "name": "getEvaluation(key:defaultValue:)",
-        "declaration": "public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T>"
+        "declaration": "public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T>"
       },
       {
         "name": "getValue(key:defaultValue:)",

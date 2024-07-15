@@ -30,8 +30,8 @@ class ConfidenceIntegrationTests: XCTestCase {
             .withContext(initialContext: ctx)
             .build()
         try await confidence.fetchAndActivate()
-        let intResult = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: "1")
-        let boolResult = try confidence.getEvaluation(key: "\(resolveFlag).my-boolean", defaultValue: false)
+        let intResult = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: "1")
+        let boolResult = confidence.getEvaluation(key: "\(resolveFlag).my-boolean", defaultValue: false)
 
 
         XCTAssertEqual(intResult.reason, .match)
@@ -42,6 +42,47 @@ class ConfidenceIntegrationTests: XCTestCase {
         XCTAssertNotNil(boolResult.variant)
         XCTAssertNil(boolResult.errorCode)
         XCTAssertNil(boolResult.errorMessage)
+    }
+
+    func testTrackEventAllTypes() async throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
+        let logger = DebugLoggerFake()
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withDebugLogger(debugLogger: logger)
+            .build()
+
+        try confidence.track(
+            eventName: "all-types",
+            data: [
+                "my_string": ConfidenceValue(string: "hello_from_world"),
+                "my_timestamp": ConfidenceValue(timestamp: Date()),
+                "my_bool": ConfidenceValue(boolean: true),
+                "my_date": ConfidenceValue(date: DateComponents(year: 2024, month: 4, day: 3)),
+                "my_int": ConfidenceValue(integer: 2),
+                "my_double": ConfidenceValue(double: 3.14),
+                "my_list": ConfidenceValue(booleanList: [true, false]),
+                "my_struct": ConfidenceValue(structure: [
+                    "my_nested_struct": ConfidenceValue(structure: [
+                        "my_nested_nested_struct": ConfidenceValue(structure: [
+                            "my_nested_nested_nested_int": ConfidenceValue(integer: 666)
+                        ]),
+                        "my_nested_nested_list": ConfidenceValue(dateList: [
+                            DateComponents(year: 2024, month: 4, day: 4),
+                            DateComponents(year: 2024, month: 4, day: 5)
+                        ])
+                    ]),
+                    "my_nested_string": ConfidenceValue(string: "nested_hello")
+                ])
+            ]
+        )
+
+        confidence.flush()
+        try logger.waitUploadBatchSuccessCount(value: 1, timeout: 5.0)
+        XCTAssertEqual(logger.getUploadBatchSuccessCount(), 1)
+        XCTAssertEqual(logger.uploadedEvents, ["all-types"])
     }
 
     func testConfidenceFeatureApplies() async throws {
@@ -63,7 +104,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .build()
         try await confidence.fetchAndActivate()
 
-        let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
 
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
@@ -91,7 +132,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .build()
         try await confidence.fetchAndActivate()
         // When evaluation of the flag happens using date context
-        let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)
         XCTAssertEqual(result.reason, .match)
         XCTAssertNotNil(result.variant)
@@ -121,7 +162,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .build()
         try await confidence.fetchAndActivate()
         // When evaluation of the flag happens using date context
-        let result = try confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
+        let result = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         // Then there is targeting match (non-default targeting)
         XCTAssertEqual(result.value, 1)
         XCTAssertEqual(result.reason, .noSegmentMatch)

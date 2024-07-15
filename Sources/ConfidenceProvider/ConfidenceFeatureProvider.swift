@@ -134,8 +134,20 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 }
 
 extension Evaluation {
-    func toProviderEvaluation() -> ProviderEvaluation<T> {
-        ProviderEvaluation(
+    func toProviderEvaluation() throws -> ProviderEvaluation<T> {
+        if let errorCode = self.errorCode {
+            switch errorCode {
+            case .providerNotReady:
+                throw OpenFeatureError.providerNotReadyError
+            case .invalidContext:
+                throw OpenFeatureError.invalidContextError
+            case .flagNotFound:
+                throw OpenFeatureError.flagNotFoundError(key: self.errorMessage ?? "unknown key")
+            case .evaluationError:
+                throw OpenFeatureError.generalError(message: self.errorMessage ?? "unknown error")
+            }
+        }
+        return ProviderEvaluation(
             value: self.value,
             variant: self.variant,
             reason: self.reason.rawValue,

@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import Combine
 import os
@@ -80,7 +81,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     /**
-    Fetches latest flag evaluations and store them on disk. Regardless of the fetch outcome (success or failure), this
+    Fetch latest flag evaluations and store them on disk. Regardless of the fetch outcome (success or failure), this
     function activates the cache after the fetch.
     Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
     Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data on disk.
@@ -97,20 +98,8 @@ public class Confidence: ConfidenceEventSender {
         try activate()
     }
 
-    func internalFetch() async throws {
-        let context = getContext()
-        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
-        let resolution = FlagResolution(
-            context: context,
-            flags: resolvedFlags.resolvedValues,
-            resolveToken: resolvedFlags.resolveToken ?? ""
-        )
-        debugLogger?.logFlags(action: "Fetch", flag: "")
-        try storage.save(data: resolution)
-    }
-
     /**
-    Fetches latest flag evaluations and store them on disk. Note that "activate" must be called for this data to be
+    Fetch latest flag evaluations and store them on disk. Note that "activate" must be called for this data to be
     made available in the app session.
     */
     public func asyncFetch() {
@@ -126,8 +115,25 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func getEvaluation<T>(key: String, defaultValue: T) throws -> Evaluation<T> {
-        try self.cache.evaluate(
+    func internalFetch() async throws {
+        let context = getContext()
+        let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
+        let resolution = FlagResolution(
+            context: context,
+            flags: resolvedFlags.resolvedValues,
+            resolveToken: resolvedFlags.resolveToken ?? ""
+        )
+        debugLogger?.logFlags(action: "Fetch", flag: "")
+        try storage.save(data: resolution)
+    }
+
+    /**
+    Get evaluation data for a specific flag. Evaluation data includes the variant's name and reason/error information.
+    - Parameter key:expects dot-notation to retrieve a specific entry in the flag's value, e.g. "flagname.myentry"
+    - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
+    */
+    public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T> {
+        self.cache.evaluate(
             flagName: key,
             defaultValue: defaultValue,
             context: getContext(),
@@ -135,18 +141,22 @@ public class Confidence: ConfidenceEventSender {
         )
     }
 
+    /**
+    Get the value for a specific flag.
+    - Parameter key:expects dot-notation to retrieve a specific entry in the flag's value, e.g. "flagname.myentry"
+    - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
+    */
     public func getValue<T>(key: String, defaultValue: T) -> T {
-        do {
-            return try getEvaluation(key: key, defaultValue: defaultValue).value
-        } catch {
-            return defaultValue
-        }
+        return getEvaluation(key: key, defaultValue: defaultValue).value
     }
 
     func isStorageEmpty() -> Bool {
         return storage.isEmpty()
     }
 
+    /**
+    Listen to changes in the context that is local to this Confidence instance.
+    */
     public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
         return contextSubject
             .dropFirst()
@@ -196,15 +206,6 @@ public class Confidence: ConfidenceEventSender {
 
     public func flush() {
         eventSenderEngine.flush()
-    }
-
-    private func withLock(callback: @escaping (Confidence) -> Void) {
-        confidenceQueue.sync {  [weak self] in
-            guard let self = self else {
-                return
-            }
-            callback(self)
-        }
     }
 
     public func getContext() -> ConfidenceStruct {
@@ -275,6 +276,15 @@ public class Confidence: ConfidenceEventSender {
             debugLogger: debugLogger
         )
     }
+
+    private func withLock(callback: @escaping (Confidence) -> Void) {
+        confidenceQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            callback(self)
+        }
+    }
 }
 
 extension Confidence {
@@ -287,7 +297,6 @@ extension Confidence {
 
         // Can be configured
         internal var region: ConfidenceRegion = .global
-        internal var metadata: ConfidenceMetadata?
         internal var initialContext: ConfidenceStruct = [:]
         internal var timeout: Double = 10
 
@@ -295,9 +304,11 @@ extension Confidence {
         internal var flagApplier: FlagApplier?
         internal var storage: Storage?
         internal var flagResolver: ConfidenceResolveClient?
+        internal var debugLogger: DebugLogger?
 
         /**
-        Initializes the builder with the given credentails.
+        Initialize the builder with the given client secret and logger level. The logger allows to print warnings or
+        debugging information to the local console.
         */
         public init(clientSecret: String, loggerLevel: LoggerLevel = .WARN) {
             self.clientSecret = clientSecret
@@ -325,13 +336,21 @@ extension Confidence {
             return self
         }
 
+        internal func withDebugLogger(debugLogger: DebugLogger) -> Builder {
+            self.debugLogger = debugLogger
+            return self
+        }
+
+        /**
+        Set the initial context.
+        */
         public func withContext(initialContext: ConfidenceStruct) -> Builder {
             self.initialContext = initialContext
             return self
         }
 
         /**
-        Sets the region for the network request to the Confidence backend.
+        Set the region for the network request to the Confidence backend.
         The default is `global` and the requests are automatically routed to the closest server.
         */
         public func withRegion(region: ConfidenceRegion) -> Builder {
@@ -348,13 +367,15 @@ extension Confidence {
             return self
         }
 
+        /**
+        Build the Confidence instance.
+        */
         public func build() -> Confidence {
-            var debugLogger: DebugLogger?
-            if loggerLevel != LoggerLevel.NONE {
-                debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
-                debugLogger?.logContext(action: "InitialContext", context: initialContext)
-            } else {
-                debugLogger = nil
+            if debugLogger == nil {
+                if loggerLevel != LoggerLevel.NONE {
+                    debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
+                    debugLogger?.logContext(action: "InitialContext", context: initialContext)
+                }
             }
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
@@ -365,7 +386,8 @@ extension Confidence {
                 version: "0.2.4") // x-release-please-version
             let uploader = RemoteConfidenceClient(
                 options: options,
-                metadata: metadata
+                metadata: metadata,
+                debugLogger: debugLogger
             )
             let httpClient = NetworkClient(
                 baseUrl: BaseUrlMapper.from(region: options.region),
@@ -404,3 +426,4 @@ extension Confidence {
         }
     }
 }
+// swiftlint:enable file_length

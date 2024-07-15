@@ -43,29 +43,5 @@ struct ConfidenceDemoApp: App {
 extension ConfidenceDemoApp {
     func setup(confidence: Confidence) async throws {
         try await confidence.fetchAndActivate()
-        try confidence.track(
-            eventName: "all-types",
-            data: [
-                "my_string": ConfidenceValue(string: "hello_from_world"),
-                "my_timestamp": ConfidenceValue(timestamp: Date()),
-                "my_bool": ConfidenceValue(boolean: true),
-                "my_date": ConfidenceValue(date: DateComponents(year: 2024, month: 4, day: 3)),
-                "my_int": ConfidenceValue(integer: 2),
-                "my_double": ConfidenceValue(double: 3.14),
-                "my_list": ConfidenceValue(booleanList: [true, false]),
-                "my_struct": ConfidenceValue(structure: [
-                    "my_nested_struct": ConfidenceValue(structure: [
-                        "my_nested_nested_struct": ConfidenceValue(structure: [
-                            "my_nested_nested_nested_int": ConfidenceValue(integer: 666)
-                        ]),
-                        "my_nested_nested_list": ConfidenceValue(dateList: [
-                            DateComponents(year: 2024, month: 4, day: 4),
-                            DateComponents(year: 2024, month: 4, day: 5)
-                        ])
-                    ]),
-                    "my_nested_string": ConfidenceValue(string: "nested_hello")
-                ])
-            ]
-        )
     }
 }
