@@ -358,10 +358,9 @@ extension Confidence {
             return self
         }
 
-        /**
-         Sets the timeout for the network requests to the Confidence backend.
-         The default is 10 seconds.
-         */
+    /**
+    Set the timeout for the network request, defaulting to 10 seconds.
+    */
         public func withTimeout(timeout: Double) -> Builder {
             self.timeout = timeout
             return self
