@@ -289,7 +289,7 @@ extension Confidence {
         internal var region: ConfidenceRegion = .global
         internal var metadata: ConfidenceMetadata?
         internal var initialContext: ConfidenceStruct = [:]
-        internal var timeout: Double = 0
+        internal var timeout: Double = 10
 
         // Injectable for testing
         internal var flagApplier: FlagApplier?
@@ -339,6 +339,10 @@ extension Confidence {
             return self
         }
 
+        /**
+         Sets the timeout for the network requests to the Confidence backend.
+         The default is 10 seconds.
+         */
         public func withTimeout(timeout: Double) -> Builder {
             self.timeout = timeout
             return self

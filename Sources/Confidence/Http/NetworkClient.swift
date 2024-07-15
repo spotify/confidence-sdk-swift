@@ -19,7 +19,6 @@ final class NetworkClient: HttpClient {
         ?? {
             let configuration = URLSessionConfiguration.default
             configuration.httpAdditionalHeaders = defaultHeaders
-            configuration.timeoutIntervalForRequest = timeoutIntervalForRequests
 
             return URLSession(configuration: configuration)
         }()
