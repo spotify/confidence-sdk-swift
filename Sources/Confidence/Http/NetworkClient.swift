@@ -5,12 +5,14 @@ final class NetworkClient: HttpClient {
     private let retry: Retry
     private let session: URLSession
     private let baseUrl: String
+    private var timeoutIntervalForRequests: Double
 
     public init(
         session: URLSession? = nil,
         baseUrl: String,
         defaultHeaders: [String: String] = [:],
-        retry: Retry = .none
+        retry: Retry = .none,
+        timeoutIntervalForRequests: Double
     ) {
         self.session =
         session
@@ -24,6 +26,7 @@ final class NetworkClient: HttpClient {
         self.headers = defaultHeaders
         self.retry = retry
         self.baseUrl = baseUrl
+        self.timeoutIntervalForRequests = timeoutIntervalForRequests
     }
 
     public func post<T: Decodable>(

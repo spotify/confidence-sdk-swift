@@ -12,7 +12,7 @@ class RemoteConfidenceClientTest: XCTestCase {
     func testUploadDoesntThrow() async throws {
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -29,7 +29,7 @@ class RemoteConfidenceClientTest: XCTestCase {
     func testUploadEmptyEventsDoesntThrow() async throws {
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -41,7 +41,7 @@ class RemoteConfidenceClientTest: XCTestCase {
         MockedClientURLProtocol.mockedOperation = .firstEventFails
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -59,7 +59,7 @@ class RemoteConfidenceClientTest: XCTestCase {
         MockedClientURLProtocol.mockedOperation = .malformedResponse
         let client = RemoteConfidenceClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 

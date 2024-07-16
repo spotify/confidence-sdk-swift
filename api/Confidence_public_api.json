@@ -80,6 +80,10 @@
         "declaration": "public func withRegion(region: ConfidenceRegion) -> Builder"
       },
       {
+        "name": "withTimeout(timeout:)",
+        "declaration": "public func withTimeout(timeout: Double) -> Builder"
+      },
+      {
         "name": "build()",
         "declaration": "public func build() -> Confidence"
       }

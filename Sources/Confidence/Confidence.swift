@@ -273,7 +273,8 @@ public class Confidence: ConfidenceEventSender {
             storage: storage,
             context: context,
             parent: self,
-            debugLogger: debugLogger)
+            debugLogger: debugLogger
+        )
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
@@ -297,6 +298,7 @@ extension Confidence {
         // Can be configured
         internal var region: ConfidenceRegion = .global
         internal var initialContext: ConfidenceStruct = [:]
+        internal var timeout: Double = 10
 
         // Injectable for testing
         internal var flagApplier: FlagApplier?
@@ -356,6 +358,14 @@ extension Confidence {
             return self
         }
 
+    /**
+    Set the timeout for the network request, defaulting to 10 seconds.
+    */
+        public func withTimeout(timeout: Double) -> Builder {
+            self.timeout = timeout
+            return self
+        }
+
         /**
         Build the Confidence instance.
         */
@@ -368,7 +378,8 @@ extension Confidence {
             }
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
-                region: region)
+                region: region,
+                timeoutIntervalForRequest: timeout)
             let metadata = ConfidenceMetadata(
                 name: sdkId,
                 version: "0.2.4") // x-release-please-version
@@ -377,7 +388,10 @@ extension Confidence {
                 metadata: metadata,
                 debugLogger: debugLogger
             )
-            let httpClient = NetworkClient(baseUrl: BaseUrlMapper.from(region: options.region))
+            let httpClient = NetworkClient(
+                baseUrl: BaseUrlMapper.from(region: options.region),
+                timeoutIntervalForRequests: options.timeoutIntervalForRequest
+            )
             let flagApplier = flagApplier ?? FlagApplierWithRetries(
                 httpClient: httpClient,
                 storage: DefaultStorage(filePath: "confidence.flags.apply"),

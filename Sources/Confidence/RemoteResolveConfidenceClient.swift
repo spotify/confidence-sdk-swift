@@ -19,7 +19,8 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         self.metadata = metadata
         self.httpClient = NetworkClient(
             session: session,
-            baseUrl: BaseUrlMapper.from(region: options.region))
+            baseUrl: BaseUrlMapper.from(region: options.region),
+            timeoutIntervalForRequests: options.timeoutIntervalForRequest)
     }
 
     // MARK: Resolver

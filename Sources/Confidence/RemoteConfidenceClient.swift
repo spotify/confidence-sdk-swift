@@ -23,7 +23,11 @@ public class RemoteConfidenceClient: ConfidenceClient {
         case .usa:
             self.baseUrl = "https://events.us.confidence.dev/v1/events"
         }
-        self.httpClient = NetworkClient(session: session, baseUrl: baseUrl)
+        self.httpClient = NetworkClient(
+            session: session,
+            baseUrl: baseUrl,
+            timeoutIntervalForRequests: options.timeoutIntervalForRequest
+        )
         self.metadata = metadata
         self.debugLogger = debugLogger
     }
