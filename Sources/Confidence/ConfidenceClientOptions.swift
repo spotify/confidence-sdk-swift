@@ -10,7 +10,7 @@ struct ConfidenceClientOptions {
         credentials: ConfidenceClientCredentials,
         region: ConfidenceRegion? = nil,
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
-        timeoutIntervalForRequest: Double = 0
+        timeoutIntervalForRequest: Double
     ) {
         self.credentials = credentials
         self.region = region ?? .global
