@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.3.0](https://github.com/spotify/confidence-sdk-swift/compare/0.2.4...0.3.0) (2024-07-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* getEvaluation doesnt throw ([#158](https://github.com/spotify/confidence-sdk-swift/issues/158))
+* decrease API surface ([#156](https://github.com/spotify/confidence-sdk-swift/issues/156))
+
+### 🐛 Bug Fixes
+
+* handle Int32 and Int64 in defaultValue evaluations ([#162](https://github.com/spotify/confidence-sdk-swift/issues/162)) ([6bb03d5](https://github.com/spotify/confidence-sdk-swift/commit/6bb03d5e06fa4a57ee5d5356d1b925ca207ef993))
+
+
+### ✨ New Features
+
+* add timeout to fetchAndActivate ([#160](https://github.com/spotify/confidence-sdk-swift/issues/160)) ([ea18479](https://github.com/spotify/confidence-sdk-swift/commit/ea18479aea15932e5c737b17274b89e4eb550018))
+
+
+### 📚 Documentation
+
+* Add docs to public APIs ([#163](https://github.com/spotify/confidence-sdk-swift/issues/163)) ([2c4ee11](https://github.com/spotify/confidence-sdk-swift/commit/2c4ee11809e88b25713a178910232bc15a03b74c))
+* fix typo ([#161](https://github.com/spotify/confidence-sdk-swift/issues/161)) ([297658b](https://github.com/spotify/confidence-sdk-swift/commit/297658ba4d0175693d637e69643dd0f992f981a7))
+* update readme ([#153](https://github.com/spotify/confidence-sdk-swift/issues/153)) ([9e49bb0](https://github.com/spotify/confidence-sdk-swift/commit/9e49bb01c112a887c6892101c379a3764d48799e))
+* Update READMEs ([#164](https://github.com/spotify/confidence-sdk-swift/issues/164)) ([c8437ac](https://github.com/spotify/confidence-sdk-swift/commit/c8437ac41e4a91b5024732c18b94634a60092ffe))
+
+
+### 🔄 Refactoring
+
+* decrease API surface ([917743b](https://github.com/spotify/confidence-sdk-swift/commit/917743b98df4b1bbae7caa7941540cf07e7b9316))
+* decrease API surface ([#156](https://github.com/spotify/confidence-sdk-swift/issues/156)) ([917743b](https://github.com/spotify/confidence-sdk-swift/commit/917743b98df4b1bbae7caa7941540cf07e7b9316))
+* getEvaluation doesnt throw ([#158](https://github.com/spotify/confidence-sdk-swift/issues/158)) ([09f6b73](https://github.com/spotify/confidence-sdk-swift/commit/09f6b735a0c54c5b43bb7415b5fff87d48ba379e))
+
 ## [0.2.4](https://github.com/spotify/confidence-sdk-swift/compare/0.2.3...0.2.4) (2024-07-02)
 
 

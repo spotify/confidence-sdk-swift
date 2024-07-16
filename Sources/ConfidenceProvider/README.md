@@ -8,7 +8,7 @@ If you want to use OpenFeature, an OpenFeature Provider for the [OpenFeature SDK
 <!---x-release-please-start-version-->
 In the dependencies section of Package.swift add:
 ```swift
-.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "0.2.4")
+.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "0.3.0")
 ```
 <!---x-release-please-end-->
 
