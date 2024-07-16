@@ -8,7 +8,10 @@ import XCTest
 
 @available(macOS 13.0, iOS 16.0, *)
 class FlagApplierWithRetriesTest: XCTestCase {
-    private let options = ConfidenceClientOptions(credentials: .clientSecret(secret: "test"))
+    private let options = ConfidenceClientOptions(
+        credentials: .clientSecret(secret: "test"),
+        timeoutIntervalForRequest: 10
+    )
     private var storage = StorageMock()
     private var httpClient = HttpClientMock()
     private let metadata = ConfidenceMetadata(name: "test-provider-name", version: "0.0.0.")

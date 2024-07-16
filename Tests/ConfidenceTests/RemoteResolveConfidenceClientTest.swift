@@ -26,7 +26,7 @@ class RemoteResolveConfidenceClientTest: XCTestCase {
         let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
 
         let client = RemoteConfidenceResolveClient(
-            options: .init(credentials: .clientSecret(secret: "test")),
+            options: .init(credentials: .clientSecret(secret: "test"), timeoutIntervalForRequest: 10),
             session: session,
             applyOnResolve: true,
             metadata: ConfidenceMetadata(name: "", version: "")

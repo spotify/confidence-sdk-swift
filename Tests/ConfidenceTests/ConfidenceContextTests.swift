@@ -6,7 +6,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testWithContext() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -33,7 +33,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testWithContextUpdateParent() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -65,7 +65,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testUpdateLocalContext() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -92,7 +92,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testUpdateLocalContextWithoutOverride() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -123,7 +123,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testUpdateParentContextWithOverride() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -154,7 +154,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testRemoveContextEntry() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -179,7 +179,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testRemoveContextEntryFromParent() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -207,7 +207,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testRemoveContextEntryFromParentAndChild() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -238,7 +238,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testRemoveContextEntryFromParentAndChildThenUpdate() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
@@ -271,7 +271,7 @@ final class ConfidenceContextTests: XCTestCase {
     func testVisitorId() {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
-                credentials: ConfidenceClientCredentials.clientSecret(secret: "")),
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
             metadata: ConfidenceMetadata(name: "", version: ""))
 
