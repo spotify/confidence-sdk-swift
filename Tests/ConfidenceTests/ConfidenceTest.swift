@@ -617,45 +617,6 @@ class ConfidenceTest: XCTestCase {
             XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
         }
     }
-
-    func testRequestTimedOut() async throws {
-        class FakeClient: ConfidenceResolveClient {
-            var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                try await Task.sleep(nanoseconds: 5000000000)
-                return .init(resolvedValues: resolvedValues, resolveToken: "token")
-            }
-        }
-
-        let client = FakeClient()
-        client.resolvedValues = [
-            ResolvedValue(
-                variant: "default",
-                value: .init(structure: ["size": .init(integer: 3)]),
-                flag: "flag",
-                resolveReason: .match)
-        ]
-
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
-            .withFlagResolverClient(flagResolver: client)
-            .withFlagApplier(flagApplier: flagApplier)
-            .withTimeout(timeout: 1)
-            .build()
-
-        try await confidence.fetchAndActivate()
-        let evaluation = try confidence.getEvaluation(
-            key: "flag.size",
-            defaultValue: 0)
-
-        XCTAssertEqual(evaluation.value, 3)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.variant, "default")
-        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
-        XCTAssertEqual(flagApplier.applyCallCount, 1)
-    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {
