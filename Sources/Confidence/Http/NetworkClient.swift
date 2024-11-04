@@ -134,10 +134,10 @@ extension NetworkClient {
                 do {
                     response.decodedError = try decoder.decode(HttpError.self, from: responseData)
                 } catch {
-                    let message = String(decoding: responseData, as: UTF8.self)
+                    let message = String(data: responseData, encoding: .utf8)
                     response.decodedError = HttpError(
                         code: httpURLResponse.statusCode,
-                        message: message,
+                        message: message ?? "{Error when decoding error message}",
                         details: []
                     )
                 }

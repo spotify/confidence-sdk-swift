@@ -139,7 +139,7 @@ private class StorageMock: Storage {
     func save(data: Encodable) throws {
         try storageQueue.sync {
             let dataB = try JSONEncoder().encode(data)
-            self.data = String(decoding: dataB, as: UTF8.self)
+            self.data = try XCTUnwrap(String(data: dataB, encoding: .utf8))
 
             saveExpectation?.fulfill()
         }

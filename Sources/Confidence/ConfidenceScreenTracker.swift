@@ -78,7 +78,7 @@ extension UIViewController {
                 let encoder = JSONEncoder()
                 do {
                     let data = try encoder.encode(trackableWithMessage.trackMessage())
-                    let messageString = String(decoding: data, as: UTF8.self)
+                    let messageString = String(data: data, encoding: .utf8) ?? "internal_error"
                     message.updateValue(messageString, forKey: ConfidenceScreenTracker.messageKey)
                 } catch {
                 }
