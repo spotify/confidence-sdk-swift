@@ -233,7 +233,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        let value = try confidence.getValue(
+        let value = confidence.getValue(
             key: "flag.size",
             defaultValue: 0 as Int64)
 
