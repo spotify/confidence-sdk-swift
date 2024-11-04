@@ -123,7 +123,12 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func withSemaphore(callback: @escaping () async -> Void) async {
-        semaphore.wait()
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global().async {
+                self.semaphore.wait()
+                continuation.resume()
+            }
+        }
         await callback()
         semaphore.signal()
     }
