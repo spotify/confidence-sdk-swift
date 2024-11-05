@@ -10,7 +10,8 @@ public class Confidence: ConfidenceEventSender {
     private let eventSenderEngine: EventSenderEngine
     private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
-    private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
+    private let contextSubjectQueue = DispatchQueue(label: "com.confidence.queue.contextsubject")
+    private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
     private let flagApplier: FlagApplier
     private var cache = FlagResolution.EMPTY
     private var storage: Storage
@@ -70,14 +71,20 @@ public class Confidence: ConfidenceEventSender {
         }
         .store(in: &cancellables)
     }
+
     /**
     Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
     Errors can be thrown if something goes wrong access data on disk.
     */
     public func activate() throws {
-        let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
-        self.cache = savedFlags
-        debugLogger?.logFlags(action: "Activate", flag: "")
+        try cacheQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
+            cache = savedFlags
+            debugLogger?.logFlags(action: "Activate", flag: "")
+        }
     }
 
     /**
@@ -133,12 +140,23 @@ public class Confidence: ConfidenceEventSender {
     - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
     */
     public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T> {
-        self.cache.evaluate(
-            flagName: key,
-            defaultValue: defaultValue,
-            context: getContext(),
-            flagApplier: flagApplier
-        )
+        cacheQueue.sync {  [weak self] in
+            guard let self = self else {
+                return Evaluation(
+                    value: defaultValue,
+                    variant: nil,
+                    reason: .error,
+                    errorCode: .providerNotReady,
+                    errorMessage: "Confidence instance deallocated before end of evaluation"
+                )
+            }
+            return self.cache.evaluate(
+                flagName: key,
+                defaultValue: defaultValue,
+                context: getContext(),
+                flagApplier: flagApplier
+            )
+        }
     }
 
     /**
@@ -278,7 +296,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
-        confidenceQueue.sync {  [weak self] in
+        contextSubjectQueue.sync {  [weak self] in
             guard let self = self else {
                 return
             }
