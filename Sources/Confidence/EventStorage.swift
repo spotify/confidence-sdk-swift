@@ -87,7 +87,7 @@ internal class EventStorageImpl: EventStorage {
                         return try decoder.decode(ConfidenceEvent.self, from: stringData)
                     }
             } else {
-                throw ConfidenceError.corruptedCache(message: "Error decoding events cache file")
+                return []
             }
         }
     }
