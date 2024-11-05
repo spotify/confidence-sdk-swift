@@ -70,14 +70,17 @@ public class Confidence: ConfidenceEventSender {
         }
         .store(in: &cancellables)
     }
+
     /**
     Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
     Errors can be thrown if something goes wrong access data on disk.
     */
     public func activate() throws {
-        let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
-        self.cache = savedFlags
-        debugLogger?.logFlags(action: "Activate", flag: "")
+        try withLockThrowing { confidence in
+            let savedFlags = try confidence.storage.load(defaultValue: FlagResolution.EMPTY)
+            confidence.cache = savedFlags
+            confidence.debugLogger?.logFlags(action: "Activate", flag: "")
+        }
     }
 
     /**
@@ -283,6 +286,15 @@ public class Confidence: ConfidenceEventSender {
                 return
             }
             callback(self)
+        }
+    }
+
+    private func withLockThrowing(callback: @escaping (Confidence) throws -> Void) throws {
+        try confidenceQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            try callback(self)
         }
     }
 }
