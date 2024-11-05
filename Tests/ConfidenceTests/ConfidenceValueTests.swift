@@ -29,6 +29,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
 
     func testStringShouldConvertToDate() throws {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
         let value = ConfidenceValue(timestamp: date)
@@ -43,6 +44,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
 
     func testListShouldConvertToList() throws {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         formatter.timeZone = TimeZone(abbreviation: "UTC")
         let date1 = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
@@ -106,6 +108,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
 
     func testEncodeDecode() throws {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         formatter.timeZone = TimeZone(abbreviation: "EDT") // Verify TimeZone conversion
         let date = try XCTUnwrap(formatter.date(from: "2024-04-05 16:00:00"))
