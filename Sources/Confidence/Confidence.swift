@@ -10,7 +10,8 @@ public class Confidence: ConfidenceEventSender {
     private let eventSenderEngine: EventSenderEngine
     private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
     private var removedContextKeys: Set<String> = Set()
-    private let confidenceQueue = DispatchQueue(label: "com.confidence.queue")
+    private let contextSubjectQueue = DispatchQueue(label: "com.confidence.queue.contextsubject")
+    private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
     private let flagApplier: FlagApplier
     private var cache = FlagResolution.EMPTY
     private var storage: Storage
@@ -76,10 +77,13 @@ public class Confidence: ConfidenceEventSender {
     Errors can be thrown if something goes wrong access data on disk.
     */
     public func activate() throws {
-        try withLockThrowing { confidence in
-            let savedFlags = try confidence.storage.load(defaultValue: FlagResolution.EMPTY)
-            confidence.cache = savedFlags
-            confidence.debugLogger?.logFlags(action: "Activate", flag: "")
+        try cacheQueue.sync {  [weak self] in
+            guard let self = self else {
+                return
+            }
+            let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
+            cache = savedFlags
+            debugLogger?.logFlags(action: "Activate", flag: "")
         }
     }
 
@@ -281,20 +285,11 @@ public class Confidence: ConfidenceEventSender {
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
-        confidenceQueue.sync {  [weak self] in
+        contextSubjectQueue.sync {  [weak self] in
             guard let self = self else {
                 return
             }
             callback(self)
-        }
-    }
-
-    private func withLockThrowing(callback: @escaping (Confidence) throws -> Void) throws {
-        try confidenceQueue.sync {  [weak self] in
-            guard let self = self else {
-                return
-            }
-            try callback(self)
         }
     }
 }
