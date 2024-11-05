@@ -13,6 +13,7 @@ public enum ErrorCode {
     case invalidContext
     case flagNotFound
     case evaluationError
+    case typeMismatch
 }
 
 struct FlagResolution: Encodable, Decodable, Equatable {
@@ -68,20 +69,40 @@ extension FlagResolution {
             }
 
             let parsedValue = try getValue(path: parsedKey.path, value: value)
-            let pathValue: T = getTyped(value: parsedValue) ?? defaultValue
+            let typedValue: T? = getTyped(value: parsedValue)
 
             if resolvedFlag.resolveReason == .match {
                 var resolveReason: ResolveReason = .match
                 if self.context != context {
                     resolveReason = .stale
                 }
-                return Evaluation(
-                    value: pathValue,
-                    variant: resolvedFlag.variant,
-                    reason: resolveReason,
-                    errorCode: nil,
-                    errorMessage: nil
-                )
+                if let typedValue = typedValue {
+                    return Evaluation(
+                        value: typedValue,
+                        variant: resolvedFlag.variant,
+                        reason: resolveReason,
+                        errorCode: nil,
+                        errorMessage: nil
+                    )
+                } else {
+                    if parsedValue == .init(null: ()) {
+                        return Evaluation(
+                            value: defaultValue,
+                            variant: resolvedFlag.variant,
+                            reason: resolveReason,
+                            errorCode: nil,
+                            errorMessage: nil
+                        )
+                    } else {
+                        return Evaluation(
+                            value: defaultValue,
+                            variant: nil,
+                            reason: .error,
+                            errorCode: .typeMismatch,
+                            errorMessage: nil
+                        )
+                    }
+                }
             } else {
                 return Evaluation(
                     value: defaultValue,
