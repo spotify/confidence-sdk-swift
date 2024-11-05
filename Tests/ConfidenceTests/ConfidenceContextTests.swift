@@ -8,7 +8,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -35,7 +35,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -67,7 +67,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidence = Confidence.init(
             clientSecret: "",
@@ -94,7 +94,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -125,7 +125,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -156,7 +156,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidence = Confidence.init(
             clientSecret: "",
@@ -181,7 +181,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -209,7 +209,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -240,7 +240,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -273,7 +273,7 @@ final class ConfidenceContextTests: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let confidence = Confidence.init(
             clientSecret: "",

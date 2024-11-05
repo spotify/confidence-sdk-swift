@@ -14,7 +14,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
     )
     private var storage = StorageMock()
     private var httpClient = HttpClientMock()
-    private let metadata = ConfidenceMetadata(name: "test-provider-name", version: "0.0.0.")
+    private let metadata = ConfidenceMetadata(id: 0, name: "test-provider-name", version: "0.0.0.")
 
     override func setUp() {
         storage = StorageMock()

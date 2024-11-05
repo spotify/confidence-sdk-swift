@@ -11,7 +11,7 @@
                 "README.md",
                 "Sources/ConfidenceProvider/README.md",
                 "Sources/ConfidenceProvider/ConfidenceFeatureProvider.swift",
-                "Sources/Confidence/Confidence.swift"
+                "Sources/Confidence/ConfidenceMetadata.swift"
             ]
         }
     },

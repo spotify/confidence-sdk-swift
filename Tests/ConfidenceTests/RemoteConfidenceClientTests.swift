@@ -14,7 +14,7 @@ class RemoteConfidenceClientTest: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let processed = try await client.upload(events: [
             NetworkEvent(
@@ -31,7 +31,7 @@ class RemoteConfidenceClientTest: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let processed = try await client.upload(events: [])
         XCTAssertTrue(processed)
@@ -43,7 +43,7 @@ class RemoteConfidenceClientTest: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         let processed = try await client.upload(events: [
             NetworkEvent(
@@ -61,7 +61,7 @@ class RemoteConfidenceClientTest: XCTestCase {
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            metadata: ConfidenceMetadata(id: 0, name: "", version: ""))
 
         var caughtError: ConfidenceError?
         do {

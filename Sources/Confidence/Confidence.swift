@@ -23,8 +23,6 @@ public class Confidence: ConfidenceEventSender {
     internal let remoteFlagResolver: ConfidenceResolveClient
     internal let contextReconciliatedChanges = PassthroughSubject<String, Never>()
 
-    public static let sdkId: String = "SDK_ID_SWIFT_CONFIDENCE"
-
     required init(
         clientSecret: String,
         region: ConfidenceRegion,
@@ -153,8 +151,7 @@ public class Confidence: ConfidenceEventSender {
             return self.cache.evaluate(
                 flagName: key,
                 defaultValue: defaultValue,
-                // TMP - TESTING (force a different context, causing STALE)
-                context: ["test":ConfidenceValue(null: ())],
+                context: getContext(),
                 flagApplier: flagApplier
             )
         }
@@ -399,9 +396,7 @@ extension Confidence {
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region,
                 timeoutIntervalForRequest: timeout)
-            let metadata = ConfidenceMetadata(
-                name: sdkId,
-                version: "1.0.1") // x-release-please-version
+            let metadata = ConfidenceMetadata.defaultMetadata
             let uploader = RemoteConfidenceClient(
                 options: options,
                 metadata: metadata,

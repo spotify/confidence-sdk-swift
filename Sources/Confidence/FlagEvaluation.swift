@@ -96,6 +96,7 @@ extension FlagResolution {
                             errorMessage: nil
                         )
                     } else {
+                        Telemetry.shared.incrementFlagTypeMismatch()
                         return Evaluation(
                             value: defaultValue,
                             variant: nil,
