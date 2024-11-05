@@ -64,6 +64,7 @@ class ValueConverterTest: XCTestCase {
 
     func testContextConversionWithLists() throws {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let date1 = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
         let date2 = try XCTUnwrap(formatter.date(from: "2022-01-02 12:00:00"))
@@ -112,6 +113,7 @@ class ValueConverterTest: XCTestCase {
 
     func testValueConversion() throws {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
 

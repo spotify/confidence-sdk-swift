@@ -38,6 +38,7 @@ class TypeMapperTests: XCTestCase {
 
     func testConfidenceToNetwork() throws {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         formatter.timeZone = TimeZone.init(identifier: "UTC+01")
         let date = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
