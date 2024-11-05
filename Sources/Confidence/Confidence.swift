@@ -153,7 +153,8 @@ public class Confidence: ConfidenceEventSender {
             return self.cache.evaluate(
                 flagName: key,
                 defaultValue: defaultValue,
-                context: getContext(),
+                // TMP - TESTING (force a different context, causing STALE)
+                context: ["test":ConfidenceValue(null: ())],
                 flagApplier: flagApplier
             )
         }

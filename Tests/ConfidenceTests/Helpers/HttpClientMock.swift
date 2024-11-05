@@ -23,6 +23,10 @@ final class HttpClientMock: HttpClient {
         try handlePost(path: path, data: data)
     }
 
+    func post<T>(path: String, data: any Encodable, header: any Encodable) async throws -> HttpClientResult<T> where T : Decodable {
+        try handlePost(path: path, data: data)
+    }
+
     private func handlePost<T>(
         path: String, data: Encodable
     ) throws -> HttpClientResult<T> where T: Decodable {

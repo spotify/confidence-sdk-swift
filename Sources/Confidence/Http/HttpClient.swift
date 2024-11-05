@@ -4,6 +4,7 @@ typealias HttpClientResult<T> = Result<HttpClientResponse<T>, Error>
 
 internal protocol HttpClient {
     func post<T: Decodable>(path: String, data: Encodable) async throws -> HttpClientResult<T>
+    func post<T: Decodable>(path: String, data: Encodable, header: Encodable) async throws -> HttpClientResult<T>
 }
 
 struct HttpClientResponse<T> {

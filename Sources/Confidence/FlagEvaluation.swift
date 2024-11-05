@@ -75,6 +75,7 @@ extension FlagResolution {
                 var resolveReason: ResolveReason = .match
                 if self.context != context {
                     resolveReason = .stale
+                    Telemetry.shared.incrementStaleAccess()
                 }
                 if let typedValue = typedValue {
                     return Evaluation(

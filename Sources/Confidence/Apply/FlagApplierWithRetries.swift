@@ -11,6 +11,7 @@ final class FlagApplierWithRetries: FlagApplier {
     private let cacheDataInteractor: CacheDataActor
     private let metadata: ConfidenceMetadata
     private let debugLogger: DebugLogger?
+    private let telemetry = Telemetry.shared
 
     init(
         httpClient: HttpClient,
@@ -139,7 +140,8 @@ final class FlagApplierWithRetries: FlagApplier {
         request: ApplyFlagsRequest
     ) async -> ApplyFlagResult {
         do {
-            return try await httpClient.post(path: ":apply", data: request)
+            let header = telemetry.getSnapshot()
+            return try await httpClient.post(path: ":apply", data: request, header: header)
         } catch {
             return .failure(handleError(error: error))
         }

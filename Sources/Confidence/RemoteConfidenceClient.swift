@@ -7,6 +7,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
     private var httpClient: HttpClient
     private var baseUrl: String
     private let debugLogger: DebugLogger?
+    private let telemetry = Telemetry.shared
 
     init(
         options: ConfidenceClientOptions,
@@ -44,9 +45,10 @@ public class RemoteConfidenceClient: ConfidenceClient {
             sendTime: timeString,
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
+        let header = telemetry.getSnapshot()
         do {
             let result: HttpClientResult<PublishEventResponse> =
-            try await self.httpClient.post(path: ":publish", data: request)
+            try await self.httpClient.post(path: ":publish", data: request, header: header)
             switch result {
             case .success(let successData):
                 let status = successData.response.statusCode
