@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.0.0](https://github.com/spotify/confidence-sdk-swift/compare/0.3.0...1.0.0) (2024-11-05)
+
+
+### 🐛 Bug Fixes
+
+* Fix warnings and prevent potential issues ([#165](https://github.com/spotify/confidence-sdk-swift/issues/165)) ([448fb93](https://github.com/spotify/confidence-sdk-swift/commit/448fb930e869d8282566f5c1abfa147a1a6611e9))
+* Make Confidence.cache thread-safe ([#167](https://github.com/spotify/confidence-sdk-swift/issues/167)) ([df2c37f](https://github.com/spotify/confidence-sdk-swift/commit/df2c37f3c5cdac3ab1bdc9d2da54b0e1e8f8a30d))
+
+
+### 🧪 Tests
+
+* date formatter in tests iOS18 ([#168](https://github.com/spotify/confidence-sdk-swift/issues/168)) ([9cab6bb](https://github.com/spotify/confidence-sdk-swift/commit/9cab6bbb3511c2672fddbe09f483795ab77ccd3f))
+
 ## [0.3.0](https://github.com/spotify/confidence-sdk-swift/compare/0.2.4...0.3.0) (2024-07-16)
 
 
