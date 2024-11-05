@@ -73,7 +73,21 @@ extension StringProtocol {
     var data: Data { .init(utf8) }
 }
 
-extension Numeric {
+extension FixedWidthInteger {
+    var data: Data {
+        var source = self
+        return .init(bytes: &source, count: MemoryLayout<Self>.size)
+    }
+}
+
+extension Float {
+    var data: Data {
+        var source = self
+        return .init(bytes: &source, count: MemoryLayout<Self>.size)
+    }
+}
+
+extension Double {
     var data: Data {
         var source = self
         return .init(bytes: &source, count: MemoryLayout<Self>.size)

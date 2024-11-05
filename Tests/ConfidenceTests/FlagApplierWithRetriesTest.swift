@@ -99,7 +99,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         await applier.apply(flagName: "flag2", resolveToken: "token1")
         await applier.apply(flagName: "flag3", resolveToken: "token1")
 
-        await waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [networkExpectation], timeout: 1.0)
 
         // Then cache data is not stored on to the disk
         // But stored in the local cache as sent
@@ -152,7 +152,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await waitForExpectations(timeout: 5.0)
+        await fulfillment(of: [storageExpectation, expectation], timeout: 1.0)
 
         // Then http client sends 5 apply flag batch request, containing 20 records each
         let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
@@ -184,7 +184,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await waitForExpectations(timeout: 5.0)
+        await fulfillment(of: [storageExpectation, expectation], timeout: 1.0)
 
         // Then http client sends 5 apply flag batch request, containing 20 records each
         let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
@@ -215,7 +215,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await waitForExpectations(timeout: 5.0)
+        await fulfillment(of: [storageExpectation, expectation], timeout: 1.0)
 
         // Then http client sends 5 apply flags batch request, containing 20 records each
         let request = try XCTUnwrap(partiallyFailingHttpClient.data?.first as? ApplyFlagsRequest)
@@ -254,7 +254,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         httpClient.testMode = .success
         await applier.apply(flagName: "flag2", resolveToken: "token1")
 
-        await waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [networkExpectation], timeout: 1.0)
 
         // Then 3 post calls are issued (one offline, one batch apply containing 2 reconrds)
         XCTAssertEqual(httpClient.postCallCounter, 2)
@@ -298,7 +298,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // With test mode .success
         offlineClient.testMode = .success
         await applier.apply(flagName: "flag2", resolveToken: "token1")
-        await waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [networkExpectation, storageExpectation], timeout: 1.0)
 
         // Then both requests are marked as sent in cache data
         let cacheData = await cacheDataInteractor.cache
@@ -332,7 +332,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [storageExpectation, networkExpectation], timeout: 1.0)
 
         // Then storage has been cleaned
         let storedData = try prefilledStorage.load(defaultValue: CacheData.empty())
@@ -361,7 +361,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // When 100 apply calls are issued
         // And all http client requests fails with .invalidResponse
         await hundredApplyCalls(applier: applier, sameToken: true)
-        await waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [networkExpectation], timeout: 1.0)
 
         // Then strored data is empty
         let storedData: CacheData = try XCTUnwrap(prefilledStorage.load(defaultValue: CacheData.empty()))
@@ -471,7 +471,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // And http client request fails with .invalidResponse
         await applier.apply(flagName: "flag1", resolveToken: "token1")
 
-        await waitForExpectations(timeout: 5.0)
+        await fulfillment(of: [networkExpectation], timeout: 1.0)
 
         // Then 2 resolve event records are stored on disk
         let storedData: CacheData = try XCTUnwrap(prefilledStorage.load(defaultValue: CacheData.empty()))
@@ -535,7 +535,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
         // When 100 apply calls are issued
         // And all http client requests fails with .invalidResponse
         await hundredApplyCalls(applier: applier, sameToken: true)
-        await waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [networkExpectation], timeout: 1.0)
 
         // Then 1 resolve event record is stored on disk
         // And 200 flag event records are stored on disk

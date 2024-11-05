@@ -125,7 +125,7 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
         let data = try encoder.encode(value)
-        let resultString = try XCTUnwrap(String(decoding: data, as: UTF8.self))
+        let resultString = try XCTUnwrap(String(data: data, encoding: .utf8))
         let resultData = try XCTUnwrap(resultString.data(using: .utf8))
         let decodedValue = try JSONDecoder().decode(ConfidenceValue.self, from: resultData)
 

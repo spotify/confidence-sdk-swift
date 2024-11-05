@@ -75,17 +75,20 @@ internal class EventStorageImpl: EventStorage {
             let decoder = JSONDecoder()
             let fileUrl = folderURL.appendingPathComponent(id)
             let data = try Data(contentsOf: fileUrl)
-            let dataString = String(decoding: data, as: UTF8.self)
-            return try dataString.components(separatedBy: "\n")
-                .filter { events in
-                    !events.isEmpty
-                }
-                .compactMap { eventString in
-                    guard let stringData = eventString.data(using: .utf8) else {
-                        return nil
+            if let dataString = String(data: data, encoding: .utf8) {
+                return try dataString.components(separatedBy: "\n")
+                    .filter { events in
+                        !events.isEmpty
                     }
-                    return try decoder.decode(ConfidenceEvent.self, from: stringData)
-                }
+                    .compactMap { eventString in
+                        guard let stringData = eventString.data(using: .utf8) else {
+                            return nil
+                        }
+                        return try decoder.decode(ConfidenceEvent.self, from: stringData)
+                    }
+            } else {
+                return []
+            }
         }
     }
 
