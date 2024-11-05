@@ -19,7 +19,7 @@ Functionalities:
 <!---x-release-please-start-version-->
 In the dependencies section of Package.swift add:
 ```swift
-.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "0.3.0")
+.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "1.0.0")
 ```
 <!---x-release-please-end-->
 
