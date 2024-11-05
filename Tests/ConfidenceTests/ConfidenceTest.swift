@@ -617,6 +617,29 @@ class ConfidenceTest: XCTestCase {
             XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
         }
     }
+
+    func testConcurrentActivate() async {
+        for _ in 1...100 {
+            Task {
+                await concurrentActivate()
+            }
+        }
+    }
+
+    private func concurrentActivate() async {
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .build()
+
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10000 {
+                group.addTask {
+                    // no need to handle errors
+                    // race condition crashes will surface regardless
+                    try? confidence.activate()
+                }
+            }
+        }
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {
