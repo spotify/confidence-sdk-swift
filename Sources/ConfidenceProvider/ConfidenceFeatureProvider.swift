@@ -145,6 +145,8 @@ extension Evaluation {
                 throw OpenFeatureError.flagNotFoundError(key: self.errorMessage ?? "unknown key")
             case .evaluationError:
                 throw OpenFeatureError.generalError(message: self.errorMessage ?? "unknown error")
+            case .typeMismatch:
+                throw OpenFeatureError.typeMismatchError
             }
         }
         return ProviderEvaluation(

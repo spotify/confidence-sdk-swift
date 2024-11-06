@@ -30,7 +30,7 @@ class ConfidenceIntegrationTests: XCTestCase {
             .withContext(initialContext: ctx)
             .build()
         try await confidence.fetchAndActivate()
-        let intResult = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: "1")
+        let intResult = confidence.getEvaluation(key: "\(resolveFlag).my-integer", defaultValue: 1)
         let boolResult = confidence.getEvaluation(key: "\(resolveFlag).my-boolean", defaultValue: false)
 
 

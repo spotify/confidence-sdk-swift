@@ -618,6 +618,44 @@ class ConfidenceTest: XCTestCase {
         }
     }
 
+    func testTypeMismatch() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(boolean: true)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: 1)
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, 1)
+        XCTAssertEqual(evaluation.errorCode, .typeMismatch)
+        XCTAssertNil(evaluation.errorMessage, "")
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertEqual(evaluation.variant, nil)
+    }
+
     func testConcurrentActivate() async {
         for _ in 1...100 {
             Task {
