@@ -85,6 +85,7 @@ extension FlagResolution {
                         errorMessage: nil
                     )
                 } else {
+                    // `null` type from backend instructs to use client-side default value
                     if parsedValue == .init(null: ()) {
                         return Evaluation(
                             value: defaultValue,
