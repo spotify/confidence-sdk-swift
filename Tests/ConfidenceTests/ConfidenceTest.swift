@@ -694,6 +694,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage, "")
         XCTAssertEqual(evaluation.reason, .error)
         XCTAssertEqual(evaluation.variant, nil)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testConcurrentActivate() async {

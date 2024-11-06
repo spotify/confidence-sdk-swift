@@ -44,11 +44,7 @@ extension FlagResolution {
                 )
             }
 
-            if resolvedFlag.resolveReason != .targetingKeyError {
-                Task {
-                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
-                }
-            } else {
+            if resolvedFlag.resolveReason == .targetingKeyError {
                 return Evaluation(
                     value: defaultValue,
                     variant: nil,
@@ -59,6 +55,9 @@ extension FlagResolution {
             }
 
             guard let value = resolvedFlag.value else {
+                Task {
+                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                }
                 return Evaluation(
                     value: defaultValue,
                     variant: resolvedFlag.variant,
@@ -77,6 +76,9 @@ extension FlagResolution {
                     resolveReason = .stale
                 }
                 if let typedValue = typedValue {
+                    Task {
+                        await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                    }
                     return Evaluation(
                         value: typedValue,
                         variant: resolvedFlag.variant,
@@ -87,6 +89,9 @@ extension FlagResolution {
                 } else {
                     // `null` type from backend instructs to use client-side default value
                     if parsedValue == .init(null: ()) {
+                        Task {
+                            await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                        }
                         return Evaluation(
                             value: defaultValue,
                             variant: resolvedFlag.variant,
@@ -105,6 +110,9 @@ extension FlagResolution {
                     }
                 }
             } else {
+                Task {
+                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                }
                 return Evaluation(
                     value: defaultValue,
                     variant: resolvedFlag.variant,
