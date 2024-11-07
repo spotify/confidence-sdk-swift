@@ -44,7 +44,7 @@ extension FlagResolution {
                 )
             }
 
-            if let evaluation = checkBackendErrrs(resolvedFlag: resolvedFlag, defaultValue: defaultValue) {
+            if let evaluation = checkBackendErrors(resolvedFlag: resolvedFlag, defaultValue: defaultValue) {
                 return evaluation
             }
 
@@ -128,7 +128,7 @@ extension FlagResolution {
     }
     // swiftlint:enable function_body_length
 
-    private func checkBackendErrrs<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
+    private func checkBackendErrors<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
         if resolvedFlag.resolveReason == .targetingKeyError {
             return Evaluation(
                 value: defaultValue,
