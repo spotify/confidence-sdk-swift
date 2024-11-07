@@ -8,12 +8,27 @@ public struct Evaluation<T> {
     public let errorMessage: String?
 }
 
-public enum ErrorCode {
+public enum ErrorCode: CustomStringConvertible {
     case providerNotReady
     case invalidContext
     case flagNotFound
     case evaluationError
     case typeMismatch
+
+    public var description: String {
+        switch self {
+        case .providerNotReady:
+            return "Provider is not ready."
+        case .invalidContext:
+            return "Invalid context."
+        case .flagNotFound:
+            return "Flag not found."
+        case .evaluationError:
+            return "Evaluation error occurred."
+        case .typeMismatch:
+            return "Type mismatch encountered."
+        }
+    }
 }
 
 struct FlagResolution: Encodable, Decodable, Equatable {

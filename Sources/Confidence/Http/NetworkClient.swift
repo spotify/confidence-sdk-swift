@@ -130,7 +130,20 @@ extension NetworkClient {
             }
         }
         // TMP - TESTING
-        print(">> \(request.allHTTPHeaderFields)")
+        if let headers = request.allHTTPHeaderFields, let metadata = headers["Confidence-Metadata"] {
+            if let data = metadata.data(using: .utf8) {
+                do {
+                    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+                    let prettyData = try JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted)
+
+                    if let prettyPrintedString = String(data: prettyData, encoding: .utf8) {
+                        print(prettyPrintedString)
+                    }
+                } catch {
+                    print("Failed to pretty print JSON: \(error)")
+                }
+            }
+        }
 
         let jsonData = try encoder.encode(data)
         request.httpBody = jsonData

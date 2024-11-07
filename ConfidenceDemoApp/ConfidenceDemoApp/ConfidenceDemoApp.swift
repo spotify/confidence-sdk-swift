@@ -20,7 +20,7 @@ struct ConfidenceDemoApp: App {
         WindowGroup {
             let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? ""
             let confidence = Confidence.Builder(clientSecret: secret, loggerLevel: .TRACE)
-                .withContext(initialContext: ["targeting_key": ConfidenceValue(string: UUID.init().uuidString)])
+//                .withContext(initialContext: ["targeting_key": ConfidenceValue(string: UUID.init().uuidString)])
                 .build()
 
             let status = Status()
@@ -42,6 +42,6 @@ struct ConfidenceDemoApp: App {
 
 extension ConfidenceDemoApp {
     func setup(confidence: Confidence) async throws {
-        try await confidence.fetchAndActivate()
+//        try await confidence.fetchAndActivate()
     }
 }
