@@ -44,17 +44,12 @@ extension FlagResolution {
                 )
             }
 
-            if resolvedFlag.resolveReason == .targetingKeyError {
-                return Evaluation(
-                    value: defaultValue,
-                    variant: nil,
-                    reason: .targetingKeyError,
-                    errorCode: .invalidContext,
-                    errorMessage: "Invalid targeting key"
-                )
+            if let evaluation = checkBackendErrrs(resolvedFlag: resolvedFlag, defaultValue: defaultValue) {
+                return evaluation
             }
 
             guard let value = resolvedFlag.value else {
+                // No backend error, but nil value returned. This can happend with "noSegmentMatch" or "archived", for example
                 Task {
                     await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
                 }
@@ -132,6 +127,30 @@ extension FlagResolution {
         }
     }
     // swiftlint:enable function_body_length
+
+    private func checkBackendErrrs<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
+        if resolvedFlag.resolveReason == .targetingKeyError {
+            return Evaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: .targetingKeyError,
+                errorCode: .invalidContext,
+                errorMessage: "Invalid targeting key"
+            )
+        } else if resolvedFlag.resolveReason == .error ||
+        resolvedFlag.resolveReason == .unknown ||
+        resolvedFlag.resolveReason == .unspecified {
+            return Evaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: .error,
+                errorCode: .evaluationError,
+                errorMessage: "Unknown error from backend"
+            )
+        } else {
+            return nil
+        }
+    }
 
     // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue) -> T? {
