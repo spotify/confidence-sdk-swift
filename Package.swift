@@ -19,11 +19,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "git@github.com:open-feature/swift-sdk.git", from: "0.1.0"),
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.0.0"),
     ],
     targets: [
         .target(
             name: "Confidence",
-            dependencies: [],
+            dependencies: [
+                .product(name: "SwiftProtobuf", package: "swift-protobuf")
+            ],
             plugins: []
         ),
         .target(

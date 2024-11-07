@@ -29,7 +29,7 @@ final class NetworkClient: HttpClient {
         self.timeoutIntervalForRequests = timeoutIntervalForRequests
     }
 
-    func post<T>(path: String, data: any Encodable, header: any Encodable) async throws -> HttpClientResult<T> where T : Decodable {
+    func post<T>(path: String, data: any Encodable, header: Data) async throws -> HttpClientResult<T> where T : Decodable {
         let request = try buildRequest(path: path, data: data, header: header)
         return try await post(request: request)
     }
@@ -107,7 +107,7 @@ extension NetworkClient {
         return URL(string: "\(normalisedBase)\(normalisedPath)")
     }
 
-    private func buildRequest(path: String, data: Encodable, header: Encodable? = nil) throws -> URLRequest {
+    private func buildRequest(path: String, data: Encodable, header: Data? = nil) throws -> URLRequest {
         guard let url = constructURL(base: baseUrl, path: path) else {
             throw ConfidenceError.internalError(message: "Could not create service url")
         }
@@ -123,26 +123,10 @@ extension NetworkClient {
         encoder.dateEncodingStrategy = .iso8601
 
         if let header = header {
-            let jsonHeaderData = try encoder.encode(header)
-
-            if let headerJsonString = String(data: jsonHeaderData, encoding: .utf8) {
-                request.addValue(headerJsonString, forHTTPHeaderField: "Confidence-Metadata")
-            }
-        }
-        // TMP - TESTING
-        if let headers = request.allHTTPHeaderFields, let metadata = headers["Confidence-Metadata"] {
-            if let data = metadata.data(using: .utf8) {
-                do {
-                    let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
-                    let prettyData = try JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted)
-
-                    if let prettyPrintedString = String(data: prettyData, encoding: .utf8) {
-                        print(prettyPrintedString)
-                    }
-                } catch {
-                    print("Failed to pretty print JSON: \(error)")
-                }
-            }
+            request.addValue(header.base64EncodedString(), forHTTPHeaderField: "Confidence-Metadata")
+            // TMP - TESTING
+            let telemetryData = try LibraryData(serializedBytes: header)
+            print(telemetryData)
         }
 
         let jsonData = try encoder.encode(data)

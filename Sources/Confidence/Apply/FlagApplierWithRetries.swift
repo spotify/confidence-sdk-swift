@@ -140,7 +140,7 @@ final class FlagApplierWithRetries: FlagApplier {
         request: ApplyFlagsRequest
     ) async -> ApplyFlagResult {
         do {
-            let header = telemetry.getSnapshot()
+            let header: Data = telemetry.getSnapshot()
             return try await httpClient.post(path: ":apply", data: request, header: header)
         } catch {
             return .failure(handleError(error: error))
