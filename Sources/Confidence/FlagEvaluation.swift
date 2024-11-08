@@ -44,21 +44,15 @@ extension FlagResolution {
                 )
             }
 
-            if resolvedFlag.resolveReason != .targetingKeyError {
-                Task {
-                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
-                }
-            } else {
-                return Evaluation(
-                    value: defaultValue,
-                    variant: nil,
-                    reason: .targetingKeyError,
-                    errorCode: .invalidContext,
-                    errorMessage: "Invalid targeting key"
-                )
+            if let evaluation = checkBackendErrors(resolvedFlag: resolvedFlag, defaultValue: defaultValue) {
+                return evaluation
             }
 
             guard let value = resolvedFlag.value else {
+                // No backend error, but nil value returned. This can happend with "noSegmentMatch" or "archived", for example
+                Task {
+                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                }
                 return Evaluation(
                     value: defaultValue,
                     variant: resolvedFlag.variant,
@@ -77,6 +71,9 @@ extension FlagResolution {
                     resolveReason = .stale
                 }
                 if let typedValue = typedValue {
+                    Task {
+                        await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                    }
                     return Evaluation(
                         value: typedValue,
                         variant: resolvedFlag.variant,
@@ -87,6 +84,9 @@ extension FlagResolution {
                 } else {
                     // `null` type from backend instructs to use client-side default value
                     if parsedValue == .init(null: ()) {
+                        Task {
+                            await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                        }
                         return Evaluation(
                             value: defaultValue,
                             variant: resolvedFlag.variant,
@@ -105,6 +105,9 @@ extension FlagResolution {
                     }
                 }
             } else {
+                Task {
+                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                }
                 return Evaluation(
                     value: defaultValue,
                     variant: resolvedFlag.variant,
@@ -124,6 +127,30 @@ extension FlagResolution {
         }
     }
     // swiftlint:enable function_body_length
+
+    private func checkBackendErrors<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
+        if resolvedFlag.resolveReason == .targetingKeyError {
+            return Evaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: .targetingKeyError,
+                errorCode: .invalidContext,
+                errorMessage: "Invalid targeting key"
+            )
+        } else if resolvedFlag.resolveReason == .error ||
+        resolvedFlag.resolveReason == .unknown ||
+        resolvedFlag.resolveReason == .unspecified {
+            return Evaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: .error,
+                errorCode: .evaluationError,
+                errorMessage: "Unknown error from backend"
+            )
+        } else {
+            return nil
+        }
+    }
 
     // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue) -> T? {

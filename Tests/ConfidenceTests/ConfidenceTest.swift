@@ -285,6 +285,46 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testResolveAndApplyIntegerFlagNullValue() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                value: .init(structure: ["size": .init(null: ())]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: 4)
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, 4)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
     func testResolveAndApplyIntegerFlagTwice() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -654,6 +694,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage, "")
         XCTAssertEqual(evaluation.reason, .error)
         XCTAssertEqual(evaluation.variant, nil)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testConcurrentActivate() async {
