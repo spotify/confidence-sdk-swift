@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/spotify/confidence-sdk-swift/compare/1.0.1...1.0.2) (2024-11-08)
+
+
+### 🐛 Bug Fixes
+
+* TypeMismatch doesn't trigger apply ([#172](https://github.com/spotify/confidence-sdk-swift/issues/172)) ([df38f0b](https://github.com/spotify/confidence-sdk-swift/commit/df38f0b1043663d11e51250393d5757e61e2dd22))
+
 ## [1.0.1](https://github.com/spotify/confidence-sdk-swift/compare/1.0.0...1.0.1) (2024-11-06)
 
 
