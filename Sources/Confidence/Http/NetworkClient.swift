@@ -29,11 +29,22 @@ final class NetworkClient: HttpClient {
         self.timeoutIntervalForRequests = timeoutIntervalForRequests
     }
 
+    func post<T>(path: String, data: any Encodable, header: Data) async throws -> HttpClientResult<T> where T : Decodable {
+        let request = try buildRequest(path: path, data: data, header: header)
+        return try await post(request: request)
+    }
+
     public func post<T: Decodable>(
         path: String,
         data: Encodable
     ) async throws -> HttpClientResult<T> {
         let request = try buildRequest(path: path, data: data)
+        return try await post(request: request)
+    }
+
+    private func post<T: Decodable>(
+        request: URLRequest
+    ) async throws -> HttpClientResult<T>  {
         let requestResult = await perform(request: request, retry: self.retry)
         if let error = requestResult.error {
             return .failure(error)
@@ -96,7 +107,7 @@ extension NetworkClient {
         return URL(string: "\(normalisedBase)\(normalisedPath)")
     }
 
-    private func buildRequest(path: String, data: Encodable) throws -> URLRequest {
+    private func buildRequest(path: String, data: Encodable, header: Data? = nil) throws -> URLRequest {
         guard let url = constructURL(base: baseUrl, path: path) else {
             throw ConfidenceError.internalError(message: "Could not create service url")
         }
@@ -107,8 +118,16 @@ extension NetworkClient {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("application/json", forHTTPHeaderField: "Accept")
 
+
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
+
+        if let header = header {
+            request.addValue(header.base64EncodedString(), forHTTPHeaderField: "Confidence-Metadata")
+            // TMP - TESTING
+            let telemetryData = try LibraryData(serializedBytes: header)
+            print(telemetryData)
+        }
 
         let jsonData = try encoder.encode(data)
         request.httpBody = jsonData

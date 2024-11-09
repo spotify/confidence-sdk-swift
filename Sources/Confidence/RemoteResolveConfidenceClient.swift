@@ -4,6 +4,7 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private var options: ConfidenceClientOptions
     private let metadata: ConfidenceMetadata
+    private let telemetry = Telemetry.shared
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
@@ -33,10 +34,10 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             apply: applyOnResolve,
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
-
+        let header = telemetry.getSnapshot()
         do {
             let result: HttpClientResult<ResolveFlagsResponse> =
-            try await self.httpClient.post(path: ":resolve", data: request)
+            try await self.httpClient.post(path: ":resolve", data: request, header: header)
             switch result {
             case .success(let successData):
                 guard successData.response.status == .ok else {

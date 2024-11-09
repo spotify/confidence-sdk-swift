@@ -23,8 +23,6 @@ public class Confidence: ConfidenceEventSender {
     internal let remoteFlagResolver: ConfidenceResolveClient
     internal let contextReconciliatedChanges = PassthroughSubject<String, Never>()
 
-    public static let sdkId: String = "SDK_ID_SWIFT_CONFIDENCE"
-
     required init(
         clientSecret: String,
         region: ConfidenceRegion,
@@ -398,9 +396,7 @@ extension Confidence {
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region,
                 timeoutIntervalForRequest: timeout)
-            let metadata = ConfidenceMetadata(
-                name: sdkId,
-                version: "1.0.1") // x-release-please-version
+            let metadata = ConfidenceMetadata.defaultMetadata
             let uploader = RemoteConfidenceClient(
                 options: options,
                 metadata: metadata,

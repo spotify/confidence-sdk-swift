@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message LibraryData {
+    SdkId libraryId = 1;
+    string libraryVersion = 2;
+    repeated CountTrace countTraces = 3;
+    repeated AverageDurationTrace durationsTraces = 4;
+}
+
+message CountTrace {
+    TraceId traceId = 1;
+    int32 count = 2;
+}
+
+message AverageDurationTrace {
+    TraceId traceId = 1;
+    float millisAverage = 2;
+}
+
+enum TraceId {
+    TRACE_UNSPECIFIED = 0;
+    TRACE_STALE = 1;
+    TRACE_TYPE_MISMATCH = 2;
+}
+
+enum SdkId {
+    SDK_UNKNOWN= 0;
+    SDK_SWIFT_CORE = 1;
+}
