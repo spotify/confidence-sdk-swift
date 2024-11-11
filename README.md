@@ -79,7 +79,7 @@ confidence.putContext(context: ["key": ConfidenceValue(string: "value")])
 ```
 
 Upon the returning of this function call, the updated context is appended to tracking events.
-However, to relfect the new context in flags resolves, a new call to `fetchAndActivate()` is required.
+However, to reflect the new context in flags resolves, a new call to `fetchAndActivate()` is required.
 
 ### Resolving feature flags
 Once the Confidence instance is **activated**, you can access the flag values using the
