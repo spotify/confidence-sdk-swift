@@ -26,13 +26,24 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     // MARK: Resolver
 
     public func resolve(flags: [String], ctx: ConfidenceStruct) async throws -> ResolvesResult {
+        let ctxNetworkValue = TypeMapper.convert(structure: ctx)
         let request = ResolveFlagsRequest(
             flags: flags.map { "flags/\($0)" },
-            evaluationContext: TypeMapper.convert(structure: ctx),
+            evaluationContext: ctxNetworkValue,
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve,
             sdk: Sdk(id: metadata.name, version: metadata.version)
         )
+
+        if let debugLogger = options.getLogger() {
+            let encoder = JSONEncoder()
+            if let jsonData = try? encoder.encode(ctxNetworkValue),
+                let jsonCtx = String(data: jsonData, encoding: .utf8) {
+                debugLogger.logMessage(
+                    message: "[Resolve Debug] https://app.confidence.spotify.com/flags/resolver-test?context=\(jsonCtx)",
+                    isWarning: false)
+            }
+        }
 
         do {
             let result: HttpClientResult<ResolveFlagsResponse> =
