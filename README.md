@@ -71,7 +71,7 @@ To avoid waiting on backend calls when the Application starts, the suggested app
 `confidence.activate()` and then trigger a background refresh via `confidence.asyncFetch()` for future sessions.
 
 ### Setting the context
-The context is a key-value map used for sampling and for targeting, when flag are evaluated by the Confidence backend.
+The context is a key-value map used for sampling and for targeting, when flags are evaluated by the Confidence backend.
 It is also appended to the tracked events, making it a great way to create dimensions for metrics in Confidence.
 
 ```swift
@@ -86,9 +86,9 @@ confidence.track(producer: contextProducerImplementation)
 The "producer" conforms to `ConfidenceContextProducer`, which allows to dynamically push context changes
 to the Confidence object.
 
-In both cases above, any context change triggers a new `fetchAndActivate` asynchronously and the flags in the
-local cache are re-evaluated remotely according to the new context: until that background operation is complete,
-flag values are returned to the application according to the old context's evaluation, and marked as "stale".
+In both cases above, any context change triggers a new asynchronous `fetchAndActivate` and the flags in the
+local cache are re-evaluated remotely according to the new context: until this background operation is complete,
+flag values are returned to the application according to the old context's evaluation, and with `resolveReason = .stale`.
 
 
 ### Resolving feature flags
