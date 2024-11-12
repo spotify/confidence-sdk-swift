@@ -25,6 +25,10 @@ internal class DebugLoggerFake: DebugLogger {
         // no-op
     }
 
+    func logResolveDebugURL(flagName: String, context: ConfidenceStruct) {
+        // no-op
+    }
+
     func getUploadBatchSuccessCount() -> Int {
         return uploadBatchSuccessCounter.get()
     }
