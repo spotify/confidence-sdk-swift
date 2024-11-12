@@ -78,8 +78,18 @@ It is also appended to the tracked events, making it a great way to create dimen
 confidence.putContext(context: ["key": ConfidenceValue(string: "value")])
 ```
 
-Upon the returning of this function call, the updated context is appended to tracking events.
-However, to reflect the new context in flags resolves, a new call to `fetchAndActivate()` is required.
+Another way to configure the context involves using the `track` API:
+```swift
+confidence.track(producer: contextProducerImplementation)
+```
+
+The "producer" conforms to `ConfidenceContextProducer`, which allows to dynamically push context changes
+to the Confidence object.
+
+In both cases above, any context change triggers a new `fetchAndActivate` asynchronously and the flags in the
+local cache are re-evaluated remotely according to the new context: until that background operation is complete,
+flag values are returned to the application according to the old context's evaluation, and marked as "stale".
+
 
 ### Resolving feature flags
 Once the Confidence instance is **activated**, you can access the flag values using the
