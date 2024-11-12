@@ -6,6 +6,7 @@ internal protocol DebugLogger {
     func logMessage(message: String, isWarning: Bool)
     func logFlags(action: String, flag: String)
     func logContext(action: String, context: ConfidenceStruct)
+    func logResolveDebugURL(flagName: String, context: ConfidenceStruct)
 }
 
 private extension Logger {
@@ -15,6 +16,16 @@ private extension Logger {
 }
 
 internal class DebugLoggerImpl: DebugLogger {
+    private let encoder = JSONEncoder()
+
+    func logResolveDebugURL(flagName: String, context: ConfidenceStruct) {
+        let ctxNetworkValue = TypeMapper.convert(structure: context)
+        if let ctxNetworkData = try? encoder.encode(ctxNetworkValue),
+        let ctxNetworkString = String(data: ctxNetworkData, encoding: .utf8) {
+            log(messageLevel: .DEBUG, message: "[Resolve Debug] https://app.confidence.spotify.com/flags/resolver-test?flag=flags/\(flagName)&context=\(ctxNetworkString)")
+        }
+    }
+
     private let loggerLevel: LoggerLevel
 
     init(loggerLevel: LoggerLevel) {

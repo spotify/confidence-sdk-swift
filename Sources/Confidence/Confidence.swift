@@ -154,7 +154,8 @@ public class Confidence: ConfidenceEventSender {
                 flagName: key,
                 defaultValue: defaultValue,
                 context: getContext(),
-                flagApplier: flagApplier
+                flagApplier: flagApplier,
+                debugLogger: debugLogger
             )
         }
     }
