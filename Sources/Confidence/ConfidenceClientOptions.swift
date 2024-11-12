@@ -5,24 +5,17 @@ struct ConfidenceClientOptions {
     public var region: ConfidenceRegion
     public var initializationStrategy: InitializationStrategy
     public var timeoutIntervalForRequest: Double
-    private let debugLogger: DebugLogger?
 
     public init(
         credentials: ConfidenceClientCredentials,
         region: ConfidenceRegion? = nil,
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
-        timeoutIntervalForRequest: Double,
-        debugLogger: DebugLogger? = nil
+        timeoutIntervalForRequest: Double
     ) {
         self.credentials = credentials
         self.region = region ?? .global
         self.initializationStrategy = initializationStrategy
         self.timeoutIntervalForRequest = timeoutIntervalForRequest
-        self.debugLogger = debugLogger
-    }
-
-    func getLogger() -> DebugLogger? {
-        return debugLogger
     }
 }
 

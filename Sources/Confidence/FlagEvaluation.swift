@@ -29,7 +29,8 @@ extension FlagResolution {
         flagName: String,
         defaultValue: T,
         context: ConfidenceStruct,
-        flagApplier: FlagApplier? = nil
+        flagApplier: FlagApplier? = nil,
+        debugLogger: DebugLogger? = nil
     ) -> Evaluation<T> {
         do {
             let parsedKey = try FlagPath.getPath(for: flagName)
@@ -42,6 +43,10 @@ extension FlagResolution {
                     errorCode: .flagNotFound,
                     errorMessage: "Flag '\(parsedKey.flag)' not found in local cache"
                 )
+            }
+
+            if let debugLogger = debugLogger {
+                debugLogger.logResolveDebugURL(flagName: parsedKey.flag, context: context)
             }
 
             if let evaluation = checkBackendErrors(resolvedFlag: resolvedFlag, defaultValue: defaultValue) {

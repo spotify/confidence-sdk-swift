@@ -154,7 +154,8 @@ public class Confidence: ConfidenceEventSender {
                 flagName: key,
                 defaultValue: defaultValue,
                 context: getContext(),
-                flagApplier: flagApplier
+                flagApplier: flagApplier,
+                debugLogger: debugLogger
             )
         }
     }
@@ -397,8 +398,7 @@ extension Confidence {
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region,
-                timeoutIntervalForRequest: timeout,
-                debugLogger: debugLogger)
+                timeoutIntervalForRequest: timeout)
             let metadata = ConfidenceMetadata(
                 name: sdkId,
                 version: "1.0.1") // x-release-please-version
