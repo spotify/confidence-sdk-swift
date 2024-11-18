@@ -391,7 +391,7 @@ extension Confidence {
         public func build() -> Confidence {
             if debugLogger == nil {
                 if loggerLevel != LoggerLevel.NONE {
-                    debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel)
+                    debugLogger = DebugLoggerImpl(loggerLevel: loggerLevel, clientKey: clientSecret)
                     debugLogger?.logContext(action: "InitialContext", context: initialContext)
                 }
             }
