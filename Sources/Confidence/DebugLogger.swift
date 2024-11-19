@@ -17,19 +17,21 @@ private extension Logger {
 
 internal class DebugLoggerImpl: DebugLogger {
     private let encoder = JSONEncoder()
+    private let clientKey: String
 
     func logResolveDebugURL(flagName: String, context: ConfidenceStruct) {
         let ctxNetworkValue = TypeMapper.convert(structure: context)
         if let ctxNetworkData = try? encoder.encode(ctxNetworkValue),
         let ctxNetworkString = String(data: ctxNetworkData, encoding: .utf8) {
-            log(messageLevel: .DEBUG, message: "[Resolve Debug] https://app.confidence.spotify.com/flags/resolver-test?flag=flags/\(flagName)&context=\(ctxNetworkString)")
+            log(messageLevel: .DEBUG, message: "[Resolve Debug] https://app.confidence.spotify.com/flags/resolver-test?client-key=\(clientKey)&flag=flags/\(flagName)&context=\(ctxNetworkString)")
         }
     }
 
     private let loggerLevel: LoggerLevel
 
-    init(loggerLevel: LoggerLevel) {
+    init(loggerLevel: LoggerLevel, clientKey: String) {
         self.loggerLevel = loggerLevel
+        self.clientKey = clientKey
     }
 
     func logMessage(message: String, isWarning: Bool = false) {
