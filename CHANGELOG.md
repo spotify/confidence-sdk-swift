@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/spotify/confidence-sdk-swift/compare/1.0.1...1.1.0) (2024-11-19)
+
+
+### 🐛 Bug Fixes
+
+* Properly encoded Resolve Debug URL ([#177](https://github.com/spotify/confidence-sdk-swift/issues/177)) ([00bf389](https://github.com/spotify/confidence-sdk-swift/commit/00bf389734840efbb41f641f642621e57278724e))
+* TypeMismatch doesn't trigger apply ([#172](https://github.com/spotify/confidence-sdk-swift/issues/172)) ([df38f0b](https://github.com/spotify/confidence-sdk-swift/commit/df38f0b1043663d11e51250393d5757e61e2dd22))
+
+
+### ✨ New Features
+
+* Client Key in Resolve Debug logs ([#176](https://github.com/spotify/confidence-sdk-swift/issues/176)) ([712ff6e](https://github.com/spotify/confidence-sdk-swift/commit/712ff6e927ed7d760af2dfe821e66a5a954027da))
+* Resolve Debug at DEBUG level logging ([#174](https://github.com/spotify/confidence-sdk-swift/issues/174)) ([558c811](https://github.com/spotify/confidence-sdk-swift/commit/558c8112210b16572f76f2636c1fdaafe1a4bdb6))
+
 ## [1.0.1](https://github.com/spotify/confidence-sdk-swift/compare/1.0.0...1.0.1) (2024-11-06)
 
 
