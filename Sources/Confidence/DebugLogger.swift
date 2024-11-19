@@ -23,7 +23,16 @@ internal class DebugLoggerImpl: DebugLogger {
         let ctxNetworkValue = TypeMapper.convert(structure: context)
         if let ctxNetworkData = try? encoder.encode(ctxNetworkValue),
         let ctxNetworkString = String(data: ctxNetworkData, encoding: .utf8) {
-            log(messageLevel: .DEBUG, message: "[Resolve Debug] https://app.confidence.spotify.com/flags/resolver-test?client-key=\(clientKey)&flag=flags/\(flagName)&context=\(ctxNetworkString)")
+            var url = URLComponents()
+            url.scheme = "https"
+            url.host = "app.confidence.spotify.com"
+            url.path = "/flags/resolver-test"
+            url.queryItems = [
+                URLQueryItem(name: "client-key", value: clientKey),
+                URLQueryItem(name: "flag", value: "flags/\(flagName)"),
+                URLQueryItem(name: "context", value: "\(ctxNetworkString)"),
+            ]
+            log(messageLevel: .DEBUG, message: "[Resolve Debug] \(url.url?.absoluteString ?? "N/A")")
         }
     }
 
