@@ -8,9 +8,9 @@ public class Confidence: ConfidenceEventSender {
     private var region: ConfidenceRegion
     private let parent: ConfidenceContextProvider?
     private let eventSenderEngine: EventSenderEngine
-    private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
+    private var context = ConfidenceStruct()
     private var removedContextKeys: Set<String> = Set()
-    private let contextSubjectQueue = DispatchQueue(label: "com.confidence.queue.contextsubject")
+    private let contextQueue = DispatchQueue(label: "com.confidence.queue.context")
     private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
     private let flagApplier: FlagApplier
     private var cache = FlagResolution.EMPTY
@@ -41,7 +41,7 @@ public class Confidence: ConfidenceEventSender {
         self.clientSecret = clientSecret
         self.region = region
         self.storage = storage
-        self.contextSubject.value = context
+        self.context = context
         self.parent = parent
         self.storage = storage
         self.flagApplier = flagApplier
@@ -50,26 +50,6 @@ public class Confidence: ConfidenceEventSender {
         if let visitorId {
             putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
-
-        contextChanges().sink { [weak self] context in
-            guard let self = self else {
-                return
-            }
-            self.currentFetchTask?.cancel()
-            self.currentFetchTask = Task {
-                do {
-                    let context = self.getContext()
-                    try await self.fetchAndActivate()
-                    self.contextReconciliatedChanges.send(context.hash())
-                } catch {
-                    debugLogger?.logMessage(
-                        message: "\(error)",
-                        isWarning: true
-                    )
-                }
-            }
-        }
-        .store(in: &cancellables)
     }
 
     /**
@@ -173,16 +153,6 @@ public class Confidence: ConfidenceEventSender {
         return storage.isEmpty()
     }
 
-    /**
-    Listen to changes in the context that is local to this Confidence instance.
-    */
-    public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
-        return contextSubject
-            .dropFirst()
-            .removeDuplicates()
-            .eraseToAnyPublisher()
-    }
-
     public func track(eventName: String, data: ConfidenceStruct) throws {
         try eventSenderEngine.emit(
             eventName: eventName,
@@ -232,53 +202,45 @@ public class Confidence: ConfidenceEventSender {
         var reconciledCtx = parentContext.filter {
             !removedContextKeys.contains($0.key)
         }
-        self.contextSubject.value.forEach { entry in
-            reconciledCtx.updateValue(entry.value, forKey: entry.key)
+        self.context.forEach { (key: String, value: ConfidenceValue) in
+            reconciledCtx.updateValue(value, forKey: key)
         }
         return reconciledCtx
     }
 
     public func putContext(key: String, value: ConfidenceValue) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
-            map[key] = value
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            confidence.context[key] = value
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.context)
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
             for entry in context {
-                map.updateValue(entry.value, forKey: entry.key)
+                confidence.context[entry.key] = entry.value
             }
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.context)
         }
     }
 
     public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
             for removedKey in removedKeys {
-                map.removeValue(forKey: removedKey)
+                confidence.removedContextKeys.insert(removedKey)
             }
             for entry in context {
-                map.updateValue(entry.value, forKey: entry.key)
+                confidence.context[entry.key] = entry.value
             }
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.context)
         }
     }
 
     public func removeKey(key: String) {
         withLock { confidence in
-            var map = confidence.contextSubject.value
-            map.removeValue(forKey: key)
-            confidence.contextSubject.value = map
+            confidence.context.removeValue(forKey: key)
             confidence.removedContextKeys.insert(key)
-            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.context)
         }
     }
 
@@ -297,7 +259,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     private func withLock(callback: @escaping (Confidence) -> Void) {
-        contextSubjectQueue.sync {  [weak self] in
+        contextQueue.sync {  [weak self] in
             guard let self = self else {
                 return
             }

@@ -142,13 +142,8 @@ class ConfidenceTest: XCTestCase {
                 resolveReason: .match)
         ]
 
-        let expectation = expectation(description: "context is synced")
-        let cancellable = confidence.contextReconciliatedChanges.sink { _ in
-            expectation.fulfill()
-        }
         confidence.putContext(context: ["targeting_key": .init(string: "user2")])
-        await fulfillment(of: [expectation], timeout: 1)
-        cancellable.cancel()
+        try await confidence.fetchAndActivate()
 
         let evaluation = confidence.getEvaluation(
             key: "flag.size",
