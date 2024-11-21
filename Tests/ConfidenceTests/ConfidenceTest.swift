@@ -98,9 +98,9 @@ class ConfidenceTest: XCTestCase {
         // Initialize allows to start listening for context changes in "confidence"
         // Let the internal "resolve" finish
         await fulfillment(of: [resolve1Completed], timeout: 5.0)
-        confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
+        await confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
         await fulfillment(of: [resolve2Started], timeout: 5.0) // Ensure resolve 2 starts before 3
-        confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
+        await confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
         await fulfillment(of: [resolve3Completed], timeout: 5.0)
         resolve2Continues.fulfill() // Allow second resolve to continue, regardless if cancelled or not
         await fulfillment(of: [resolve2Cancelled], timeout: 5.0) // Second resolve is cancelled
@@ -142,14 +142,8 @@ class ConfidenceTest: XCTestCase {
                 resolveReason: .match)
         ]
 
-        let expectation = expectation(description: "context is synced")
-        let cancellable = confidence.contextReconciliatedChanges.sink { _ in
-            expectation.fulfill()
-        }
-        confidence.putContext(context: ["targeting_key": .init(string: "user2")])
-        await fulfillment(of: [expectation], timeout: 1)
-        cancellable.cancel()
 
+        await confidence.putContext(context: ["targeting_key": .init(string: "user2")])
         let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
@@ -400,7 +394,7 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         try await confidence.fetchAndActivate()
-        confidence.putContext(context: ["hello": .init(string: "world")])
+        await confidence.putContext(context: ["hello": .init(string: "world")])
         let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)

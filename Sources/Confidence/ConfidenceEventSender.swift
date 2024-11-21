@@ -21,7 +21,7 @@ public protocol ConfidenceEventSender: ConfidenceContextProvider {
     /**
     Adds/override entry to local context data
     */
-    func putContext(key: String, value: ConfidenceValue)
+    func putContext(key: String, value: ConfidenceValue) async
     /**
     Removes entry from localcontext data
     It hides entries with this key from parents' data (without modifying parents' data)

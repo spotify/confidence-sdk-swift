@@ -50,26 +50,6 @@ public class Confidence: ConfidenceEventSender {
         if let visitorId {
             putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
-
-        contextChanges().sink { [weak self] context in
-            guard let self = self else {
-                return
-            }
-            self.currentFetchTask?.cancel()
-            self.currentFetchTask = Task {
-                do {
-                    let context = self.getContext()
-                    try await self.fetchAndActivate()
-                    self.contextReconciliatedChanges.send(context.hash())
-                } catch {
-                    debugLogger?.logMessage(
-                        message: "\(error)",
-                        isWarning: true
-                    )
-                }
-            }
-        }
-        .store(in: &cancellables)
     }
 
     /**
@@ -238,22 +218,24 @@ public class Confidence: ConfidenceEventSender {
         return reconciledCtx
     }
 
-    public func putContext(key: String, value: ConfidenceValue) {
-        withLock { confidence in
+    public func putContext(key: String, value: ConfidenceValue) async {
+        await withLockAsync { confidence in
             var map = confidence.contextSubject.value
             map[key] = value
             confidence.contextSubject.value = map
+            try! await self.fetchAndActivate()
             confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
 
-    public func putContext(context: ConfidenceStruct) {
-        withLock { confidence in
+    public func putContext(context: ConfidenceStruct) async {
+        await withLockAsync { confidence in
             var map = confidence.contextSubject.value
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
+            try! await self.fetchAndActivate()
             confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
         }
     }
@@ -302,6 +284,21 @@ public class Confidence: ConfidenceEventSender {
                 return
             }
             callback(self)
+        }
+    }
+
+    private func withLockAsync(callback: @escaping (Confidence) async -> Void) async {
+        await withCheckedContinuation { continuation in
+            contextSubjectQueue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume()
+                    return
+                }
+                Task {
+                    await callback(self) // Await the async closure
+                    continuation.resume()
+                }
+            }
         }
     }
 }
