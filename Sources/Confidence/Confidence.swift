@@ -3,6 +3,7 @@ import Foundation
 import Combine
 import os
 
+// swiftlint:disable:next type_body_length
 public class Confidence: ConfidenceEventSender {
     private let clientSecret: String
     private var region: ConfidenceRegion
@@ -16,8 +17,8 @@ public class Confidence: ConfidenceEventSender {
     private var cache = FlagResolution.EMPTY
     private var storage: Storage
     private var cancellables = Set<AnyCancellable>()
-    private var currentFetchTask: Task<(), Never>?
     private let debugLogger: DebugLogger?
+    private let semaphore = DispatchSemaphore(value: 1)
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
@@ -48,28 +49,8 @@ public class Confidence: ConfidenceEventSender {
         self.remoteFlagResolver = remoteFlagResolver
         self.debugLogger = debugLogger
         if let visitorId {
-            putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
+            putContextLocal(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
-
-        contextChanges().sink { [weak self] context in
-            guard let self = self else {
-                return
-            }
-            self.currentFetchTask?.cancel()
-            self.currentFetchTask = Task {
-                do {
-                    let context = self.getContext()
-                    try await self.fetchAndActivate()
-                    self.contextReconciliatedChanges.send(context.hash())
-                } catch {
-                    debugLogger?.logMessage(
-                        message: "\(error)",
-                        isWarning: true
-                    )
-                }
-            }
-        }
-        .store(in: &cancellables)
     }
 
     /**
@@ -214,10 +195,10 @@ public class Confidence: ConfidenceEventSender {
         if let contextProducer = producer as? ConfidenceContextProducer {
             contextProducer.produceContexts()
                 .sink { [weak self] context in
-                    guard let self = self else {
-                        return
+                    Task { [weak self] in
+                        guard let self = self else { return }
+                        await self.putContext(context: context)
                     }
-                    self.putContext(context: context)
                 }
                 .store(in: &cancellables)
         }
@@ -238,47 +219,112 @@ public class Confidence: ConfidenceEventSender {
         return reconciledCtx
     }
 
-    public func putContext(key: String, value: ConfidenceValue) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
-            map[key] = value
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
-        }
-    }
-
-    public func putContext(context: ConfidenceStruct) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
-            for entry in context {
-                map.updateValue(entry.value, forKey: entry.key)
+    public func putContext(key: String, value: ConfidenceValue) async {
+        await withSemaphoreAsync { [weak self] in
+            guard let self = self else {
+                return
             }
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            var map = contextSubject.value
+            map[key] = value
+            contextSubject.value = map
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(action: "PutContext", context: contextSubject.value)
+            } catch {
+                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+            }
         }
     }
 
-    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
+
+    public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
+        // Maybe use the semaphore instead
+        withSemaphore { [weak self] in
+            guard let self = self else {
+                return
+            }
+            var map = contextSubject.value
             for removedKey in removedKeys {
                 map.removeValue(forKey: removedKey)
             }
             for entry in context {
                 map.updateValue(entry.value, forKey: entry.key)
             }
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            contextSubject.value = map
+            debugLogger?.logContext(
+                action: "PutContext",
+                context: contextSubject.value)
         }
     }
 
-    public func removeKey(key: String) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
+    public func putContext(context: ConfidenceStruct) async {
+        await withSemaphoreAsync { [weak self] in
+            guard let self = self else {
+                return
+            }
+            var map = contextSubject.value
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            contextSubject.value = map
+            do {
+                try await fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "PutContext & FetchAndActivate",
+                    context: contextSubject.value)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when putting context: \(error)",
+                    isWarning: true)
+            }
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) async {
+        await withSemaphoreAsync { [weak self] in
+            guard let self = self else {
+                return
+            }
+            var map = contextSubject.value
+            for removedKey in removedKeys {
+                map.removeValue(forKey: removedKey)
+            }
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            contextSubject.value = map
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "PutContext & FetchAndActivate",
+                    context: contextSubject.value)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when putting context: \(error)",
+                    isWarning: true)
+            }
+        }
+    }
+
+    public func removeContext(key: String) async {
+        await withSemaphoreAsync { [weak self] in
+            guard let self = self else {
+                return
+            }
+            var map = contextSubject.value
             map.removeValue(forKey: key)
-            confidence.contextSubject.value = map
-            confidence.removedContextKeys.insert(key)
-            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.contextSubject.value)
+            contextSubject.value = map
+            removedContextKeys.insert(key)
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "RemoveContextKey & FetchAndActivate",
+                    context: contextSubject.value)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when removing context key: \(error)",
+                    isWarning: true)
+            }
         }
     }
 
@@ -296,13 +342,21 @@ public class Confidence: ConfidenceEventSender {
         )
     }
 
-    private func withLock(callback: @escaping (Confidence) -> Void) {
-        contextSubjectQueue.sync {  [weak self] in
-            guard let self = self else {
-                return
+    func withSemaphoreAsync(callback: @escaping () async -> Void) async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global().async {
+                self.semaphore.wait()
+                continuation.resume()
             }
-            callback(self)
         }
+        await callback()
+        semaphore.signal()
+    }
+
+    func withSemaphore(callback: @escaping () -> Void) {
+        self.semaphore.wait()
+        callback()
+        semaphore.signal()
     }
 }
 

@@ -40,11 +40,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) {
-        self.updateConfidenceContext(context: initialContext ?? MutableContext(attributes: [:]))
-        if self.initializationStrategy == .activateAndFetchAsync {
-            eventHandler.send(.ready)
-        }
-
+        let context = ConfidenceTypeMapper.from(ctx: initialContext ?? MutableContext(attributes: [:]))
+        confidence.putContextLocal(context: context)
         do {
             if initializationStrategy == .activateAndFetchAsync {
                 try confidence.activate()
@@ -77,16 +74,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) {
-        var removedKeys: [String] = []
-        if let oldContext = oldContext {
-            removedKeys = Array(oldContext.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
+        let removedKeys: [String] = oldContext.map {
+            Array($0.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
+        } ?? []
+
+        Task {
+            await confidence.putContext(context: ConfidenceTypeMapper.from(ctx: newContext), removedKeys: removedKeys)
         }
-
-        self.updateConfidenceContext(context: newContext, removedKeys: removedKeys)
-    }
-
-    private func updateConfidenceContext(context: EvaluationContext, removedKeys: [String] = []) {
-        confidence.putContext(context: ConfidenceTypeMapper.from(ctx: context), removeKeys: removedKeys)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws

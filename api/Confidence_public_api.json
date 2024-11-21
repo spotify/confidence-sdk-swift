@@ -55,8 +55,8 @@
         "declaration": "public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
       },
       {
-        "name": "removeKey(key:)",
-        "declaration": "public func removeKey(key: String)"
+        "name": "removeContext(key:)",
+        "declaration": "public func removeContext(key: String)"
       },
       {
         "name": "withContext(_:)",
