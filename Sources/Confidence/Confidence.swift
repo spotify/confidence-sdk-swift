@@ -293,7 +293,7 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func removeKey(key: String) async {
+    public func removeContext(key: String) async {
         await withLockAsync { confidence in
             var map = confidence.contextSubject.value
             map.removeValue(forKey: key)

@@ -26,7 +26,7 @@ public protocol ConfidenceEventSender: ConfidenceContextProvider {
     Removes entry from localcontext data
     It hides entries with this key from parents' data (without modifying parents' data)
     */
-    func removeKey(key: String) async
+    func removeContext(key: String) async
     /**
     Creates a child event sender instance that maintains access to its parent's data
     */
