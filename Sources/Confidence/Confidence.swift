@@ -49,7 +49,7 @@ public class Confidence: ConfidenceEventSender {
         self.remoteFlagResolver = remoteFlagResolver
         self.debugLogger = debugLogger
         if let visitorId {
-            putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
+            putContextLocal(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
     }
 
@@ -195,10 +195,10 @@ public class Confidence: ConfidenceEventSender {
         if let contextProducer = producer as? ConfidenceContextProducer {
             contextProducer.produceContexts()
                 .sink { [weak self] context in
-                    guard let self = self else {
-                        return
+                    Task { [weak self] in
+                        guard let self = self else { return }
+                        await self.putContext(context: context)
                     }
-                    self.putContext(context: context)
                 }
                 .store(in: &cancellables)
         }
@@ -233,23 +233,8 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
-    public func putContext(context: ConfidenceStruct) async {
-        await withLockAsync { confidence in
-            var map = confidence.contextSubject.value
-            for entry in context {
-                map.updateValue(entry.value, forKey: entry.key)
-            }
-            confidence.contextSubject.value = map
-            do {
-                try await self.fetchAndActivate()
-                confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
-            } catch {
-                confidence.debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
-            }
-        }
-    }
 
-    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
+    public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
         withLock { confidence in
             var map = confidence.contextSubject.value
             for removedKey in removedKeys {
@@ -259,17 +244,71 @@ public class Confidence: ConfidenceEventSender {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            confidence.debugLogger?.logContext(
+                action: "PutContext",
+                context: confidence.contextSubject.value)
         }
     }
 
-    public func removeKey(key: String) {
-        withLock { confidence in
+    public func putContext(context: ConfidenceStruct) async {
+        await withLockAsync { confidence in
+            var map = confidence.contextSubject.value
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            confidence.contextSubject.value = map
+            do {
+                try await self.fetchAndActivate()
+                confidence.debugLogger?.logContext(
+                    action: "PutContext & FetchAndActivate",
+                    context: confidence.contextSubject.value)
+            } catch {
+                confidence.debugLogger?.logMessage(
+                    message: "Error when putting context: \(error)",
+                    isWarning: true)
+            }
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) async {
+        await withLockAsync { confidence in
+            var map = confidence.contextSubject.value
+            for removedKey in removedKeys {
+                map.removeValue(forKey: removedKey)
+            }
+            for entry in context {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            confidence.contextSubject.value = map
+            do {
+                try await self.fetchAndActivate()
+                confidence.debugLogger?.logContext(
+                    action: "PutContext & FetchAndActivate",
+                    context: confidence.contextSubject.value)
+            } catch {
+                confidence.debugLogger?.logMessage(
+                    message: "Error when putting context: \(error)",
+                    isWarning: true)
+            }
+        }
+    }
+
+    public func removeKey(key: String) async {
+        await withLockAsync { confidence in
             var map = confidence.contextSubject.value
             map.removeValue(forKey: key)
             confidence.contextSubject.value = map
             confidence.removedContextKeys.insert(key)
-            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.contextSubject.value)
+            do {
+                try await self.fetchAndActivate()
+                confidence.debugLogger?.logContext(
+                    action: "RemoveContextKey & FetchAndActivate",
+                    context: confidence.contextSubject.value)
+            } catch {
+                confidence.debugLogger?.logMessage(
+                    message: "Error when removing context key: \(error)",
+                    isWarning: true)
+            }
         }
     }
 

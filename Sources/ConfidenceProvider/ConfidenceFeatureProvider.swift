@@ -86,7 +86,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     private func updateConfidenceContext(context: EvaluationContext, removedKeys: [String] = []) {
-        confidence.putContext(context: ConfidenceTypeMapper.from(ctx: context), removeKeys: removedKeys)
+        confidence.putContextLocal(context: ConfidenceTypeMapper.from(ctx: context), removeKeys: removedKeys)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
