@@ -3,6 +3,7 @@ import Foundation
 import Combine
 import os
 
+// swiftlint:disable:next type_body_length
 public class Confidence: ConfidenceEventSender {
     private let clientSecret: String
     private var region: ConfidenceRegion
@@ -223,8 +224,12 @@ public class Confidence: ConfidenceEventSender {
             var map = confidence.contextSubject.value
             map[key] = value
             confidence.contextSubject.value = map
-            try! await self.fetchAndActivate()
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            do {
+                try await self.fetchAndActivate()
+                confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            } catch {
+                confidence.debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+            }
         }
     }
 
@@ -235,8 +240,12 @@ public class Confidence: ConfidenceEventSender {
                 map.updateValue(entry.value, forKey: entry.key)
             }
             confidence.contextSubject.value = map
-            try! await self.fetchAndActivate()
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            do {
+                try await self.fetchAndActivate()
+                confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
+            } catch {
+                confidence.debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+            }
         }
     }
 
