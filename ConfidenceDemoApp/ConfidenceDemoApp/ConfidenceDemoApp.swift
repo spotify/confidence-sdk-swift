@@ -1,50 +1,90 @@
 import Confidence
 import SwiftUI
 
-class Status: ObservableObject {
-    enum State {
-        case unknown
-        case ready
-        case error(Error?)
-    }
-
-    @Published var state: State = .unknown
-}
-
-
 @main
 struct ConfidenceDemoApp: App {
-    @StateObject private var lifecycleObserver = ConfidenceAppLifecycleProducer()
+    @AppStorage("loggedUser")
+    private var loggedUser: String?
+    @AppStorage("appVersion")
+    private var appVersion = 0
+
+    private let confidence: Confidence
+    private let flaggingState = ExperimentationFlags()
+    private let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? "<Empty Secret>"
+
+    init() {
+        @AppStorage("appVersion") var appVersion = 0
+        @AppStorage("loggedUser") var loggedUser: String?
+        appVersion += 1 // Simulate update of the app on every new run
+        var context = ["app_version": ConfidenceValue.init(integer: appVersion)]
+        if let user = loggedUser {
+            context["user_id"] = ConfidenceValue.init(string: user)
+        }
+
+        confidence = Confidence
+            .Builder(clientSecret: secret, loggerLevel: .TRACE)
+            .withContext(initialContext: context)
+            .build()
+        do {
+            // NOTE: here we are activating all the flag values from storage, regardless of how `context` looks now
+            try confidence.activate()
+        } catch {
+            flaggingState.state = .error(ExperimentationFlags.CustomError(message: error.localizedDescription))
+        }
+        // flaggingState.color is set here at startup and remains immutable until a user logs out
+        flaggingState.color = ContentView.getColor(
+            color: confidence.getValue(
+                key: "swift-demoapp.color",
+                defaultValue: "Gray"))
+
+        self.appVersion = appVersion
+        self.loggedUser = loggedUser
+        updateConfidence()
+    }
 
     var body: some Scene {
         WindowGroup {
-            let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? ""
-            let confidence = Confidence.Builder(clientSecret: secret, loggerLevel: .TRACE)
-                .withContext(initialContext: [
-                    "targeting_key": ConfidenceValue(string: UUID.init().uuidString),
-                    "user_id": .init(string: "user2")
-                ])
-                .build()
+            Text("Client secret: \(secret)")
+                .font(.caption)
+            if loggedUser == nil {
+                LoginView(confidence: confidence)
+                    .environmentObject(flaggingState)
+            } else {
+                ContentView(confidence: confidence)
+                    .environmentObject(flaggingState)
+            }
+        }
+    }
 
-            let status = Status()
-
-            ContentView(confidence: confidence, status: status)
-                .task {
-                    do {
-                        confidence.track(producer: lifecycleObserver)
-                        try await self.setup(confidence: confidence)
-                        status.state = .ready
-                    } catch {
-                        status.state = .error(error)
-                        print(error.localizedDescription)
-                    }
-                }
+    private func updateConfidence() {
+        Task {
+            do {
+                flaggingState.state = .loading
+                try await Task.sleep(nanoseconds: 2 * 1_000_000_000) // simulating slow network
+                // The flags in storage are refreshed for the current `context`, and activated
+                // After this line, fresh (and potentially new) flags values can be accessed
+                try await confidence.fetchAndActivate()
+                flaggingState.state = .ready
+            } catch {
+                flaggingState.state = .error(ExperimentationFlags.CustomError(message: error.localizedDescription))
+            }
         }
     }
 }
 
-extension ConfidenceDemoApp {
-    func setup(confidence: Confidence) async throws {
-        try await confidence.fetchAndActivate()
+class ExperimentationFlags: ObservableObject {
+    var color: Color = .red // This is set on applicaaton start, and reset on user logout
+    @Published var state: State = .notReady
+
+    enum State: Equatable {
+        case unknown
+        case notReady
+        case loading
+        case ready
+        case error(CustomError?)
+    }
+
+    public struct CustomError: Error, Equatable {
+        let message: String
     }
 }

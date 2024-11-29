@@ -51,7 +51,7 @@ final class FlagApplierWithRetries: FlagApplier {
             return
         }
 
-        debugLogger?.logFlags(action: "Apply", flag: flagName)
+        debugLogger?.logFlags(action: "Apply", flag: flagName, resolveToken: resolveToken)
         self.writeToFile(data: data)
         await triggerBatch()
     }

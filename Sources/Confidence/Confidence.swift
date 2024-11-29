@@ -64,7 +64,6 @@ public class Confidence: ConfidenceEventSender {
             }
             let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
             cache = savedFlags
-            debugLogger?.logFlags(action: "Activate", flag: "")
         }
     }
 
@@ -111,7 +110,6 @@ public class Confidence: ConfidenceEventSender {
             flags: resolvedFlags.resolvedValues,
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
-        debugLogger?.logFlags(action: "Fetch", flag: "")
         try storage.save(data: resolution)
     }
 
@@ -252,7 +250,7 @@ public class Confidence: ConfidenceEventSender {
             }
             contextSubject.value = map
             debugLogger?.logContext(
-                action: "PutContext",
+                action: "PutContextLocal",
                 context: contextSubject.value)
         }
     }
@@ -270,7 +268,7 @@ public class Confidence: ConfidenceEventSender {
             do {
                 try await fetchAndActivate()
                 debugLogger?.logContext(
-                    action: "PutContext & FetchAndActivate",
+                    action: "PutContext - Done with FetchAndActivate",
                     context: contextSubject.value)
             } catch {
                 debugLogger?.logMessage(
@@ -296,7 +294,7 @@ public class Confidence: ConfidenceEventSender {
             do {
                 try await self.fetchAndActivate()
                 debugLogger?.logContext(
-                    action: "PutContext & FetchAndActivate",
+                    action: "PutContext - Done with FetchAndActivate",
                     context: contextSubject.value)
             } catch {
                 debugLogger?.logMessage(
@@ -318,7 +316,7 @@ public class Confidence: ConfidenceEventSender {
             do {
                 try await self.fetchAndActivate()
                 debugLogger?.logContext(
-                    action: "RemoveContextKey & FetchAndActivate",
+                    action: "RemoveContext - Done with FetchAndActivate",
                     context: contextSubject.value)
             } catch {
                 debugLogger?.logMessage(

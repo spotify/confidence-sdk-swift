@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		733219BF2BE3C11100747AC2 /* ConfidenceOpenFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */; };
+		735EADF52CF9B64E007BC42C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735EADF42CF9B64E007BC42C /* LoginView.swift */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
@@ -35,6 +36,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		735EADF42CF9B64E007BC42C /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConfidenceDemoApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9782A739FA100C2AC8C /* ConfidenceDemoAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C770C9822A739FA100C2AC8C /* ConfidenceDemoAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConfidenceDemoAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -103,6 +105,7 @@
 				C770C9AA2A73A06000C2AC8C /* Info.plist */,
 				C770C9992A739FBC00C2AC8C /* Assets.xcassets */,
 				C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */,
+				735EADF42CF9B64E007BC42C /* LoginView.swift */,
 				C770C9982A739FBC00C2AC8C /* ContentView.swift */,
 				C770C9952A739FBC00C2AC8C /* Preview Content */,
 			);
@@ -285,6 +288,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				735EADF52CF9B64E007BC42C /* LoginView.swift in Sources */,
 				C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */,
 				C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */,
 			);
