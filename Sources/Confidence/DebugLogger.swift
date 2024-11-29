@@ -5,6 +5,7 @@ internal protocol DebugLogger {
     func logEvent(action: String, event: ConfidenceEvent?)
     func logMessage(message: String, isWarning: Bool)
     func logFlags(action: String, flag: String)
+    func logFlags(action: String, context: ConfidenceStruct)
     func logContext(action: String, context: ConfidenceStruct)
     func logResolveDebugURL(flagName: String, context: ConfidenceStruct)
 }
@@ -60,6 +61,10 @@ internal class DebugLoggerImpl: DebugLogger {
 
     func logFlags(action: String, flag: String) {
         log(messageLevel: .TRACE, message: "[\(action)] \(flag)")
+    }
+
+    func logFlags(action: String, context: ConfidenceStruct) {
+        log(messageLevel: .TRACE, message: "[\(action)] \(context)")
     }
 
     func logContext(action: String, context: ConfidenceStruct) {
