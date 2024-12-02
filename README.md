@@ -50,38 +50,57 @@ If your app is using some of the features of Swift 6, we recommend setting the *
 ```swift
 import Confidence
 
-let confidence = Confidence.Builder(clientSecret: "mysecret", loggerLevel: .NONE).build()
+let confidence = Confidence
+   .Builder(clientSecret: "mysecret", loggerLevel: .NONE)
+   .withContext(context: ["user_id": ConfidenceValue(string: "user_1")])
+   .build()
 await confidence.fetchAndActivate()
 ```
 
 - The `clientSecret` for your application can be generated in the Confidence portal.
 - The `loggerLevel` sets the verbosity level for logging to console. This can be useful while testing your integration with the Confidence SDK.
+- `withContext()` sets the initial context. The context is a key-value map used for sampling and for targeting, so it determines how flags are evaluated by the Confidence backend.
 
 _Note: the Confidence SDK has been intended to work as a single instance in your Application.
 Creating multiple instances in the same runtime could lead to unexpected behaviours._
 
 ### Initialization strategy
 
-`confidence.activateAndFetch()` is an async function that fetches the flags from the Confidence backend,
-stores the result on disk, and make the same data ready for the Application to be consumed.
+After creating the confidence instance, you can choose between different strategies to initialize the SDK:
+- `await confidence.fetchAndActivate()`: async function that fetches the flags from the Confidence backend according to the current context,
+stores the result in storage, and make the same data ready for the Application to be consumed.
 
-The alternative option is to call `confidence.activate()`: this loads previously fetched flags data
+- `confidence.activate()`: this loads previously fetched flags data
 from storage and makes that available for the Application to consume right away.
-To avoid waiting on backend calls when the Application starts, the suggested approach is to call
-`confidence.activate()` and then trigger a background refresh via `confidence.asyncFetch()` for future sessions.
 
-### Setting the context
-The context is a key-value map used for sampling and for targeting, when flag are evaluated by the Confidence backend.
-It is also appended to the tracked events, making it a great way to create dimensions for metrics in Confidence.
+If you wish to avoid waiting on backend calls when the Application starts, the suggested approach is to call
+`confidence.activate()` and then call `confidence.asyncFetch()` to update the flag values in storage to be used on a future `activate()`. 
+
+**Important:** `confidence.activate()` ignores the current context: even if the current context has changed since the last fetch, flag values from the last fetch will be exposed to the Application.
+
+### Managing the context
+The context is set when instantiating the Confidence instance, but it can be updated at runtime:
 
 ```swift
-confidence.putContext(context: ["key": ConfidenceValue(string: "value")])
+await confidence.putContext(context: ["key": ConfidenceValue(string: "value")])
+await confidence.putContext(key: "key", value: ConfidenceValue(string: "value"))
+await confidence.removeContext(key: "key")
 ```
 
-Note that a `ConfidenceValue` is accepted a map values, which has a constructor for all the value types
-supported by Confidence.
+These functions are async functions, because the flag values are fetched from the backend for the new context, put in storage and then exposed to the Application.
 
-### Resolving feature flags
+_Note: Changing the Confidence context from the Application could cause a change in the flag values._
+
+_Note: while the SDK is fetching the new values, the old values are still available for the Application to consume._
+
+When integrating the SDK in your Application, it's important to understand the implications of changing the context at runtime:
+- You might want to keep the flag values unchanged within a certain session
+- You might want to show a loading UI while re-fetching all flag values
+- You might want the UI to dynamically adapt to underlying changes in flag values
+
+You can find examples on how to implement these different scenarios in the Demo Application project within this repo.
+
+### Read flag values
 Once the Confidence instance is **activated**, you can access the flag values using the
 `getValue` method or the `getEvaluation` functions.
 Both functions use generics to return a type defined by the default value type.
