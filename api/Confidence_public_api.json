@@ -12,7 +12,11 @@
       },
       {
         "name": "asyncFetch()",
-        "declaration": "public func asyncFetch()"
+        "declaration": "public func asyncFetch() async"
+      },
+      {
+        "name": "isStorageEmpty()",
+        "declaration": "public func isStorageEmpty() -> Bool"
       },
       {
         "name": "getEvaluation(key:defaultValue:)",
@@ -23,44 +27,44 @@
         "declaration": "public func getValue<T>(key: String, defaultValue: T) -> T"
       },
       {
-        "name": "contextChanges()",
-        "declaration": "public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never>"
+        "name": "getContext()",
+        "declaration": "public func getContext() -> ConfidenceStruct"
       },
       {
-        "name": "track(eventName:data:)",
-        "declaration": "public func track(eventName: String, data: ConfidenceStruct) throws"
+        "name": "putContext(key:value:)",
+        "declaration": "public func putContext(key: String, value: ConfidenceValue) async"
+      },
+      {
+        "name": "putContext(context:removedKeys:)",
+        "declaration": "public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) async"
+      },
+      {
+        "name": "putContext(context:)",
+        "declaration": "public func putContext(context: ConfidenceStruct) async"
+      },
+      {
+        "name": "putContextLocal(context:removeKeys:)",
+        "declaration": "public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
+      },
+      {
+        "name": "removeContext(key:)",
+        "declaration": "public func removeContext(key: String) async"
+      },
+      {
+        "name": "withContext(_:)",
+        "declaration": "public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender"
       },
       {
         "name": "track(producer:)",
         "declaration": "public func track(producer: ConfidenceProducer)"
       },
       {
+        "name": "track(eventName:data:)",
+        "declaration": "public func track(eventName: String, data: ConfidenceStruct) throws"
+      },
+      {
         "name": "flush()",
         "declaration": "public func flush()"
-      },
-      {
-        "name": "getContext()",
-        "declaration": "public func getContext() -> ConfidenceStruct"
-      },
-      {
-        "name": "putContext(key:value:)",
-        "declaration": "public func putContext(key: String, value: ConfidenceValue)"
-      },
-      {
-        "name": "putContext(context:)",
-        "declaration": "public func putContext(context: ConfidenceStruct)"
-      },
-      {
-        "name": "putContext(context:removeKeys:)",
-        "declaration": "public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
-      },
-      {
-        "name": "removeContext(key:)",
-        "declaration": "public func removeContext(key: String)"
-      },
-      {
-        "name": "withContext(_:)",
-        "declaration": "public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender"
       }
     ]
   },
