@@ -32,7 +32,10 @@ internal class DebugLoggerImpl: DebugLogger {
                 URLQueryItem(name: "flag", value: "flags/\(flagName)"),
                 URLQueryItem(name: "context", value: "\(ctxNetworkString)"),
             ]
-            log(messageLevel: .DEBUG, message: "[Resolve Debug] \(url.url?.absoluteString ?? "N/A")")
+            log(messageLevel: .DEBUG, message: """
+                See resolves for \(flagName) in Confidence:
+                \(url.url?.absoluteString ?? "N/A")
+            """)
         }
     }
 
