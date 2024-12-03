@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/spotify/confidence-sdk-swift/compare/1.1.0...1.1.1) (2024-12-03)
+
+
+### 🐛 Bug Fixes
+
+* align debug resolve log wording on all platforms ([5369e04](https://github.com/spotify/confidence-sdk-swift/commit/5369e0484dc6f1241818f0798f5da2ace24fa517))
+* Align debug resolve log wording on all platforms ([#181](https://github.com/spotify/confidence-sdk-swift/issues/181)) ([5369e04](https://github.com/spotify/confidence-sdk-swift/commit/5369e0484dc6f1241818f0798f5da2ace24fa517))
+
 ## [1.1.0](https://github.com/spotify/confidence-sdk-swift/compare/1.0.1...1.1.0) (2024-11-19)
 
 
