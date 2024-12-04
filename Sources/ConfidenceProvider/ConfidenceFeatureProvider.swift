@@ -46,7 +46,9 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             if initializationStrategy == .activateAndFetchAsync {
                 try confidence.activate()
                 eventHandler.send(.ready)
-                confidence.asyncFetch()
+                Task {
+                    await confidence.asyncFetch()
+                }
             } else {
                 Task {
                     do {
