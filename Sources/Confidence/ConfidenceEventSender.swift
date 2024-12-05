@@ -20,13 +20,44 @@ public protocol ConfidenceEventSender: ConfidenceContextProvider {
     func flush()
     /**
     Adds/override entry to local context data
+    Triggers fetchAndActivate after the context change
     */
-    func putContext(key: String, value: ConfidenceValue)
+    func putContextAndWait(key: String, value: ConfidenceValue) async
+    /**
+    Adds/override entry to local context data
+    Triggers fetchAndActivate after the context change
+    */
+    func putContextAndWait(context: ConfidenceStruct) async
     /**
     Removes entry from localcontext data
     It hides entries with this key from parents' data (without modifying parents' data)
+    Triggers fetchAndActivate after the context change
     */
-    func removeKey(key: String)
+    func removeContextAndWait(key: String) async
+    /**
+    Combination of putContext and removeContext
+    */
+    func putContextAndWait(context: ConfidenceStruct, removedKeys: [String]) async
+    /**
+    Adds/override entry to local context data
+    Triggers fetchAndActivate after the context change
+    */
+    func putContext(key: String, value: ConfidenceValue)
+    /**
+    Adds/override entry to local context data
+    Triggers fetchAndActivate after the context change
+    */
+    func putContext(context: ConfidenceStruct)
+    /**
+    Removes entry from localcontext data
+    It hides entries with this key from parents' data (without modifying parents' data)
+    Triggers fetchAndActivate after the context change
+    */
+    func removeContext(key: String)
+    /**
+    Combination of putContext and removeContext
+    */
+    func putContext(context: ConfidenceStruct, removedKeys: [String])
     /**
     Creates a child event sender instance that maintains access to its parent's data
     */

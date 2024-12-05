@@ -12,7 +12,11 @@
       },
       {
         "name": "asyncFetch()",
-        "declaration": "public func asyncFetch()"
+        "declaration": "public func asyncFetch() async"
+      },
+      {
+        "name": "isStorageEmpty()",
+        "declaration": "public func isStorageEmpty() -> Bool"
       },
       {
         "name": "getEvaluation(key:defaultValue:)",
@@ -23,24 +27,28 @@
         "declaration": "public func getValue<T>(key: String, defaultValue: T) -> T"
       },
       {
-        "name": "contextChanges()",
-        "declaration": "public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never>"
-      },
-      {
-        "name": "track(eventName:data:)",
-        "declaration": "public func track(eventName: String, data: ConfidenceStruct) throws"
-      },
-      {
-        "name": "track(producer:)",
-        "declaration": "public func track(producer: ConfidenceProducer)"
-      },
-      {
-        "name": "flush()",
-        "declaration": "public func flush()"
-      },
-      {
         "name": "getContext()",
         "declaration": "public func getContext() -> ConfidenceStruct"
+      },
+      {
+        "name": "putContextAndWait(key:value:)",
+        "declaration": "public func putContextAndWait(key: String, value: ConfidenceValue) async"
+      },
+      {
+        "name": "putContextAndWait(context:removedKeys:)",
+        "declaration": "public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async"
+      },
+      {
+        "name": "putContextAndWait(context:)",
+        "declaration": "public func putContextAndWait(context: ConfidenceStruct) async"
+      },
+      {
+        "name": "removeContextAndWait(key:)",
+        "declaration": "public func removeContextAndWait(key: String) async"
+      },
+      {
+        "name": "putContextLocal(context:removeKeys:)",
+        "declaration": "public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
       },
       {
         "name": "putContext(key:value:)",
@@ -55,12 +63,32 @@
         "declaration": "public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
       },
       {
-        "name": "removeKey(key:)",
-        "declaration": "public func removeKey(key: String)"
+        "name": "removeContext(key:)",
+        "declaration": "public func removeContext(key: String)"
+      },
+      {
+        "name": "putContext(context:removedKeys:)",
+        "declaration": "public func putContext(context: ConfidenceStruct, removedKeys: [String])"
+      },
+      {
+        "name": "awaitReconciliation()",
+        "declaration": "public func awaitReconciliation() async"
       },
       {
         "name": "withContext(_:)",
         "declaration": "public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender"
+      },
+      {
+        "name": "track(producer:)",
+        "declaration": "public func track(producer: ConfidenceProducer)"
+      },
+      {
+        "name": "track(eventName:data:)",
+        "declaration": "public func track(eventName: String, data: ConfidenceStruct) throws"
+      },
+      {
+        "name": "flush()",
+        "declaration": "public func flush()"
       }
     ]
   },
