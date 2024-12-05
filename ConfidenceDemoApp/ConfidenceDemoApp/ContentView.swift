@@ -43,7 +43,7 @@ struct ContentView: View {
                     flaggingState.state = .loading
                     flaggingState.color = .gray
                     Task {
-                        await confidence.removeContext(key: "user_id")
+                        await confidence.removeContextAndWait(key: "user_id")
                         flaggingState.state = .ready
                     }
                     loggedOut = true

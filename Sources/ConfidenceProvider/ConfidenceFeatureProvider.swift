@@ -81,7 +81,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         } ?? []
 
         Task {
-            await confidence.putContext(context: ConfidenceTypeMapper.from(ctx: newContext), removedKeys: removedKeys)
+            confidence.putContext(context: ConfidenceTypeMapper.from(ctx: newContext), removedKeys: removedKeys)
         }
     }
 

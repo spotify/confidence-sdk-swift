@@ -3,6 +3,7 @@ import Foundation
 import Combine
 import os
 
+// swiftlint:disable:next type_body_length
 public class Confidence: ConfidenceEventSender {
     // User configurations
     private let clientSecret: String
@@ -22,7 +23,7 @@ public class Confidence: ConfidenceEventSender {
     // Synchronization and task management resources
     private var cancellables = Set<AnyCancellable>()
     private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
-    private let semaphore = DispatchSemaphore(value: 1)
+    private var currentFetchTask: Task<(), Never>?
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
@@ -153,11 +154,9 @@ public class Confidence: ConfidenceEventSender {
         return contextManager.getContext(parentContext: parentContext)
     }
 
-    public func putContext(key: String, value: ConfidenceValue) async {
-        await withSemaphoreAsync { [weak self] in
-            guard let self = self else {
-                return
-            }
+    public func putContextAndWait(key: String, value: ConfidenceValue) async {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: [key: value], removedKeys: [])
             do {
                 try await self.fetchAndActivate()
@@ -166,13 +165,12 @@ public class Confidence: ConfidenceEventSender {
                 debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
             }
         }
+        await awaitReconciliation()
     }
 
-    public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) async {
-        await withSemaphoreAsync { [weak self] in
-            guard let self = self else {
-                return
-            }
+    public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
             do {
                 try await self.fetchAndActivate()
@@ -181,13 +179,12 @@ public class Confidence: ConfidenceEventSender {
                 debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
             }
         }
+        await awaitReconciliation()
     }
 
-    public func putContext(context: ConfidenceStruct) async {
-        await withSemaphoreAsync { [weak self] in
-            guard let self = self else {
-                return
-            }
+    public func putContextAndWait(context: ConfidenceStruct) async {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: [])
             do {
                 try await fetchAndActivate()
@@ -200,6 +197,25 @@ public class Confidence: ConfidenceEventSender {
                     isWarning: true)
             }
         }
+        await awaitReconciliation()
+    }
+
+    public func removeContextAndWait(key: String) async {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
+            let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "RemoveContext",
+                    context: newContext)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when removing context key: \(error)",
+                    isWarning: true)
+            }
+        }
+        await awaitReconciliation()
     }
 
     /**
@@ -212,12 +228,38 @@ public class Confidence: ConfidenceEventSender {
             context: newContext)
     }
 
-    public func removeContext(key: String) async {
-        await withSemaphoreAsync { [weak self] in
-            guard let self = self else {
-                return
-            }
-            let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
+    public func putContext(key: String, value: ConfidenceValue) {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
+            await putContextAndWait(key: key, value: value)
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct) {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
+            await putContextAndWait(context: context)
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
+            await putContextAndWait(context: context, removedKeys: removedKeys)
+        }
+    }
+
+    public func removeContext(key: String) {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
+            await removeContextAndWait(key: key)
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
+        self.currentFetchTask?.cancel()
+        self.currentFetchTask = Task {
+            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
             do {
                 try await self.fetchAndActivate()
                 debugLogger?.logContext(
@@ -225,9 +267,18 @@ public class Confidence: ConfidenceEventSender {
                     context: newContext)
             } catch {
                 debugLogger?.logMessage(
-                    message: "Error when removing context key: \(error)",
+                    message: "Error when putting context: \(error)",
                     isWarning: true)
             }
+        }
+    }
+
+    /**
+    Ensures all the already-started context changes prior to this function have been reconciliated
+    */
+    public func awaitReconciliation() async {
+        if let task = self.currentFetchTask {
+            await task.value
         }
     }
 
@@ -270,7 +321,7 @@ public class Confidence: ConfidenceEventSender {
                 .sink { [weak self] context in
                     Task { [weak self] in
                         guard let self = self else { return }
-                        await self.putContext(context: context)
+                        await self.putContextAndWait(context: context)
                     }
                 }
                 .store(in: &cancellables)
@@ -287,17 +338,6 @@ public class Confidence: ConfidenceEventSender {
 
     public func flush() {
         eventSenderEngine.flush()
-    }
-
-    private func withSemaphoreAsync(callback: @escaping () async -> Void) async {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global().async {
-                self.semaphore.wait()
-                continuation.resume()
-            }
-        }
-        await callback()
-        semaphore.signal()
     }
 }
 
