@@ -31,24 +31,48 @@
         "declaration": "public func getContext() -> ConfidenceStruct"
       },
       {
-        "name": "putContext(key:value:)",
-        "declaration": "public func putContext(key: String, value: ConfidenceValue) async"
+        "name": "putContextAndWait(key:value:)",
+        "declaration": "public func putContextAndWait(key: String, value: ConfidenceValue) async"
       },
       {
-        "name": "putContext(context:removedKeys:)",
-        "declaration": "public func putContext(context: ConfidenceStruct, removedKeys: [String] = []) async"
+        "name": "putContextAndWait(context:removedKeys:)",
+        "declaration": "public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async"
       },
       {
-        "name": "putContext(context:)",
-        "declaration": "public func putContext(context: ConfidenceStruct) async"
+        "name": "putContextAndWait(context:)",
+        "declaration": "public func putContextAndWait(context: ConfidenceStruct) async"
+      },
+      {
+        "name": "removeContextAndWait(key:)",
+        "declaration": "public func removeContextAndWait(key: String) async"
       },
       {
         "name": "putContextLocal(context:removeKeys:)",
         "declaration": "public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
       },
       {
+        "name": "putContext(key:value:)",
+        "declaration": "public func putContext(key: String, value: ConfidenceValue)"
+      },
+      {
+        "name": "putContext(context:)",
+        "declaration": "public func putContext(context: ConfidenceStruct)"
+      },
+      {
+        "name": "putContext(context:removeKeys:)",
+        "declaration": "public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
+      },
+      {
         "name": "removeContext(key:)",
-        "declaration": "public func removeContext(key: String) async"
+        "declaration": "public func removeContext(key: String)"
+      },
+      {
+        "name": "putContext(context:removedKeys:)",
+        "declaration": "public func putContext(context: ConfidenceStruct, removedKeys: [String])"
+      },
+      {
+        "name": "awaitReconciliation()",
+        "declaration": "public func awaitReconciliation() async"
       },
       {
         "name": "withContext(_:)",

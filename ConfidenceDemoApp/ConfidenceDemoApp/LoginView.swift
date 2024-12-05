@@ -43,7 +43,7 @@ struct LoginView: View {
                             flaggingState.state = .loading
                             try? await Task.sleep(nanoseconds: 5 * 1_000_000_000) // simulating network delay
                             // putContext adds the user_id field to the evaluation context and fetches values for it
-                            await confidence.putContext(context: ["user_id": .init(string: "user1")])
+                            await confidence.putContextAndWait(context: ["user_id": .init(string: "user1")])
                             flaggingState.state = .ready
                         }
 

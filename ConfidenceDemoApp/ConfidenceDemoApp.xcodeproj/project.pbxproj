@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		733219BF2BE3C11100747AC2 /* ConfidenceOpenFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */; };
 		735EADF52CF9B64E007BC42C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735EADF42CF9B64E007BC42C /* LoginView.swift */; };
-		7383EED62D01EE8300EC738D /* Confidence in Frameworks */ = {isa = PBXBuildFile; productRef = 7383EED52D01EE8300EC738D /* Confidence */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
 		C770C99C2A739FBC00C2AC8C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9982A739FBC00C2AC8C /* ContentView.swift */; };
@@ -57,7 +56,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7383EED62D01EE8300EC738D /* Confidence in Frameworks */,
 				733219BF2BE3C11100747AC2 /* ConfidenceOpenFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -172,7 +170,6 @@
 			name = ConfidenceDemoApp;
 			packageProductDependencies = (
 				733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */,
-				7383EED52D01EE8300EC738D /* Confidence */,
 			);
 			productName = ConfidenceDemoApp;
 			productReference = C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */;
@@ -250,7 +247,6 @@
 			);
 			mainGroup = C770C95F2A739FA000C2AC8C;
 			packageReferences = (
-				7383EED42D01EE8300EC738D /* XCRemoteSwiftPackageReference "confidence-sdk-swift" */,
 			);
 			productRefGroup = C770C9692A739FA000C2AC8C /* Products */;
 			projectDirPath = "";
@@ -649,26 +645,10 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		7383EED42D01EE8300EC738D /* XCRemoteSwiftPackageReference "confidence-sdk-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:spotify/confidence-sdk-swift.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.1.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
 		733219BE2BE3C11100747AC2 /* ConfidenceOpenFeature */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ConfidenceOpenFeature;
-		};
-		7383EED52D01EE8300EC738D /* Confidence */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7383EED42D01EE8300EC738D /* XCRemoteSwiftPackageReference "confidence-sdk-swift" */;
-			productName = Confidence;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
