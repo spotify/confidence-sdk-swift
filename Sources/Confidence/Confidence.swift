@@ -95,6 +95,13 @@ public class Confidence: ConfidenceEventSender {
         }
     }
 
+    /**
+    Ensures all the already-started context changes prior to this function have been reconciliated
+    */
+    public func awaitReconciliation() async {
+        await withSemaphoreAsync {}
+    }
+
     private func internalFetch() async throws {
         let context = getContext()
         let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
