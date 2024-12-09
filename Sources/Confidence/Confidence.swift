@@ -23,7 +23,13 @@ public class Confidence: ConfidenceEventSender {
     // Synchronization and task management resources
     private var cancellables = Set<AnyCancellable>()
     private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
-    private var currentFetchTask: Task<(), Never>?
+    private var currentFetchTask: Task<(), Never>? {
+        didSet {
+            if let oldTask = oldValue {
+                oldTask.cancel()
+            }
+        }
+    }
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
@@ -155,7 +161,6 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(key: String, value: ConfidenceValue) async {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: [key: value], removedKeys: [])
             do {
@@ -169,7 +174,6 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
             do {
@@ -183,7 +187,6 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(context: ConfidenceStruct) async {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: [])
             do {
@@ -201,7 +204,6 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func removeContextAndWait(key: String) async {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
             do {
@@ -229,35 +231,30 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContext(key: String, value: ConfidenceValue) {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             await putContextAndWait(key: key, value: value)
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             await putContextAndWait(context: context)
         }
     }
 
     public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             await putContextAndWait(context: context, removedKeys: removedKeys)
         }
     }
 
     public func removeContext(key: String) {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             await removeContextAndWait(key: key)
         }
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
-        self.currentFetchTask?.cancel()
         self.currentFetchTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
             do {
@@ -277,8 +274,22 @@ public class Confidence: ConfidenceEventSender {
     Ensures all the already-started context changes prior to this function have been reconciliated
     */
     public func awaitReconciliation() async {
-        if let task = self.currentFetchTask {
+        while let task = self.currentFetchTask {
+            // If current task is cancelled, return
+            if task.isCancelled {
+                return
+            }
+            // Wait for result of current task
             await task.value
+            // If current task gets cancelled, check again if a new task was set
+            if task.isCancelled {
+                continue
+            }
+            // If current task finished successfully
+            // and the set task has not changed, we are done waiting
+            if self.currentFetchTask == task {
+                return
+            }
         }
     }
 

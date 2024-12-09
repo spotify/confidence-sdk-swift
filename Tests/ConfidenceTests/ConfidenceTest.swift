@@ -107,8 +107,8 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(2, client.resolveContexts.count)
         XCTAssertEqual(confidence.getContext(), client.resolveContexts[1])
     }
+
     // swiftlint:enable function_body_length
- 
     func testRefresh() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -486,6 +486,64 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testAwaitReconciliationFailingTask() async throws {
+        class FakeClient: XCTestCase, ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                if resolveStats == 1 {
+                    // Delay to ensure the second putContext cancels this Task
+                    try await Task.sleep(nanoseconds: 2000000)
+                    XCTFail("This line shouldn't be reached as task is expected to be cancelled")
+                    return .init(resolvedValues: [], resolveToken: "token")
+                } else {
+                    if ctx["hello"] == .init(string: "world") {
+                        return .init(resolvedValues: resolvedValues, resolveToken: "token")
+                    } else {
+                        return .init(resolvedValues: [], resolveToken: "token")
+                    }
+                }
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .withStorage(storage: storage)
+            .build()
+
+        confidence.putContext(context: ["hello": .init(string: "not-world")])
+        Task {
+            confidence.putContext(context: ["hello": .init(string: "world")])
+        }
+        await confidence.awaitReconciliation()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: 0
+        )
+
+        XCTAssertEqual(client.resolveStats, 2)
+        XCTAssertEqual(evaluation.value, 3)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
         await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
