@@ -358,7 +358,7 @@ class ConfidenceTest: XCTestCase {
         await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
-    
+
     func testAwaitReconciliation() async throws {
         class FakeClient: XCTestCase, ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -368,7 +368,7 @@ class ConfidenceTest: XCTestCase {
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
         }
-        
+
         let client = FakeClient()
         client.resolvedValues = [
             ResolvedValue(
@@ -377,7 +377,7 @@ class ConfidenceTest: XCTestCase {
                 flag: "flag",
                 resolveReason: .match)
         ]
-        
+
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
             .withFlagResolverClient(flagResolver: client)
@@ -388,7 +388,7 @@ class ConfidenceTest: XCTestCase {
         let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0)
-        
+
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value, 3)
         XCTAssertNil(evaluation.errorCode)
