@@ -30,7 +30,7 @@ final class ConfidenceContextTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testWithContextUpdateParent() {
+    func testWithContextUpdateParent() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -51,7 +51,7 @@ final class ConfidenceContextTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceParent.putContext(
+        await confidenceParent.putContextAndWait(
             key: "k3",
             value: ConfidenceValue(string: "v3"))
         let expected = [
@@ -62,7 +62,7 @@ final class ConfidenceContextTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testUpdateLocalContext() {
+    func testUpdateLocalContext() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -80,7 +80,7 @@ final class ConfidenceContextTests: XCTestCase {
             parent: nil,
             debugLogger: nil
         )
-        confidence.putContext(
+        await confidence.putContextAndWait(
             key: "k1",
             value: ConfidenceValue(string: "v3"))
         let expected = [
@@ -89,7 +89,7 @@ final class ConfidenceContextTests: XCTestCase {
         XCTAssertEqual(confidence.getContext(), expected)
     }
 
-    func testUpdateLocalContextWithoutOverride() {
+    func testUpdateLocalContextWithoutOverride() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -110,7 +110,7 @@ final class ConfidenceContextTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceChild.putContext(
+        await confidenceChild.putContextAndWait(
             key: "k2",
             value: ConfidenceValue(string: "v4"))
         let expected = [
@@ -120,7 +120,7 @@ final class ConfidenceContextTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testUpdateParentContextWithOverride() {
+    func testUpdateParentContextWithOverride() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -141,7 +141,7 @@ final class ConfidenceContextTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceParent.putContext(
+        await confidenceParent.putContextAndWait(
             key: "k2",
             value: ConfidenceValue(string: "v4"))
         let expected = [
@@ -151,7 +151,7 @@ final class ConfidenceContextTests: XCTestCase {
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testRemoveContextEntry() {
+    func testRemoveContextEntry() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -169,14 +169,14 @@ final class ConfidenceContextTests: XCTestCase {
             parent: nil,
             debugLogger: nil
         )
-        confidence.removeKey(key: "k2")
+        await confidence.removeContextAndWait(key: "k2")
         let expected = [
             "k1": ConfidenceValue(string: "v1")
         ]
         XCTAssertEqual(confidence.getContext(), expected)
     }
 
-    func testRemoveContextEntryFromParent() {
+    func testRemoveContextEntryFromParent() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -197,14 +197,14 @@ final class ConfidenceContextTests: XCTestCase {
         let confidenceChild: ConfidenceEventSender = confidenceParent.withContext(
             ["k2": ConfidenceValue(string: "v2")]
         )
-        confidenceChild.removeKey(key: "k1")
+        await confidenceChild.removeContextAndWait(key: "k1")
         let expected = [
             "k2": ConfidenceValue(string: "v2")
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testRemoveContextEntryFromParentAndChild() {
+    func testRemoveContextEntryFromParentAndChild() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -228,14 +228,14 @@ final class ConfidenceContextTests: XCTestCase {
                 "k1": ConfidenceValue(string: "v3"),
             ]
         )
-        confidenceChild.removeKey(key: "k1")
+        await confidenceChild.removeContextAndWait(key: "k1")
         let expected = [
             "k2": ConfidenceValue(string: "v2")
         ]
         XCTAssertEqual(confidenceChild.getContext(), expected)
     }
 
-    func testRemoveContextEntryFromParentAndChildThenUpdate() {
+    func testRemoveContextEntryFromParentAndChildThenUpdate() async {
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
@@ -259,8 +259,8 @@ final class ConfidenceContextTests: XCTestCase {
                 "k1": ConfidenceValue(string: "v3"),
             ]
         )
-        confidenceChild.removeKey(key: "k1")
-        confidenceChild.putContext(key: "k1", value: ConfidenceValue(string: "v4"))
+        await confidenceChild.removeContextAndWait(key: "k1")
+        await confidenceChild.putContextAndWait(key: "k1", value: ConfidenceValue(string: "v4"))
         let expected = [
             "k2": ConfidenceValue(string: "v2"),
             "k1": ConfidenceValue(string: "v4"),
