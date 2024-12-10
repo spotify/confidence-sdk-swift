@@ -3,25 +3,30 @@ import Foundation
 import Combine
 import os
 
+// swiftlint:disable:next type_body_length
 public class Confidence: ConfidenceEventSender {
+    // User configurations
     private let clientSecret: String
-    private var region: ConfidenceRegion
-    private let parent: ConfidenceContextProvider?
-    private let eventSenderEngine: EventSenderEngine
-    private let contextSubject = CurrentValueSubject<ConfidenceStruct, Never>([:])
-    private var removedContextKeys: Set<String> = Set()
-    private let contextSubjectQueue = DispatchQueue(label: "com.confidence.queue.contextsubject")
-    private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
-    private let flagApplier: FlagApplier
-    private var cache = FlagResolution.EMPTY
-    private var storage: Storage
-    private var cancellables = Set<AnyCancellable>()
-    private var currentFetchTask: Task<(), Never>?
+    private let region: ConfidenceRegion
     private let debugLogger: DebugLogger?
+
+    // Resources related to managing context and flags
+    private let parentContextProvider: ConfidenceContextProvider?
+    private let contextManager: ContextManager
+    private var cache = FlagResolution.EMPTY
+
+    // Core components managing internal SDK functionality
+    private let eventSenderEngine: EventSenderEngine
+    private let storage: Storage
+    private let flagApplier: FlagApplier
+
+    // Synchronization and task management resources
+    private var cancellables = Set<AnyCancellable>()
+    private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
+    private var taskManager = TaskManager()
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
-    internal let contextReconciliatedChanges = PassthroughSubject<String, Never>()
 
     public static let sdkId: String = "SDK_ID_SWIFT_CONFIDENCE"
 
@@ -41,35 +46,14 @@ public class Confidence: ConfidenceEventSender {
         self.clientSecret = clientSecret
         self.region = region
         self.storage = storage
-        self.contextSubject.value = context
-        self.parent = parent
-        self.storage = storage
+        self.contextManager = ContextManager(initialContext: context)
+        self.parentContextProvider = parent
         self.flagApplier = flagApplier
         self.remoteFlagResolver = remoteFlagResolver
         self.debugLogger = debugLogger
         if let visitorId {
-            putContext(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
+            putContextLocal(context: ["visitor_id": ConfidenceValue.init(string: visitorId)])
         }
-
-        contextChanges().sink { [weak self] context in
-            guard let self = self else {
-                return
-            }
-            self.currentFetchTask?.cancel()
-            self.currentFetchTask = Task {
-                do {
-                    let context = self.getContext()
-                    try await self.fetchAndActivate()
-                    self.contextReconciliatedChanges.send(context.hash())
-                } catch {
-                    debugLogger?.logMessage(
-                        message: "\(error)",
-                        isWarning: true
-                    )
-                }
-            }
-        }
-        .store(in: &cancellables)
     }
 
     /**
@@ -83,7 +67,6 @@ public class Confidence: ConfidenceEventSender {
             }
             let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
             cache = savedFlags
-            debugLogger?.logFlags(action: "Activate", flag: "")
         }
     }
 
@@ -94,14 +77,7 @@ public class Confidence: ConfidenceEventSender {
     Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data on disk.
     */
     public func fetchAndActivate() async throws {
-        do {
-            try await internalFetch()
-        } catch {
-            debugLogger?.logMessage(
-                message: "\(error)",
-                isWarning: true
-            )
-        }
+        await asyncFetch()
         try activate()
     }
 
@@ -109,20 +85,18 @@ public class Confidence: ConfidenceEventSender {
     Fetch latest flag evaluations and store them on disk. Note that "activate" must be called for this data to be
     made available in the app session.
     */
-    public func asyncFetch() {
-        Task {
-            do {
-                try await internalFetch()
-            } catch {
-                debugLogger?.logMessage(
-                    message: "\(error )",
-                    isWarning: true
-                )
-            }
+    public func asyncFetch() async {
+        do {
+            try await internalFetch()
+        } catch {
+            debugLogger?.logMessage(
+                message: "\(error )",
+                isWarning: true
+            )
         }
     }
 
-    func internalFetch() async throws {
+    private func internalFetch() async throws {
         let context = getContext()
         let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
         let resolution = FlagResolution(
@@ -130,8 +104,14 @@ public class Confidence: ConfidenceEventSender {
             flags: resolvedFlags.resolvedValues,
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
-        debugLogger?.logFlags(action: "Fetch", flag: "")
         try storage.save(data: resolution)
+    }
+
+    /**
+    Returns true if any flag is found in storage.
+    */
+    public func isStorageEmpty() -> Bool {
+        return storage.isEmpty()
     }
 
     /**
@@ -169,25 +149,139 @@ public class Confidence: ConfidenceEventSender {
         return getEvaluation(key: key, defaultValue: defaultValue).value
     }
 
-    func isStorageEmpty() -> Bool {
-        return storage.isEmpty()
+    public func getContext() -> ConfidenceStruct {
+        let parentContext = parentContextProvider?.getContext() ?? [:]
+        return contextManager.getContext(parentContext: parentContext)
+    }
+
+    public func putContextAndWait(key: String, value: ConfidenceValue) async {
+        taskManager.currentTask = Task {
+            let newContext = contextManager.updateContext(withValues: [key: value], removedKeys: [])
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(action: "PutContext", context: newContext)
+            } catch {
+                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+            }
+        }
+        await awaitReconciliation()
+    }
+
+    public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async {
+        taskManager.currentTask = Task {
+            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(action: "PutContext", context: newContext)
+            } catch {
+                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+            }
+        }
+        await awaitReconciliation()
+    }
+
+    public func putContextAndWait(context: ConfidenceStruct) async {
+        taskManager.currentTask = Task {
+            let newContext = contextManager.updateContext(withValues: context, removedKeys: [])
+            do {
+                try await fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "PutContext",
+                    context: newContext)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when putting context: \(error)",
+                    isWarning: true)
+            }
+        }
+        await awaitReconciliation()
+    }
+
+    public func removeContextAndWait(key: String) async {
+        taskManager.currentTask = Task {
+            let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "RemoveContext",
+                    context: newContext)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when removing context key: \(error)",
+                    isWarning: true)
+            }
+        }
+        await awaitReconciliation()
     }
 
     /**
-    Listen to changes in the context that is local to this Confidence instance.
+    Adds/override entry to local context data. Does not trigger fetchAndActivate after the context change.
     */
-    public func contextChanges() -> AnyPublisher<ConfidenceStruct, Never> {
-        return contextSubject
-            .dropFirst()
-            .removeDuplicates()
-            .eraseToAnyPublisher()
+    public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
+        let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+        debugLogger?.logContext(
+            action: "PutContextLocal",
+            context: newContext)
     }
 
-    public func track(eventName: String, data: ConfidenceStruct) throws {
-        try eventSenderEngine.emit(
-            eventName: eventName,
-            data: data,
-            context: getContext()
+    public func putContext(key: String, value: ConfidenceValue) {
+        taskManager.currentTask = Task {
+            await putContextAndWait(key: key, value: value)
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct) {
+        taskManager.currentTask = Task {
+            await putContextAndWait(context: context)
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
+        taskManager.currentTask = Task {
+            await putContextAndWait(context: context, removedKeys: removedKeys)
+        }
+    }
+
+    public func removeContext(key: String) {
+        taskManager.currentTask = Task {
+            await removeContextAndWait(key: key)
+        }
+    }
+
+    public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
+        taskManager.currentTask = Task {
+            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+            do {
+                try await self.fetchAndActivate()
+                debugLogger?.logContext(
+                    action: "RemoveContext",
+                    context: newContext)
+            } catch {
+                debugLogger?.logMessage(
+                    message: "Error when putting context: \(error)",
+                    isWarning: true)
+            }
+        }
+    }
+
+    /**
+    Ensures all the already-started context changes prior to this function have been reconciliated
+    */
+    public func awaitReconciliation() async {
+        await taskManager.awaitReconciliation()
+    }
+
+    public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {
+        return Self.init(
+            clientSecret: clientSecret,
+            region: region,
+            eventSenderEngine: eventSenderEngine,
+            flagApplier: flagApplier,
+            remoteFlagResolver: remoteFlagResolver,
+            storage: storage,
+            context: context,
+            parent: self,
+            debugLogger: debugLogger
         )
     }
 
@@ -214,94 +308,67 @@ public class Confidence: ConfidenceEventSender {
         if let contextProducer = producer as? ConfidenceContextProducer {
             contextProducer.produceContexts()
                 .sink { [weak self] context in
-                    guard let self = self else {
-                        return
+                    Task { [weak self] in
+                        guard let self = self else { return }
+                        await self.putContextAndWait(context: context)
                     }
-                    self.putContext(context: context)
                 }
                 .store(in: &cancellables)
         }
     }
 
-    public func flush() {
-        eventSenderEngine.flush()
-    }
-
-    public func getContext() -> ConfidenceStruct {
-        let parentContext = parent?.getContext() ?? [:]
-        var reconciledCtx = parentContext.filter {
-            !removedContextKeys.contains($0.key)
-        }
-        self.contextSubject.value.forEach { entry in
-            reconciledCtx.updateValue(entry.value, forKey: entry.key)
-        }
-        return reconciledCtx
-    }
-
-    public func putContext(key: String, value: ConfidenceValue) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
-            map[key] = value
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
-        }
-    }
-
-    public func putContext(context: ConfidenceStruct) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
-            for entry in context {
-                map.updateValue(entry.value, forKey: entry.key)
-            }
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
-        }
-    }
-
-    public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
-            for removedKey in removedKeys {
-                map.removeValue(forKey: removedKey)
-            }
-            for entry in context {
-                map.updateValue(entry.value, forKey: entry.key)
-            }
-            confidence.contextSubject.value = map
-            confidence.debugLogger?.logContext(action: "PutContext", context: confidence.contextSubject.value)
-        }
-    }
-
-    public func removeKey(key: String) {
-        withLock { confidence in
-            var map = confidence.contextSubject.value
-            map.removeValue(forKey: key)
-            confidence.contextSubject.value = map
-            confidence.removedContextKeys.insert(key)
-            confidence.debugLogger?.logContext(action: "RemoveContext", context: confidence.contextSubject.value)
-        }
-    }
-
-    public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {
-        return Self.init(
-            clientSecret: clientSecret,
-            region: region,
-            eventSenderEngine: eventSenderEngine,
-            flagApplier: flagApplier,
-            remoteFlagResolver: remoteFlagResolver,
-            storage: storage,
-            context: context,
-            parent: self,
-            debugLogger: debugLogger
+    public func track(eventName: String, data: ConfidenceStruct) throws {
+        try eventSenderEngine.emit(
+            eventName: eventName,
+            data: data,
+            context: getContext()
         )
     }
 
-    private func withLock(callback: @escaping (Confidence) -> Void) {
-        contextSubjectQueue.sync {  [weak self] in
+    public func flush() {
+        eventSenderEngine.flush()
+    }
+}
+
+private class ContextManager {
+    private var context: ConfidenceStruct = [:]
+    private var removedContextKeys: Set<String> = Set()
+    private let contextQueue = DispatchQueue(label: "com.confidence.queue.context")
+
+    public init(initialContext: ConfidenceStruct) {
+        context = initialContext
+    }
+
+    func updateContext(withValues: ConfidenceStruct, removedKeys: [String]) -> ConfidenceStruct {
+        contextQueue.sync {  [weak self] in
             guard let self = self else {
-                return
+                return [:]
             }
-            callback(self)
+            var map = self.context
+            for removedKey in removedKeys {
+                map.removeValue(forKey: removedKey)
+                removedContextKeys.insert(removedKey)
+            }
+            for entry in withValues {
+                map.updateValue(entry.value, forKey: entry.key)
+            }
+            self.context = map
+            return self.context
+        }
+    }
+
+    func getContext(parentContext: ConfidenceStruct) -> ConfidenceStruct {
+        contextQueue.sync {  [weak self] in
+            guard let self = self else {
+                return [:]
+            }
+            var reconciledCtx = parentContext.filter {
+                !self.removedContextKeys.contains($0.key)
+            }
+            context.forEach { entry in
+                reconciledCtx.updateValue(entry.value, forKey: entry.key)
+            }
+            return reconciledCtx
         }
     }
 }

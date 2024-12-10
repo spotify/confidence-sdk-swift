@@ -4,7 +4,7 @@ excluded:
   - ${PWD}/DerivedData
   - ${PWD}/.build
   - ${PWD}/Tools/*/.build
-  - ${PWD}/Sources/ConfidenceProvider/FlagResolver/
+  - ${PWD}/ConfidenceDemoApp
 
 disabled_rules:
   - discarded_notification_center_observer
@@ -19,8 +19,8 @@ analyzer_rules:
   - unused_import
 
 opt_in_rules:
-  - array_init
   - attributes
+  - array_init
   - closure_end_indentation
   - closure_spacing
   - collection_alignment
