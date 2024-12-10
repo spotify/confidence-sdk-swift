@@ -23,13 +23,7 @@ public class Confidence: ConfidenceEventSender {
     // Synchronization and task management resources
     private var cancellables = Set<AnyCancellable>()
     private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
-    private var currentFetchTask: Task<(), Never>? {
-        didSet {
-            if let oldTask = oldValue {
-                oldTask.cancel()
-            }
-        }
-    }
+    private var taskManager = TaskManager()
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
@@ -161,7 +155,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(key: String, value: ConfidenceValue) async {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             let newContext = contextManager.updateContext(withValues: [key: value], removedKeys: [])
             do {
                 try await self.fetchAndActivate()
@@ -174,7 +168,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
             do {
                 try await self.fetchAndActivate()
@@ -187,7 +181,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(context: ConfidenceStruct) async {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: [])
             do {
                 try await fetchAndActivate()
@@ -204,7 +198,7 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func removeContextAndWait(key: String) async {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
             do {
                 try await self.fetchAndActivate()
@@ -231,31 +225,31 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContext(key: String, value: ConfidenceValue) {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             await putContextAndWait(key: key, value: value)
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             await putContextAndWait(context: context)
         }
     }
 
     public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             await putContextAndWait(context: context, removedKeys: removedKeys)
         }
     }
 
     public func removeContext(key: String) {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             await removeContextAndWait(key: key)
         }
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
-        self.currentFetchTask = Task {
+        taskManager.currentTask = Task {
             let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
             do {
                 try await self.fetchAndActivate()
@@ -274,23 +268,7 @@ public class Confidence: ConfidenceEventSender {
     Ensures all the already-started context changes prior to this function have been reconciliated
     */
     public func awaitReconciliation() async {
-        while let task = self.currentFetchTask {
-            // If current task is cancelled, return
-            if task.isCancelled {
-                return
-            }
-            // Wait for result of current task
-            await task.value
-            // If current task gets cancelled, check again if a new task was set
-            if task.isCancelled {
-                continue
-            }
-            // If current task finished successfully
-            // and the set task has not changed, we are done waiting
-            if self.currentFetchTask == task {
-                return
-            }
-        }
+        await taskManager.awaitReconciliation()
     }
 
     public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {
