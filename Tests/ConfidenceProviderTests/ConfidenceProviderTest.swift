@@ -21,16 +21,17 @@ class ConfidenceProviderTest: XCTestCase {
             .withFlagResolverClient(flagResolver: client)
             .build()
 
-        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .activateAndFetchAsync)
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
             if event == .ready {
                 readyExpectation.fulfill()
             } else {
-                print(event)
+                print(event.debugDescription)
             }
         }
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .activateAndFetchAsync)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+
         await fulfillment(of: [readyExpectation], timeout: 5.0)
         cancellable.cancel()
     }
@@ -60,16 +61,19 @@ class ConfidenceProviderTest: XCTestCase {
             .withStorage(storage: FakeStorage())
             .build()
 
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if let event = event {
+                if case .error = event {
+                    errorExpectation.fulfill()
+                } else {
+                    // no-op
+                }
+            }
+        }
+
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .activateAndFetchAsync)
         OpenFeatureAPI.shared.setProvider(provider: provider)
 
-        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if event == .error {
-                errorExpectation.fulfill()
-            } else {
-                print(event)
-            }
-        }
         await fulfillment(of: [errorExpectation], timeout: 5.0)
         cancellable.cancel()
     }
@@ -103,7 +107,7 @@ class ConfidenceProviderTest: XCTestCase {
             if event == .ready {
                 readyExpectation.fulfill()
             } else {
-                print(event)
+                print(event.debugDescription)
             }
         }
         await fulfillment(of: [readyExpectation], timeout: 1.0)
