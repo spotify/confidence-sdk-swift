@@ -28,9 +28,9 @@ struct ConfidenceDemoApp: App {
         
         let contextProducer = ConfidenceDeviceInfoContextDecorator.builder()
             .withLocale()
-            .withBundleId()
+            .withOsInfo()
             .withDeviceInfo()
-            .withVersionInfo()
+            .withAppInfo()
             .build()
 
         confidence.track(producer: contextProducer)

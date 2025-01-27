@@ -34,28 +34,38 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             self.initialContext = ConfidenceStruct()
         }
 
-        public func withVersionInfo() -> Builder {
+        public func withAppInfo() -> Builder {
             let currentVersion: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
             let currentBuild: String = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
-            initialContext["app_version"] = .init(string: currentVersion)
-            initialContext["app_build"] = .init(string: currentBuild)
-            return self
-        }
-
-        public func withBundleId() -> Builder {
             let bundleId = Bundle.main.bundleIdentifier ?? ""
-            initialContext["bundle_id"] = .init(string: bundleId)
+
+            initialContext["app"] = .init(structure: [
+                "version": .init(string: currentVersion),
+                "build": .init(string: currentBuild),
+                "namespace": .init(string: bundleId)
+            ])
             return self
         }
 
         public func withDeviceInfo() -> Builder {
-            // Fetch device properties
             let device = UIDevice.current
 
-            // Set the context with the desired properties
-            initialContext["device_model"] = .init(string: device.model)             // Device model (e.g., "iPhone")
-            initialContext["system_name"] = .init(string: device.systemName)         // OS name (e.g., "iOS")
-            initialContext["system_version"] = .init(string: device.systemVersion)   // OS version (e.g., "16.2")
+            initialContext["device"] = .init(structure: [
+                "manufacturer": .init(string: "Apple"),
+                "model": .init(string: getDeviceModelIdentifier()),
+                "type": .init(string: device.model),
+
+            ])
+            return self
+        }
+
+        public func withOsInfo() -> Builder {
+            let device = UIDevice.current
+
+            initialContext["os"] = .init(structure: [
+                "name": .init(string: device.systemName),
+                "version": .init(string: device.systemVersion)
+            ])
             return self
         }
 
@@ -63,7 +73,8 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             let locale = Locale.current
             let preferredLanguages = Locale.preferredLanguages
 
-            initialContext["locale_identifier"] = .init(string: locale.identifier) // Locale identifier (e.g., "en_US")
+            // Top level fields
+            initialContext["locale"] = .init(string: locale.identifier) // Locale identifier (e.g., "en_US")
             initialContext["preferred_languages"] = .init(list: preferredLanguages.map { lang in
                 .init(string: lang)
             })
@@ -75,5 +86,15 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             return ConfidenceDeviceInfoContextDecorator(context: initialContext)
         }
     }
+    private static func getDeviceModelIdentifier() -> String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        let identifier = machineMirror.children.compactMap { element in
+            element.value as? Int8
+        }.filter { $0 != 0 }.map { Character(UnicodeScalar(UInt8($0))) }
+        return String(identifier)
+    }
+
 }
 #endif
