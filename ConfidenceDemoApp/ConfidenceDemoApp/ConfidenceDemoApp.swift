@@ -25,6 +25,15 @@ struct ConfidenceDemoApp: App {
             .Builder(clientSecret: secret, loggerLevel: .TRACE)
             .withContext(initialContext: context)
             .build()
+        
+        let contextProducer = ConfidenceDeviceInfoContextDecorator.builder()
+            .withLocale()
+            .withBundleId()
+            .withDeviceInfo()
+            .withVersionInfo()
+            .build()
+
+        confidence.track(producer: contextProducer)
         do {
             // NOTE: here we are activating all the flag values from storage, regardless of how `context` looks now
             try confidence.activate()

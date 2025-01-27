@@ -114,27 +114,43 @@
       {
         "name": "build()",
         "declaration": "public func build() -> Confidence"
-      }
-    ]
-  },
-  {
-    "className": "ConfidenceAppLifecycleProducer",
-    "apiFunctions": [
+      },
       {
         "name": "init()",
         "declaration": "public init()"
       },
       {
-        "name": "deinit",
-        "declaration": "deinit"
+        "name": "withVersionInfo()",
+        "declaration": "public func withVersionInfo() -> Builder"
       },
       {
-        "name": "produceEvents()",
-        "declaration": "public func produceEvents() -> AnyPublisher<Event, Never>"
+        "name": "withBundleId()",
+        "declaration": "public func withBundleId() -> Builder"
       },
+      {
+        "name": "withDeviceInfo()",
+        "declaration": "public func withDeviceInfo() -> Builder"
+      },
+      {
+        "name": "withLocale()",
+        "declaration": "public func withLocale() -> Builder"
+      },
+      {
+        "name": "build()",
+        "declaration": "public func build() -> ConfidenceDeviceInfoContextDecorator"
+      }
+    ]
+  },
+  {
+    "className": "ConfidenceDeviceInfoContextDecorator",
+    "apiFunctions": [
       {
         "name": "produceContexts()",
         "declaration": "public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never>"
+      },
+      {
+        "name": "builder()",
+        "declaration": "public static func builder() -> Builder"
       }
     ]
   },
