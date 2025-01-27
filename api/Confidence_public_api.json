@@ -120,16 +120,16 @@
         "declaration": "public init()"
       },
       {
-        "name": "withVersionInfo()",
-        "declaration": "public func withVersionInfo() -> Builder"
-      },
-      {
-        "name": "withBundleId()",
-        "declaration": "public func withBundleId() -> Builder"
+        "name": "withAppInfo()",
+        "declaration": "public func withAppInfo() -> Builder"
       },
       {
         "name": "withDeviceInfo()",
         "declaration": "public func withDeviceInfo() -> Builder"
+      },
+      {
+        "name": "withOsInfo()",
+        "declaration": "public func withOsInfo() -> Builder"
       },
       {
         "name": "withLocale()",

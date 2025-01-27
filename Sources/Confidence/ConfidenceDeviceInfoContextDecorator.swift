@@ -53,8 +53,7 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             initialContext["device"] = .init(structure: [
                 "manufacturer": .init(string: "Apple"),
                 "model": .init(string: getDeviceModelIdentifier()),
-                "type": .init(string: device.model),
-
+                "type": .init(string: device.model)
             ])
             return self
         }
@@ -81,20 +80,22 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             return self
         }
 
-
         public func build() -> ConfidenceDeviceInfoContextDecorator {
             return ConfidenceDeviceInfoContextDecorator(context: initialContext)
         }
     }
+
     private static func getDeviceModelIdentifier() -> String {
         var systemInfo = utsname()
         uname(&systemInfo)
         let machineMirror = Mirror(reflecting: systemInfo.machine)
-        let identifier = machineMirror.children.compactMap { element in
-            element.value as? Int8
-        }.filter { $0 != 0 }.map { Character(UnicodeScalar(UInt8($0))) }
+        let identifier = machineMirror.children
+            .compactMap { element in element.value as? Int8 }
+            .filter { $0 != 0 }
+            .map {
+                Character(UnicodeScalar(UInt8($0)))
+            }
         return String(identifier)
     }
-
 }
 #endif
