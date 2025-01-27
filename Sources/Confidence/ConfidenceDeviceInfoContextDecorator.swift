@@ -15,7 +15,6 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
         currentProducedContext
             .filter { context in !context.isEmpty }
             .eraseToAnyPublisher()
-
     }
 
     private func withLock(callback: @escaping () -> Void) {
@@ -54,9 +53,9 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             let device = UIDevice.current
 
             // Set the context with the desired properties
-            initialContext["device_model"] = .init(string: device.model)                 // Device model (e.g., "iPhone")
-            initialContext["system_name"] = .init(string: device.systemName)             // OS name (e.g., "iOS")
-            initialContext["system_version"] = .init(string: device.systemVersion)       // OS version (e.g., "16.2")
+            initialContext["device_model"] = .init(string: device.model)             // Device model (e.g., "iPhone")
+            initialContext["system_name"] = .init(string: device.systemName)         // OS name (e.g., "iOS")
+            initialContext["system_version"] = .init(string: device.systemVersion)   // OS version (e.g., "16.2")
             return self
         }
 
@@ -65,9 +64,9 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             let preferredLanguages = Locale.preferredLanguages
 
             initialContext["locale_identifier"] = .init(string: locale.identifier) // Locale identifier (e.g., "en_US")
-            initialContext["preferred_languages"] = .init(list: preferredLanguages.map({ l in
-                    .init(string: l)
-            })) // Preferred languages as a comma-separated string
+            initialContext["preferred_languages"] = .init(list: preferredLanguages.map { lang in
+                .init(string: lang)
+            })
             return self
         }
 
@@ -76,6 +75,5 @@ public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, Ob
             return ConfidenceDeviceInfoContextDecorator(context: initialContext)
         }
     }
-
 }
 #endif
