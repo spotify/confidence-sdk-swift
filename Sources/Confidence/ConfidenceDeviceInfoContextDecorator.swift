@@ -3,6 +3,32 @@ import Foundation
 import UIKit
 import Combine
 
+/**
+Helper class to produce device information context for the Confidence context.
+
+The values appended to the Context come primarily from the Bundle or UiDevice API
+
+AppInfo contains:
+- version: the version name of the app.
+- build: the version code of the app.
+- namespace: the package name of the app.
+
+DeviceInfo contains:
+- manufacturer: the manufacturer of the device.
+- brand: the brand of the device.
+- model: the model of the device.
+- type: the type of the device.
+
+OsInfo contains:
+- name: the name of the OS.
+- version: the version of the OS.
+
+Locale contains:
+- locale: the locale of the device.
+- preferred_languages: the preferred languages of the device.
+
+The context is only updated when the class is initialized and then static.
+*/
 public class ConfidenceDeviceInfoContextDecorator: ConfidenceContextProducer, ObservableObject {
     public var currentProducedContext: CurrentValueSubject<ConfidenceStruct, Never> = CurrentValueSubject([:])
     private let queue = DispatchQueue(label: "com.confidence.device_info_decorator")

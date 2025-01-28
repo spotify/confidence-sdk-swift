@@ -93,6 +93,37 @@ _Note: Changing the context could cause a change in the flag values._
 
 _Note: When a context change is performed and the SDK is fetching the new values for it, the old values are still available for the Application to consume but marked with evaluation reason `STALE`._
 
+The SDK comes with a built in helper class to decorate the Context with some static data from the device. 
+The class is called `ConfidenceDeviceInfoContextDecorator` and used as follows:
+
+```swift
+let contextProducer = ConfidenceDeviceInfoContextDecorator.builder()
+    .withLocale()
+    .withOsInfo()
+    .withDeviceInfo()
+    .withAppInfo()
+    .build()
+
+confidence.track(producer: contextProducer)
+```
+The values appended to the Context come primarily from the Bundle and the UIDevice APIs.
+
+- `withAppInfo()` includes:
+  - version: the value from `CFBundleShortVersionString`.
+  - build: the value from `CFBundleVersion`.
+  - namespace: the `bundleIdentifier`.
+- `withDeviceInfo()` includes:
+  - manufacturer: hard coded to Apple.
+  - model: the device model identifier, for example "iPhone15,4" or "iPad14,11".
+  - type: the value from `UIDevice.current.model`.
+- `withOsInfo()` includes:
+  - name: the system name.
+  - version: the system version.
+- `withLocale()` includes:
+  - locale: the selected Locale.
+  - preferred_languages: the user set preferred languages as set in the Locale.
+
+
 When integrating the SDK in your Application, it's important to understand the implications of changing the context at runtime:
 - You might want to keep the flag values unchanged within a certain session
 - You might want to show a loading UI while re-fetching all flag values
