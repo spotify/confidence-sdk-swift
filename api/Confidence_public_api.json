@@ -114,30 +114,6 @@
       {
         "name": "build()",
         "declaration": "public func build() -> Confidence"
-      },
-      {
-        "name": "init()",
-        "declaration": "public init()"
-      },
-      {
-        "name": "withAppInfo()",
-        "declaration": "public func withAppInfo() -> Builder"
-      },
-      {
-        "name": "withDeviceInfo()",
-        "declaration": "public func withDeviceInfo() -> Builder"
-      },
-      {
-        "name": "withOsInfo()",
-        "declaration": "public func withOsInfo() -> Builder"
-      },
-      {
-        "name": "withLocale()",
-        "declaration": "public func withLocale() -> Builder"
-      },
-      {
-        "name": "build()",
-        "declaration": "public func build() -> ConfidenceDeviceInfoContextDecorator"
       }
     ]
   },
@@ -145,12 +121,12 @@
     "className": "ConfidenceDeviceInfoContextDecorator",
     "apiFunctions": [
       {
-        "name": "produceContexts()",
-        "declaration": "public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never>"
+        "name": "init(withDeviceInfo:withAppInfo:withOsInfo:withLocale:)",
+        "declaration": "public init(\n    withDeviceInfo: Bool = false,\n    withAppInfo: Bool = false,\n    withOsInfo: Bool = false,\n    withLocale: Bool = false\n)"
       },
       {
-        "name": "builder()",
-        "declaration": "public static func builder() -> Builder"
+        "name": "decorated(context:)",
+        "declaration": "public func decorated(context contextToDecorate: [String: ConfidenceValue]) -> [String: ConfidenceValue]"
       }
     ]
   },
