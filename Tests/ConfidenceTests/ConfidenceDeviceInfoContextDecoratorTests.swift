@@ -1,8 +1,7 @@
 import XCTest
 @testable import Confidence
 
-final class ConfidenceDeviceInfoContextDecoratorTests: XCTestCase {
-
+final class DeviceInfoContextDecoratorTests: XCTestCase {
     func testEmptyConstructMakesNoOp() {
         let result = ConfidenceDeviceInfoContextDecorator().decorated(context: [:])
         XCTAssertEqual(result.count, 0)
@@ -25,7 +24,9 @@ final class ConfidenceDeviceInfoContextDecoratorTests: XCTestCase {
     }
 
     func testAppendsData() {
-        let result = ConfidenceDeviceInfoContextDecorator(withDeviceInfo: true).decorated(context: ["my_key": .init(double: 42.0)])
+        let result = ConfidenceDeviceInfoContextDecorator(
+            withDeviceInfo: true
+        ).decorated(context: ["my_key": .init(double: 42.0)])
         XCTAssertEqual(result.count, 2)
         XCTAssertEqual(result["my_key"]?.asDouble(), 42.0)
         XCTAssertNotNil(result["device"])
