@@ -97,29 +97,27 @@ The SDK comes with a built in helper class to decorate the Context with some sta
 The class is called `ConfidenceDeviceInfoContextDecorator` and used as follows:
 
 ```swift
-let contextProducer = ConfidenceDeviceInfoContextDecorator.builder()
-    .withLocale()
-    .withOsInfo()
-    .withDeviceInfo()
-    .withAppInfo()
-    .build()
-
-confidence.track(producer: contextProducer)
+let context = ConfidenceDeviceInfoContextDecorator(
+    withDeviceInfo: true,
+    withAppInfo: true,
+    withOsInfo: true,
+    withLocale: true
+).decorated(context: [:]); // it's also possible to pass an already prepared context here.
 ```
 The values appended to the Context come primarily from the Bundle and the UIDevice APIs.
 
-- `withAppInfo()` includes:
+- `withAppInfo` includes:
   - version: the value from `CFBundleShortVersionString`.
   - build: the value from `CFBundleVersion`.
   - namespace: the `bundleIdentifier`.
-- `withDeviceInfo()` includes:
+- `withDeviceInfo` includes:
   - manufacturer: hard coded to Apple.
   - model: the device model identifier, for example "iPhone15,4" or "iPad14,11".
   - type: the value from `UIDevice.current.model`.
-- `withOsInfo()` includes:
+- `withOsInfo` includes:
   - name: the system name.
   - version: the system version.
-- `withLocale()` includes:
+- `withLocale` includes:
   - locale: the selected Locale.
   - preferred_languages: the user set preferred languages as set in the Locale.
 
