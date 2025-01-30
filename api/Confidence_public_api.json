@@ -118,23 +118,15 @@
     ]
   },
   {
-    "className": "ConfidenceAppLifecycleProducer",
+    "className": "ConfidenceDeviceInfoContextDecorator",
     "apiFunctions": [
       {
-        "name": "init()",
-        "declaration": "public init()"
+        "name": "init(withDeviceInfo:withAppInfo:withOsInfo:withLocale:)",
+        "declaration": "public init(\n    withDeviceInfo: Bool = false,\n    withAppInfo: Bool = false,\n    withOsInfo: Bool = false,\n    withLocale: Bool = false\n)"
       },
       {
-        "name": "deinit",
-        "declaration": "deinit"
-      },
-      {
-        "name": "produceEvents()",
-        "declaration": "public func produceEvents() -> AnyPublisher<Event, Never>"
-      },
-      {
-        "name": "produceContexts()",
-        "declaration": "public func produceContexts() -> AnyPublisher<ConfidenceStruct, Never>"
+        "name": "decorated(context:)",
+        "declaration": "public func decorated(context contextToDecorate: [String: ConfidenceValue]) -> [String: ConfidenceValue]"
       }
     ]
   },

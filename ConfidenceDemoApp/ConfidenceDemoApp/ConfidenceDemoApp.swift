@@ -21,10 +21,18 @@ struct ConfidenceDemoApp: App {
             context["user_id"] = ConfidenceValue.init(string: user)
         }
 
+        context = ConfidenceDeviceInfoContextDecorator(
+            withDeviceInfo: true,
+            withAppInfo: true,
+            withOsInfo: true,
+            withLocale: true
+        ).decorated(context: [:]);
+
         confidence = Confidence
             .Builder(clientSecret: secret, loggerLevel: .TRACE)
             .withContext(initialContext: context)
             .build()
+        
         do {
             // NOTE: here we are activating all the flag values from storage, regardless of how `context` looks now
             try confidence.activate()
