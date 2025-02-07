@@ -116,7 +116,38 @@ struct ResolvedFlag: Codable {
     var variant: String = ""
     var flagSchema: StructFlagSchema? = StructFlagSchema(schema: [:])
     var reason: ResolveReason
+
+    enum CodingKeys: String, CodingKey {
+        case flag, value, variant, flagSchema, reason
+    }
+
+    init(
+        from decoder: Decoder
+    ) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        flag = try container.decode(String.self, forKey: .flag)
+        value = try container.decodeIfPresent(NetworkStruct.self, forKey: .value) ?? NetworkStruct(fields: [:])
+        variant = try container.decodeIfPresent(String.self, forKey: .variant) ?? ""
+        flagSchema = try container.decodeIfPresent(
+            StructFlagSchema.self, forKey: .flagSchema) ?? StructFlagSchema(schema: [:])
+        reason = try container.decode(ResolveReason.self, forKey: .reason)
+    }
+
+    init(
+        flag: String,
+        value: NetworkStruct? = NetworkStruct(fields: [:]),
+        variant: String = "",
+        flagSchema: StructFlagSchema? = StructFlagSchema(schema: [:]),
+        reason: ResolveReason
+    ) {
+        self.flag = flag
+        self.value = value
+        self.variant = variant
+        self.flagSchema = flagSchema
+        self.reason = reason
+    }
 }
+
 
 public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case unspecified = "RESOLVE_REASON_UNSPECIFIED"
