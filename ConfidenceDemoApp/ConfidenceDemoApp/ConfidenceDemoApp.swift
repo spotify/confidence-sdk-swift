@@ -26,7 +26,7 @@ struct ConfidenceDemoApp: App {
             withAppInfo: true,
             withOsInfo: true,
             withLocale: true
-        ).decorated(context: [:]);
+        ).decorated(context: context);
 
         confidence = Confidence
             .Builder(clientSecret: secret, loggerLevel: .TRACE)
