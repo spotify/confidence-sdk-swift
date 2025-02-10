@@ -46,7 +46,7 @@ class ClientMock: ConfidenceResolveClient {
 
     func resolve(flag: String, ctx: ConfidenceStruct) throws -> ResolveResult {
         return ResolveResult(
-            resolvedValue: ResolvedValue(flag: "flag1", resolveReason: .match),
+            resolvedValue: ResolvedValue(flag: "flag1", resolveReason: .match, shouldApply: true),
             resolveToken: ""
         )
     }

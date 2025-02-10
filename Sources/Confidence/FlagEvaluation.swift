@@ -25,6 +25,7 @@ struct FlagResolution: Encodable, Decodable, Equatable {
 
 extension FlagResolution {
     // swiftlint:disable function_body_length
+    // swiftlint:disable cyclomatic_complexity
     func evaluate<T>(
         flagName: String,
         defaultValue: T,
@@ -34,7 +35,7 @@ extension FlagResolution {
     ) -> Evaluation<T> {
         do {
             let parsedKey = try FlagPath.getPath(for: flagName)
-            let resolvedFlag = self.flags.first { resolvedFlag in  resolvedFlag.flag == parsedKey.flag }
+            let resolvedFlag = self.flags.first { resolvedFlag in resolvedFlag.flag == parsedKey.flag }
             guard let resolvedFlag = resolvedFlag else {
                 return Evaluation(
                     value: defaultValue,
@@ -56,7 +57,9 @@ extension FlagResolution {
             guard let value = resolvedFlag.value else {
                 // No backend error, but nil value returned. This can happend with "noSegmentMatch" or "archived", for example
                 Task {
-                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                    if resolvedFlag.shouldApply {
+                        await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                    }
                 }
                 return Evaluation(
                     value: defaultValue,
@@ -77,7 +80,9 @@ extension FlagResolution {
                 }
                 if let typedValue = typedValue {
                     Task {
-                        await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                        if resolvedFlag.shouldApply {
+                            await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                        }
                     }
                     return Evaluation(
                         value: typedValue,
@@ -90,7 +95,9 @@ extension FlagResolution {
                     // `null` type from backend instructs to use client-side default value
                     if parsedValue == .init(null: ()) {
                         Task {
-                            await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                            if resolvedFlag.shouldApply {
+                                await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                            }
                         }
                         return Evaluation(
                             value: defaultValue,
@@ -111,7 +118,9 @@ extension FlagResolution {
                 }
             } else {
                 Task {
-                    await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                    if resolvedFlag.shouldApply {
+                        await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                    }
                 }
                 return Evaluation(
                     value: defaultValue,
@@ -132,6 +141,7 @@ extension FlagResolution {
         }
     }
     // swiftlint:enable function_body_length
+    // swiftlint:enable cyclomatic_complexity
 
     private func checkBackendErrors<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
         if resolvedFlag.resolveReason == .targetingKeyError {
