@@ -15,7 +15,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private let initializationStrategy: InitializationStrategy
-    private let eventHandler = EventHandler(ProviderEvent.notReady)
+    private let eventHandler = EventHandler()
     private let confidence: Confidence
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
@@ -26,12 +26,12 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     The `initializationStrategy` defines when the Provider is ready to read flags, before or after a refresh of the flag evaluation fata.
     */
     public convenience init(confidence: Confidence, initializationStrategy: InitializationStrategy = .fetchAndActivate) {
-        self.init(confidence: confidence, session: nil)
+        self.init(confidence: confidence, initializationStrategy: initializationStrategy, session: nil)
     }
 
     internal init(
         confidence: Confidence,
-        initializationStrategy: InitializationStrategy = .fetchAndActivate,
+        initializationStrategy: InitializationStrategy,
         session: URLSession?
     ) {
         self.metadata = Metadata(name: ConfidenceFeatureProvider.providerId)
@@ -39,28 +39,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.confidence = confidence
     }
 
-    public func initialize(initialContext: OpenFeature.EvaluationContext?) {
+    public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws {
         let context = ConfidenceTypeMapper.from(ctx: initialContext ?? MutableContext(attributes: [:]))
         confidence.putContextLocal(context: context)
-        do {
-            if initializationStrategy == .activateAndFetchAsync {
-                try confidence.activate()
-                eventHandler.send(.ready)
-                Task {
-                    await confidence.asyncFetch()
-                }
-            } else {
-                Task {
-                    do {
-                        try await confidence.fetchAndActivate()
-                        eventHandler.send(.ready)
-                    } catch {
-                        eventHandler.send(.error)
-                    }
-                }
+        if initializationStrategy == .activateAndFetchAsync {
+            try confidence.activate()
+            Task {
+                await confidence.asyncFetch()
             }
-        } catch {
-            eventHandler.send(.error)
+        } else {
+            try await confidence.fetchAndActivate()
         }
     }
 
@@ -75,14 +63,13 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func onContextSet(
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
-    ) {
+    ) async {
         let removedKeys: [String] = oldContext.map {
             Array($0.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
         } ?? []
-
-        Task {
-            confidence.putContext(context: ConfidenceTypeMapper.from(ctx: newContext), removedKeys: removedKeys)
-        }
+        await confidence.putContextAndWait(
+            context: ConfidenceTypeMapper.from(ctx: newContext),
+            removedKeys: removedKeys)
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -115,7 +102,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
-    public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
+    public func observe() -> AnyPublisher<OpenFeature.ProviderEvent?, Never> {
         return eventHandler.observe()
     }
 
