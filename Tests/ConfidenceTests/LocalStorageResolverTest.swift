@@ -8,7 +8,8 @@ class LocalStorageResolverTest: XCTestCase {
         let resolvedValue = ResolvedValue(
             value: .init(structure: ["string": .init(string: "Value")]),
             flag: "flag_name",
-            resolveReason: .match
+            resolveReason: .match,
+            shouldApply: true
         )
         let flagResolution = FlagResolution(
             context: ["hey": ConfidenceValue(string: "old value")],
@@ -26,7 +27,8 @@ class LocalStorageResolverTest: XCTestCase {
         let resolvedValue = ResolvedValue(
             value: .init(structure: ["string": .init(string: "Value")]),
             flag: "flag_name",
-            resolveReason: .match
+            resolveReason: .match,
+            shouldApply: true
         )
         let context =
             ["hey": ConfidenceValue(string: "old value")]

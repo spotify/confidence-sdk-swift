@@ -88,7 +88,8 @@ class ConfidenceProviderTest: XCTestCase {
                 variant: "variant1",
                 value: .init(structure: ["int": .init(integer: 42)]),
                 flag: "flagName",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
             ]
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 return .init(resolvedValues: resolvedValues, resolveToken: "token")

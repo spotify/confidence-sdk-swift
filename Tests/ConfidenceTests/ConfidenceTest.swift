@@ -138,7 +138,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
 
@@ -174,7 +175,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -216,7 +218,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -253,7 +256,8 @@ class ConfidenceTest: XCTestCase {
             ResolvedValue(
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .noSegmentMatch)
+                resolveReason: .noSegmentMatch,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -293,7 +297,8 @@ class ConfidenceTest: XCTestCase {
             ResolvedValue(
                 value: .init(structure: ["size": .init(null: ())]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -334,7 +339,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -382,7 +388,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -424,7 +431,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(double: 3.14)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -465,7 +473,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -518,7 +527,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -578,7 +588,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(integer: 3)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -628,7 +639,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(boolean: true)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -668,7 +680,8 @@ class ConfidenceTest: XCTestCase {
             variant: "control",
             value: .init(structure: ["size": .init(structure: ["boolean": .init(boolean: true)])]),
             flag: "flag",
-            resolveReason: .match
+            resolveReason: .match,
+            shouldApply: true
         )
         client.resolvedValues = [value]
 
@@ -710,7 +723,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(null: ())]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -779,7 +793,7 @@ class ConfidenceTest: XCTestCase {
 
         let client = FakeClient()
         client.resolvedValues =
-        [ResolvedValue(flag: "flag", resolveReason: .targetingKeyError)]
+        [ResolvedValue(flag: "flag", resolveReason: .targetingKeyError, shouldApply: true)]
 
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user2")])
@@ -829,7 +843,8 @@ class ConfidenceTest: XCTestCase {
                 variant: "control",
                 value: .init(structure: ["size": .init(boolean: true)]),
                 flag: "flag",
-                resolveReason: .match)
+                resolveReason: .match,
+                shouldApply: true)
         ]
 
         let confidence = Confidence.Builder(clientSecret: "test")
@@ -849,6 +864,40 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage, "")
         XCTAssertEqual(evaluation.reason, .error)
         XCTAssertEqual(evaluation.variant, nil)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
+    }
+
+    func testShouldNotApply() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(boolean: true)]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        _ = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: false)
+
         XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 

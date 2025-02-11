@@ -15,6 +15,7 @@ struct ResolvedValue: Codable, Equatable {
     var value: ConfidenceValue?
     var flag: String
     var resolveReason: ResolveReason
+    var shouldApply: Bool
 }
 
 public struct ResolvesResult: Codable, Equatable {

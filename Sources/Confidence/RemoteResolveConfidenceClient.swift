@@ -69,7 +69,9 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             return ResolvedValue(
                 value: nil,
                 flag: try displayName(resolvedFlag: resolvedFlag),
-                resolveReason: resolvedFlag.reason)
+                resolveReason: resolvedFlag.reason,
+                shouldApply: true
+            )
         }
 
         let value = ConfidenceValue(
@@ -81,7 +83,8 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             variant: variant,
             value: value,
             flag: try displayName(resolvedFlag: resolvedFlag),
-            resolveReason: resolvedFlag.reason
+            resolveReason: resolvedFlag.reason,
+            shouldApply: true
         )
     }
 
