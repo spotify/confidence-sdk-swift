@@ -201,6 +201,415 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testResolveStruct() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["size": 0]
+        )
+
+        print(evaluation)
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["size": 3])
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testResolveInnerStruct() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(structure: ["border": ConfidenceValue.init(integer: 420)])]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: ["border": 0]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["border": 420])
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testResolveStructSchemaMismatch() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 44)]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.size",
+            defaultValue: ["test": "wrong_type"]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["test": "wrong_type"])
+        XCTAssertEqual(evaluation.errorCode, .typeMismatch(
+            message: "Value 44 cannot be cast to Dictionary<String, String>"))
+        XCTAssertEqual(evaluation.errorMessage, "Value 44 cannot be cast to Dictionary<String, String>")
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
+    }
+
+    func testResolveStructSchemaExtraValues() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "width": .init(integer: 200),
+                    "height": .init(integer: 400)
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["width": 100]
+        )
+
+        print(evaluation)
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["width": 200, "height": 400])
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testResolveStructHeterogenous() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "width": .init(integer: 200),
+                    "color": .init(string: "yellow")
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["width": 100, "color": "black"]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        let expected: [String: AnyHashable] = ["width": 200, "color": "yellow"]
+        XCTAssertEqual(evaluation.value as? [String: AnyHashable], expected)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testResolveStructHeterogenousExtraValueInFlag() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "width": .init(integer: 200),
+                    "color": .init(string: "yellow"),
+                    "error": .init(string: "Unknown")
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["width": 100, "color": "black"]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        let expected: [String: AnyHashable] = ["width": 200, "color": "yellow", "error": "Unknown"]
+        XCTAssertEqual(evaluation.value as? [String: AnyHashable], expected)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testResolveStructHeterogenousExtraValueInDefaultValue() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "width": .init(integer: 200),
+                    "color": .init(string: "yellow")
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["width": 100, "color": "black", "error": "Unknown"]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        let expected: [String: AnyHashable] = ["width": 200, "color": "yellow"]
+        XCTAssertEqual(evaluation.value as? [String: AnyHashable], expected)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    func testResolveStructHeterogenousMismatch() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "width": .init(integer: 200),
+                    "color": .init(string: "yellow")
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["width": 100]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["width": 100])
+        if case let .typeMismatch(message) = evaluation.errorCode {
+            XCTAssertTrue(message.hasSuffix("cannot be cast to Dictionary<String, Int>"))
+            XCTAssertTrue(message.contains("\"width\": \"200\""))
+            XCTAssertTrue(message.contains("\"color\": \"yellow\""))
+        } else {
+            XCTFail("Expected .typeMismatch but got \(String(describing: evaluation.errorCode))")
+        }
+        let errorMessage = evaluation.errorMessage ?? ""
+        XCTAssertTrue(errorMessage.hasSuffix("cannot be cast to Dictionary<String, Int>"))
+        XCTAssertTrue(errorMessage.contains("\"width\": \"200\""))
+        XCTAssertTrue(errorMessage.contains("\"color\": \"yellow\""))
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
+    }
+
+    func testResolveStructConfidenceValueDefault() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ConfidenceValue.init(structure: ["size": .init(integer: 4)]))
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ConfidenceValue.init(structure: ["size": .init(integer: 4)]))
+        XCTAssertEqual(evaluation.errorCode, .typeMismatch(
+            message: "Value [\"size\": \"3\"] cannot be cast to ConfidenceValue"))
+        XCTAssertEqual(evaluation.errorMessage, "Value [\"size\": \"3\"] cannot be cast to ConfidenceValue")
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
+    }
+
 
     func testResolveIntegerFlagWithInt64() async throws {
         class FakeClient: ConfidenceResolveClient {
@@ -665,48 +1074,6 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveObjectFlag() async throws {
-        class FakeClient: ConfidenceResolveClient {
-            var resolveStats: Int = 0
-            var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                self.resolveStats += 1
-                return .init(resolvedValues: resolvedValues, resolveToken: "token")
-            }
-        }
-
-        let client = FakeClient()
-        let value = ResolvedValue(
-            variant: "control",
-            value: .init(structure: ["size": .init(structure: ["boolean": .init(boolean: true)])]),
-            flag: "flag",
-            resolveReason: .match,
-            shouldApply: true
-        )
-        client.resolvedValues = [value]
-
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
-            .withFlagResolverClient(flagResolver: client)
-            .withFlagApplier(flagApplier: flagApplier)
-            .build()
-
-        try await confidence.fetchAndActivate()
-        let evaluation = confidence.getEvaluation(
-            key: "flag.size",
-            defaultValue: [:])
-
-        XCTAssertEqual(client.resolveStats, 1)
-        XCTAssertEqual(evaluation.value as? ConfidenceStruct, ["boolean": .init(boolean: true)])
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(client.resolveStats, 1)
-        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
-        XCTAssertEqual(flagApplier.applyCallCount, 1)
-    }
-
     func testResolveNullValues() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -825,46 +1192,6 @@ class ConfidenceTest: XCTestCase {
         ) { error in
             XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
         }
-    }
-
-    func testTypeMismatch() async throws {
-        class FakeClient: ConfidenceResolveClient {
-            var resolveStats: Int = 0
-            var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                self.resolveStats += 1
-                return .init(resolvedValues: resolvedValues, resolveToken: "token")
-            }
-        }
-
-        let client = FakeClient()
-        client.resolvedValues = [
-            ResolvedValue(
-                variant: "control",
-                value: .init(structure: ["size": .init(boolean: true)]),
-                flag: "flag",
-                resolveReason: .match,
-                shouldApply: true)
-        ]
-
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
-            .withFlagResolverClient(flagResolver: client)
-            .withFlagApplier(flagApplier: flagApplier)
-            .build()
-
-        try await confidence.fetchAndActivate()
-        let evaluation = confidence.getEvaluation(
-            key: "flag.size",
-            defaultValue: 1)
-
-        XCTAssertEqual(client.resolveStats, 1)
-        XCTAssertEqual(evaluation.value, 1)
-        XCTAssertEqual(evaluation.errorCode, .typeMismatch)
-        XCTAssertNil(evaluation.errorMessage, "")
-        XCTAssertEqual(evaluation.reason, .error)
-        XCTAssertEqual(evaluation.variant, nil)
-        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testShouldNotApply() async throws {
