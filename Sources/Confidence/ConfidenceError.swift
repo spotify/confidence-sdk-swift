@@ -9,6 +9,28 @@ public enum ConfidenceError: Error, Equatable {
     case internalError(message: String)
     case parseError(message: String)
     case invalidContextInMessage
+
+    var errorCode: ErrorCode {
+        switch self {
+        case .grpcError(let message),
+            .cacheError(let message),
+            .corruptedCache(let message),
+            .badRequest(let message?),
+            .internalError(let message):
+            return .generalError(message: message)
+
+        case .flagNotFoundError:
+            return .flagNotFound
+
+        case .parseError(let message):
+            return .parseError(message: message)
+
+        case .invalidContextInMessage:
+            return .invalidContext
+        case .badRequest(message: .none):
+            return .generalError(message: "unknown error")
+        }
+    }
 }
 
 extension ConfidenceError: CustomStringConvertible {
