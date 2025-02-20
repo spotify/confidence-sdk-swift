@@ -201,6 +201,49 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testResolveStructureFails() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["size": .init(integer: 3)]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ConfidenceValue.init(structure: [:]))
+
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ConfidenceValue.init(structure: [:]))
+        XCTAssertEqual(evaluation.errorCode, .parseError(message:
+            "Flag path must contain path to the field for non-object values"))
+        XCTAssertEqual(evaluation.errorMessage, "Parse error occurred: Flag path must " +
+            "contain path to the field for non-object values")
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertNil(evaluation.variant)
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
+    }
 
     func testResolveIntegerFlagWithInt64() async throws {
         class FakeClient: ConfidenceResolveClient {
