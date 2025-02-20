@@ -99,6 +99,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)
     throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
+        // Convert Struct Value to 
         try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
     }
 
@@ -130,6 +131,10 @@ extension Evaluation {
                 throw OpenFeatureError.generalError(message: self.errorMessage ?? "unknown error")
             case .typeMismatch:
                 throw OpenFeatureError.typeMismatchError
+            case .parseError(message: let message):
+                throw OpenFeatureError.parseError(message: message)
+            case .generalError(message: let message):
+                throw OpenFeatureError.generalError(message: message)
             }
         }
         return ProviderEvaluation(
