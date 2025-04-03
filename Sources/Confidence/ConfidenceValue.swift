@@ -210,6 +210,75 @@ extension ConfidenceValue {
     }
 }
 
+extension ConfidenceValue {
+    public func asJSONData() -> Data? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+
+        switch value {
+        case .boolean(let value):
+            return try? encoder.encode(value)
+        case .string(let value):
+            return try? encoder.encode(value)
+        case .integer(let value):
+            return try? encoder.encode(value)
+        case .double(let value):
+            return try? encoder.encode(value)
+        case .date(let value):
+            return try? encoder.encode(value)
+        case .timestamp(let value):
+            return try? encoder.encode(value)
+        case .structure(let values):
+            var flattened: [String: Any] = [:]
+            for (key, value) in values {
+                switch value {
+                case .boolean(let v): flattened[key] = v
+                case .string(let v): flattened[key] = v
+                case .integer(let v): flattened[key] = v
+                case .double(let v): flattened[key] = v
+                case .date(let v): flattened[key] = v
+                case .timestamp(let v): flattened[key] = v
+                case .structure(let v):
+                    var nested: [String: Any] = [:]
+                    for (nestedKey, nestedValue) in v {
+                        switch nestedValue {
+                        case .boolean(let v): nested[nestedKey] = v
+                        case .string(let v): nested[nestedKey] = v
+                        case .integer(let v): nested[nestedKey] = v
+                        case .double(let v): nested[nestedKey] = v
+                        case .date(let v): nested[nestedKey] = v
+                        case .timestamp(let v): nested[nestedKey] = v
+                        case .structure(let v):
+                            var innerNested: [String: Any] = [:]
+                            for (innerKey, innerValue) in v {
+                                switch innerValue {
+                                case .boolean(let v): innerNested[innerKey] = v
+                                case .string(let v): innerNested[innerKey] = v
+                                case .integer(let v): innerNested[innerKey] = v
+                                case .double(let v): innerNested[innerKey] = v
+                                case .date(let v): innerNested[innerKey] = v
+                                case .timestamp(let v): innerNested[innerKey] = v
+                                default: break
+                                }
+                            }
+                            nested[nestedKey] = innerNested
+                        default: break
+                        }
+                    }
+                    flattened[key] = nested
+                default: break
+                }
+            }
+            return try? JSONSerialization.data(withJSONObject: flattened, options: .sortedKeys)
+        case .null:
+            return try? JSONSerialization.data(withJSONObject: NSNull())
+        default:
+            return nil
+        }
+    }
+}
+
+
 public enum ConfidenceValueType: CaseIterable {
     case boolean
     case string

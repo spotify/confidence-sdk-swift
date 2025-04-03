@@ -26,7 +26,7 @@ struct FlagResolution: Encodable, Decodable, Equatable {
 extension FlagResolution {
     // swiftlint:disable function_body_length
     // swiftlint:disable cyclomatic_complexity
-    func evaluate<T>(
+    func evaluate<T: Decodable>(
         flagName: String,
         defaultValue: T,
         context: ConfidenceStruct,
@@ -55,7 +55,7 @@ extension FlagResolution {
             }
 
             guard let value = resolvedFlag.value else {
-                // No backend error, but nil value returned. This can happend with "noSegmentMatch" or "archived", for example
+                // No backend error, but nil value returned. This can happen with "noSegmentMatch" or "archived", for example
                 Task {
                     if resolvedFlag.shouldApply {
                         await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
@@ -71,7 +71,7 @@ extension FlagResolution {
             }
 
             let parsedValue = try getValue(path: parsedKey.path, value: value)
-            let typedValue: T? = getTyped(value: parsedValue)
+            let typedValue: T? = getTyped(value: parsedValue, debugLogger: debugLogger)
 
             if resolvedFlag.resolveReason == .match {
                 var resolveReason: ResolveReason = .match
@@ -140,9 +140,9 @@ extension FlagResolution {
             )
         }
     }
+    
     // swiftlint:enable function_body_length
     // swiftlint:enable cyclomatic_complexity
-
     private func checkBackendErrors<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
         if resolvedFlag.resolveReason == .targetingKeyError {
             return Evaluation(
@@ -153,8 +153,8 @@ extension FlagResolution {
                 errorMessage: "Invalid targeting key"
             )
         } else if resolvedFlag.resolveReason == .error ||
-        resolvedFlag.resolveReason == .unknown ||
-        resolvedFlag.resolveReason == .unspecified {
+                  resolvedFlag.resolveReason == .unknown ||
+                  resolvedFlag.resolveReason == .unspecified {
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
@@ -168,7 +168,7 @@ extension FlagResolution {
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    private func getTyped<T>(value: ConfidenceValue) -> T? {
+    private func getTyped<T>(value: ConfidenceValue, debugLogger: DebugLogger?) -> T? {
         if let value = self as? T {
             return value
         }
@@ -198,8 +198,41 @@ extension FlagResolution {
         case .list:
             return value.asList() as? T
         case .structure:
+            // Try to decode as a Codable type if T is not ConfidenceStruct
+            if T.self != ConfidenceStruct.self {
+                return tryDecodeCodable(value: value, debugLogger: debugLogger)
+            }
             return value.asStructure() as? T
         case .null:
+            return nil
+        }
+    }
+
+    private func tryDecodeCodable<T>(value: ConfidenceValue, debugLogger: DebugLogger?) -> T? {
+        guard let decodable = T.self as? Decodable.Type else {
+            debugLogger?.logMessage(message: "tryDecodeCodable: Type \(T.self) does not conform to Decodable", isWarning: true)
+            return nil
+        }
+
+        guard let data = value.asJSONData() else {
+            debugLogger?.logMessage(message: "tryDecodeCodable: Failed to encode ConfidenceValue to JSON", isWarning: true)
+            return nil
+        }
+/*
+        if let jsonString = String(data: data, encoding: .utf8) {
+            debugLogger?.logMessage(message: "tryDecodeCodable: Encoded JSON: \(jsonString)")
+        } else {
+            debugLogger?.logMessage(message: "tryDecodeCodable: Failed to convert encoded data to string")
+        }
+*/
+        do {
+            let decoded = try JSONDecoder().decode(decodable, from: data) as? T
+            if decoded == nil {
+                debugLogger?.logMessage(message: "tryDecodeCodable: Failed to cast decoded value to type \(T.self)", isWarning: true)
+            }
+            return decoded
+        } catch {
+            debugLogger?.logMessage(message: "tryDecodeCodable: Failed to decode JSON: \(error)", isWarning: true)
             return nil
         }
     }

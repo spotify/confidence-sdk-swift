@@ -134,4 +134,18 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
 
         XCTAssertEqual(value, decodedValue)
     }
+
+    func testAsJSONData() throws {
+        let value = ConfidenceValue(structure: [
+            "field1": ConfidenceValue(integer: 3),
+            "field2": ConfidenceValue(string: "test"),
+            "field3": ConfidenceValue(structure: [
+                "field4": ConfidenceValue(integer: 4),
+                "field5": ConfidenceValue(string: "test2")
+            ])
+        ])
+        let data = try value.asJSONData()
+        let dataAsString = try XCTUnwrap(String(data: data!, encoding: .utf8))
+        XCTAssertEqual(dataAsString, "{\"field1\":3,\"field2\":\"test\",\"field3\":{\"field4\":4,\"field5\":\"test2\"}}")
+    }
 }
