@@ -145,7 +145,8 @@ final class ConfidenceConfidenceValueTests: XCTestCase {
             ])
         ])
         let data = try value.asJSONData()
-        let dataAsString = try XCTUnwrap(String(data: data!, encoding: .utf8))
+        let dataAsString = try XCTUnwrap(String(data: data, encoding: .utf8))
+        // swiftlint:disable:next line_length
         XCTAssertEqual(dataAsString, "{\"field1\":3,\"field2\":\"test\",\"field3\":{\"field4\":4,\"field5\":\"test2\"}}")
     }
 }

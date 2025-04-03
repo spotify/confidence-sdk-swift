@@ -250,6 +250,7 @@ class ConfidenceTest: XCTestCase {
             }
         }
 
+        // swiftlint:disable:next line_length
         let expected: ConfidenceValue = .init(structure: ["blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")]), "string": .init(string: "test")])
         let client = FakeClient()
         client.resolvedValues = [
@@ -293,6 +294,7 @@ class ConfidenceTest: XCTestCase {
         client.resolvedValues = [
             ResolvedValue(
                 variant: "control",
+                // swiftlint:disable:next line_length
                 value: .init(structure: ["blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")]), "string": .init(string: "test")]),
                 flag: "flag",
                 resolveReason: .match,
