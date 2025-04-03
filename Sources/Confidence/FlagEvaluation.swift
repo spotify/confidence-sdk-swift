@@ -140,7 +140,7 @@ extension FlagResolution {
             )
         }
     }
-    
+
     // swiftlint:enable function_body_length
     // swiftlint:enable cyclomatic_complexity
     private func checkBackendErrors<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
@@ -153,8 +153,8 @@ extension FlagResolution {
                 errorMessage: "Invalid targeting key"
             )
         } else if resolvedFlag.resolveReason == .error ||
-                  resolvedFlag.resolveReason == .unknown ||
-                  resolvedFlag.resolveReason == .unspecified {
+            resolvedFlag.resolveReason == .unknown ||
+            resolvedFlag.resolveReason == .unspecified {
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
@@ -210,25 +210,24 @@ extension FlagResolution {
 
     private func tryDecodeCodable<T>(value: ConfidenceValue, debugLogger: DebugLogger?) -> T? {
         guard let decodable = T.self as? Decodable.Type else {
-            debugLogger?.logMessage(message: "tryDecodeCodable: Type \(T.self) does not conform to Decodable", isWarning: true)
+            debugLogger?.logMessage(
+                message: "tryDecodeCodable: Type \(T.self) does not conform to Decodable",
+                isWarning: true)
             return nil
         }
 
         guard let data = value.asJSONData() else {
-            debugLogger?.logMessage(message: "tryDecodeCodable: Failed to encode ConfidenceValue to JSON", isWarning: true)
+            debugLogger?.logMessage(
+                message: "tryDecodeCodable: Failed to encode ConfidenceValue to JSON",
+                isWarning: true)
             return nil
         }
-/*
-        if let jsonString = String(data: data, encoding: .utf8) {
-            debugLogger?.logMessage(message: "tryDecodeCodable: Encoded JSON: \(jsonString)")
-        } else {
-            debugLogger?.logMessage(message: "tryDecodeCodable: Failed to convert encoded data to string")
-        }
-*/
         do {
             let decoded = try JSONDecoder().decode(decodable, from: data) as? T
             if decoded == nil {
-                debugLogger?.logMessage(message: "tryDecodeCodable: Failed to cast decoded value to type \(T.self)", isWarning: true)
+                debugLogger?.logMessage(
+                    message: "tryDecodeCodable: Failed to cast decoded value to type \(T.self)",
+                    isWarning: true)
             }
             return decoded
         } catch {

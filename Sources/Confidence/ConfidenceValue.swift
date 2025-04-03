@@ -211,6 +211,9 @@ extension ConfidenceValue {
 }
 
 extension ConfidenceValue {
+    // swiftlint:disable function_body_length
+    // swiftlint:disable cyclomatic_complexity
+    // swiftlint:disable identifier_name
     public func asJSONData() -> Data? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
@@ -276,6 +279,9 @@ extension ConfidenceValue {
             return nil
         }
     }
+    // swiftlint:enable function_body_length
+    // swiftlint:enable cyclomatic_complexity
+    // swiftlint:enable identifier_name
 }
 
 
