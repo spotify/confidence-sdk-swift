@@ -33,7 +33,10 @@ class DebugLoggerImpl: DebugLogger {
             let jsonData = try JSONSerialization.data(withJSONObject: resolveHintData, options: [])
             if let jsonString = String(data: jsonData, encoding: .utf8) {
                 let base64 = Data(jsonString.utf8).base64EncodedString()
-                let message = "Check your flag evaluation for \(flagName) by copy pasting the payload to the Resolve tester '\(base64)'"
+                let message = """
+                    Check your flag evaluation for \(flagName)
+                    by copy pasting the payload to the Resolve tester '\(base64)'
+                """
                 log(messageLevel: .DEBUG, message: message)
             } else {
                 log(messageLevel: .DEBUG, message: "Could not convert JSON data to string")

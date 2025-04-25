@@ -19,7 +19,9 @@ class TestableDebugLogger: DebugLoggerImpl {
 }
 
 class DebugLoggerTests: XCTestCase {
+    // swiftlint:disable implicitly_unwrapped_optional
     var debugLogger: TestableDebugLogger!
+    // swiftlint:enable implicitly_unwrapped_optional
 
     override func setUp() {
         super.setUp()
@@ -40,7 +42,8 @@ class DebugLoggerTests: XCTestCase {
 
         debugLogger.logResolveDebugURL(flagName: "my-flag", context: context)
         XCTAssertFalse(debugLogger.capturedLogs.isEmpty, "No logs were captured")
-        let debugLog = debugLogger.capturedLogs.first { $0.level == .DEBUG && $0.message.contains("Check your flag evaluation for my-flag") }
+        let debugLog = debugLogger.capturedLogs
+            .first { $0.level == .DEBUG && $0.message.contains("Check your flag evaluation for my-flag") }
         XCTAssertNotNil(debugLog, "Expected debug log not found")
         // Extract base64 string from log message
         guard let base64String = debugLog?.message.split(separator: "'").dropFirst().first else {
@@ -50,9 +53,9 @@ class DebugLoggerTests: XCTestCase {
 
         // Decode base64 to JSON string
         guard let decodedData = Data(base64Encoded: String(base64String)),
-              let decodedString = String(data: decodedData, encoding: .utf8),
-              let jsonData = decodedString.data(using: .utf8),
-              let decodedJson = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+            let decodedString = String(data: decodedData, encoding: .utf8),
+            let jsonData = decodedString.data(using: .utf8),
+            let decodedJson = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
         else {
             XCTFail("Could not decode base64 string to JSON")
             return
@@ -76,7 +79,8 @@ class DebugLoggerTests: XCTestCase {
 
         debugLogger.logResolveDebugURL(flagName: "my-flag", context: context)
         XCTAssertFalse(debugLogger.capturedLogs.isEmpty, "No logs were captured")
-        let debugLog = debugLogger.capturedLogs.first { $0.level == .DEBUG && $0.message.contains("Check your flag evaluation for my-flag") }
+        let debugLog = debugLogger.capturedLogs
+            .first { $0.level == .DEBUG && $0.message.contains("Check your flag evaluation for my-flag") }
         XCTAssertNotNil(debugLog, "Expected debug log not found")
 
         guard let base64String = debugLog?.message.split(separator: "'").dropFirst().first else {
@@ -85,9 +89,9 @@ class DebugLoggerTests: XCTestCase {
         }
 
         guard let decodedData = Data(base64Encoded: String(base64String)),
-              let decodedString = String(data: decodedData, encoding: .utf8),
-              let jsonData = decodedString.data(using: .utf8),
-              let decodedJson = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+            let decodedString = String(data: decodedData, encoding: .utf8),
+            let jsonData = decodedString.data(using: .utf8),
+            let decodedJson = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
         else {
             XCTFail("Could not decode base64 string to JSON")
             return
@@ -123,7 +127,8 @@ class DebugLoggerTests: XCTestCase {
 
         debugLogger.logResolveDebugURL(flagName: "my-flag", context: context)
         XCTAssertFalse(debugLogger.capturedLogs.isEmpty, "No logs were captured")
-        let debugLog = debugLogger.capturedLogs.first { $0.level == .DEBUG && $0.message.contains("Check your flag evaluation for my-flag") }
+        let debugLog = debugLogger.capturedLogs
+            .first { $0.level == .DEBUG && $0.message.contains("Check your flag evaluation for my-flag") }
         XCTAssertNotNil(debugLog, "Expected debug log not found")
 
         guard let base64String = debugLog?.message.split(separator: "'").dropFirst().first else {
@@ -132,9 +137,9 @@ class DebugLoggerTests: XCTestCase {
         }
 
         guard let decodedData = Data(base64Encoded: String(base64String)),
-              let decodedString = String(data: decodedData, encoding: .utf8),
-              let jsonData = decodedString.data(using: .utf8),
-              let decodedJson = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+            let decodedString = String(data: decodedData, encoding: .utf8),
+            let jsonData = decodedString.data(using: .utf8),
+            let decodedJson = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
         else {
             XCTFail("Could not decode base64 string to JSON")
             return
