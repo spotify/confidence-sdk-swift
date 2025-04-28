@@ -1,7 +1,7 @@
 import Foundation
 import OSLog
 
-internal protocol DebugLogger {
+protocol DebugLogger {
     func logEvent(action: String, event: ConfidenceEvent?)
     func logMessage(message: String, isWarning: Bool)
     func logFlags(action: String, flag: String)
@@ -16,31 +16,37 @@ private extension Logger {
     static let confidence = Logger(subsystem: subsystem ?? "", category: "confidence")
 }
 
-internal class DebugLoggerImpl: DebugLogger {
+class DebugLoggerImpl: DebugLogger {
     private let encoder = JSONEncoder()
-    private let clientKey: String
+    let clientKey: String
 
     func logResolveDebugURL(flagName: String, context: ConfidenceStruct) {
-        let ctxNetworkValue = TypeMapper.convert(structure: context)
-        if let ctxNetworkData = try? encoder.encode(ctxNetworkValue),
-        let ctxNetworkString = String(data: ctxNetworkData, encoding: .utf8) {
-            var url = URLComponents()
-            url.scheme = "https"
-            url.host = "app.confidence.spotify.com"
-            url.path = "/flags/resolver-test"
-            url.queryItems = [
-                URLQueryItem(name: "client-key", value: clientKey),
-                URLQueryItem(name: "flag", value: "flags/\(flagName)"),
-                URLQueryItem(name: "context", value: "\(ctxNetworkString)"),
+        let ctxNetworkValue: NetworkStruct = TypeMapper.convert(structure: context)
+        do {
+            let ctxNetworkData = try encoder.encode(ctxNetworkValue)
+
+            let resolveHintData = try [
+                "context": JSONSerialization.jsonObject(with: ctxNetworkData, options: []),
+                "flag": "flags/\(flagName)",
+                "clientKey": clientKey,
             ]
-            log(messageLevel: .DEBUG, message: """
-                See resolves for \(flagName) in Confidence:
-                \(url.url?.absoluteString ?? "N/A")
-            """)
+            let jsonData = try JSONSerialization.data(withJSONObject: resolveHintData, options: [])
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                let base64 = Data(jsonString.utf8).base64EncodedString()
+                let message = """
+                    Check your flag evaluation for \(flagName)
+                    by copy pasting the payload to the Resolve tester '\(base64)'
+                """
+                log(messageLevel: .DEBUG, message: message)
+            } else {
+                log(messageLevel: .DEBUG, message: "Could not convert JSON data to string")
+            }
+        } catch {
+            log(messageLevel: .DEBUG, message: "Failed to encode resolve hint data: \(error)")
         }
     }
 
-    private let loggerLevel: LoggerLevel
+    let loggerLevel: LoggerLevel
 
     init(loggerLevel: LoggerLevel, clientKey: String) {
         self.loggerLevel = loggerLevel
@@ -71,7 +77,7 @@ internal class DebugLoggerImpl: DebugLogger {
         log(messageLevel: .TRACE, message: "[\(action)] \(context)")
     }
 
-    private func log(messageLevel: LoggerLevel, message: String) {
+    func log(messageLevel: LoggerLevel, message: String) {
         if messageLevel >= loggerLevel {
             switch messageLevel {
             case .TRACE:
