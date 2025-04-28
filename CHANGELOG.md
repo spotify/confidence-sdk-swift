@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.3.0](https://github.com/spotify/confidence-sdk-swift/compare/1.2.0...1.3.0) (2025-04-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* restructure automatic context decorator ([#185](https://github.com/spotify/confidence-sdk-swift/issues/185))
+
+### 🐛 Bug Fixes
+
+* change how we log resolve tester hints ([#192](https://github.com/spotify/confidence-sdk-swift/issues/192)) ([40b206a](https://github.com/spotify/confidence-sdk-swift/commit/40b206a4866d4f18e699f77415c3160f1a2cd1ef))
+
+
+### ✨ New Features
+
+* add shouldApply to control sending apply ([#188](https://github.com/spotify/confidence-sdk-swift/issues/188)) ([a4b1e0a](https://github.com/spotify/confidence-sdk-swift/commit/a4b1e0af5ccfc83d61ca566a78f4a4181b112d63))
+* Adopt latest OF SDK ([#184](https://github.com/spotify/confidence-sdk-swift/issues/184)) ([652d5f0](https://github.com/spotify/confidence-sdk-swift/commit/652d5f019ecf2a16c0cf0a6eeb81a42a1d6fb986))
+
+
+### 🔄 Refactoring
+
+* restructure automatic context decorator ([#185](https://github.com/spotify/confidence-sdk-swift/issues/185)) ([3588ae8](https://github.com/spotify/confidence-sdk-swift/commit/3588ae80a3c6efe36f8eaa8fb33cb037f6dbc2f0))
+
 ## [1.2.0](https://github.com/spotify/confidence-sdk-swift/compare/1.1.0...1.2.0) (2024-12-10)
 
 
