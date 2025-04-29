@@ -8,12 +8,14 @@ public struct Evaluation<T> {
     public let errorMessage: String?
 }
 
-public enum ErrorCode {
+public enum ErrorCode: Equatable {
     case providerNotReady
     case invalidContext
     case flagNotFound
     case evaluationError
+    case parseError(message: String)
     case typeMismatch
+    case generalError(message: String)
 }
 
 struct FlagResolution: Encodable, Decodable, Equatable {
@@ -130,6 +132,14 @@ extension FlagResolution {
                     errorMessage: nil
                 )
             }
+        } catch let error as ConfidenceError {
+            return Evaluation(
+                value: defaultValue,
+                variant: nil,
+                reason: .error,
+                errorCode: error.errorCode,
+                errorMessage: error.description
+            )
         } catch {
             return Evaluation(
                 value: defaultValue,
@@ -206,7 +216,7 @@ extension FlagResolution {
 
     private func getValue(path: [String], value: ConfidenceValue) throws -> ConfidenceValue {
         if path.isEmpty {
-            guard value.asStructure() != nil else {
+            guard value.asStructure() == nil else {
                 throw ConfidenceError.parseError(
                     message: "Flag path must contain path to the field for non-object values")
             }
