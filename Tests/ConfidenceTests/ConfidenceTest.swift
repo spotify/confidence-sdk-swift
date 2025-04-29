@@ -240,6 +240,94 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testResolveObjectFlagWithUnderlyingStruct() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        // swiftlint:disable:next line_length
+        let expected: ConfidenceValue = .init(structure: ["blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")]), "string": .init(string: "test")])
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: expected,
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+
+        // if the expected output is a struct, it's important the the defaultValue is ConfidenceStruct.
+        let defaultValue = ConfidenceStruct(uniqueKeysWithValues: [])
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        XCTAssertEqual(evaluation, expected.asStructure())
+    }
+
+
+    func testResolveCodable() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                // swiftlint:disable:next line_length
+                value: .init(structure: ["blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")]), "string": .init(string: "test")]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        let expected = Flag(string: "test", blob: Blob(size: 3, name: "testInner"))
+        XCTAssertEqual(evaluation.string, expected.string)
+        XCTAssertEqual(evaluation.blob.size, expected.blob.size)
+        XCTAssertEqual(evaluation.blob.name, expected.blob.name)
+    }
 
     func testResolveAndApplyIntegerFlagNoSegmentMatch() async throws {
         class FakeClient: ConfidenceResolveClient {
@@ -694,7 +782,7 @@ class ConfidenceTest: XCTestCase {
         try await confidence.fetchAndActivate()
         let evaluation = confidence.getEvaluation(
             key: "flag.size",
-            defaultValue: [:])
+            defaultValue: ConfidenceStruct())
 
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value as? ConfidenceStruct, ["boolean": .init(boolean: true)])
