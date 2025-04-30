@@ -169,9 +169,55 @@ class ConfidenceProviderTest: XCTestCase {
             try provider.getIntegerEvaluation(key: "flagName", defaultValue: -1, context: context))
         { error in
             if let specificError = error as? OpenFeatureError {
-                XCTAssertEqual(specificError.errorCode(), ErrorCode.parseError)
-                XCTAssertEqual(specificError.description, "Parse error: Flag path " +
-                    "must contain path to the field for non-object values")
+                XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
+                XCTAssertEqual(specificError.description, "Type mismatch")
+            } else {
+                XCTFail("expected a flag not found error")
+            }
+        }
+    }
+
+    func testProviderObjectEval() async throws {
+        let context = MutableContext(targetingKey: "t")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                variant: "variant1",
+                value: .init(structure: ["int": .init(integer: 42)]),
+                flag: "flagName",
+                resolveReason: .match,
+                shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "t")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            } else {
+                print(event.debugDescription)
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+        XCTAssertThrowsError(
+            try provider.getObjectEvaluation(key: "flagName", defaultValue: Value.structure(["int": .integer(3)]), context: context))
+        { error in
+            if let specificError = error as? OpenFeatureError {
+                XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
+                XCTAssertEqual(specificError.description, "Type mismatch")
             } else {
                 XCTFail("expected a flag not found error")
             }
