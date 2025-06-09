@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.1](https://github.com/spotify/confidence-sdk-swift/compare/1.3.0...1.3.1) (2025-06-09)
+
+
+### 📚 Documentation
+
+* update flag name ([#195](https://github.com/spotify/confidence-sdk-swift/issues/195)) ([1d42190](https://github.com/spotify/confidence-sdk-swift/commit/1d4219053667617b27683bcd0c077610643f9d0a))
+* update open feature sdk url ([#194](https://github.com/spotify/confidence-sdk-swift/issues/194)) ([ca493de](https://github.com/spotify/confidence-sdk-swift/commit/ca493de4a70ed8410d541a38921d9311707fde30))
+
 ## [1.3.0](https://github.com/spotify/confidence-sdk-swift/compare/1.2.0...1.3.0) (2025-04-28)
 
 
