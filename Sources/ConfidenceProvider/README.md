@@ -102,7 +102,7 @@ OpenFeatureAPI.shared.observe().sink { event in
 ### Request a flag / value
 
 The `client` is used to retrieve values for the current user / context. For example, retrieving a boolean value for the
-flag `flag.my-boolean`:
+flag `my-flag.my-boolean`:
 
 ```swift
 let client = OpenFeatureAPI.shared.getClient()
