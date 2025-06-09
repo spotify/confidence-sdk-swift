@@ -165,5 +165,5 @@ confidence.putContext(context: ["os_version": ConfidenceValue(string: "17.0")])
 ```
 
 # OpenFeature Provider
-If you want to use OpenFeature, an OpenFeature Provider for the [OpenFeature SDK](https://github.com/open-feature/kotlin-sdk) is also available.
+If you want to use OpenFeature, an OpenFeature Provider for the [OpenFeature SDK](https://github.com/open-feature/swift-sdk) is also available.
 See the [dedicated Provider Readme](https://github.com/spotify/confidence-sdk-swift/tree/main/Sources/ConfidenceProvider).

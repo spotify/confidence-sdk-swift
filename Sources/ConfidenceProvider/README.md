@@ -1,5 +1,5 @@
 # OpenFeature Provider
-If you want to use OpenFeature, an OpenFeature Provider for the [OpenFeature SDK](https://github.com/open-feature/kotlin-sdk) is also available.
+If you want to use OpenFeature, an OpenFeature Provider for the [OpenFeature SDK](https://github.com/open-feature/swift-sdk) is also available.
 
 ## Usage
 
