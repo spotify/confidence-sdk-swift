@@ -252,6 +252,10 @@
         "declaration": "public func asStructure() -> [String: ConfidenceValue]?"
       },
       {
+        "name": "asStructureNative()",
+        "declaration": "public func asStructureNative() -> [String: Any]?"
+      },
+      {
         "name": "isNull()",
         "declaration": "public func isNull() -> Bool"
       },
