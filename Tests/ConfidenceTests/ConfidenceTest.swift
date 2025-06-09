@@ -241,6 +241,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
@@ -283,6 +284,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
@@ -372,6 +374,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
@@ -418,6 +421,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
@@ -465,6 +469,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
@@ -511,6 +516,7 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
