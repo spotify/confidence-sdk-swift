@@ -212,19 +212,390 @@ class ConfidenceProviderTest: XCTestCase {
         }
         await fulfillment(of: [readyExpectation], timeout: 1.0)
         cancellable.cancel()
-        XCTAssertThrowsError(
-            try provider.getObjectEvaluation(
-                key: "flagName",
-                defaultValue: Value.structure(["int": .integer(3)]),
-                context: context))
-        { error in
-            if let specificError = error as? OpenFeatureError {
-                XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
-                XCTAssertEqual(specificError.description, "Type mismatch")
-            } else {
-                XCTFail("expected a flag not found error")
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flagName",
+            defaultValue: Value.structure(["int": .integer(3)]),
+            context: context)
+
+        // Verify the evaluation succeeded and returned the correct structure
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        // Verify the converted value is correct
+        XCTAssertEqual(resultMap["int"], .integer(42))
+        XCTAssertEqual(evaluation.variant, "variant1")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
+    }
+
+    func testProviderResolveStruct() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: ["size": .init(integer: 3)]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
             }
         }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["size": .integer(0)]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        XCTAssertEqual(resultMap["size"], .integer(3))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
+
+    func testProviderResolveInnerStruct() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: ["size": .init(structure: ["border": .init(integer: 420)])]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["size": .structure(["border": .integer(0)])]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        guard case let .structure(sizeMap) = resultMap["size"] else {
+            XCTFail("Expected nested structure value")
+            return
+        }
+
+        XCTAssertEqual(sizeMap["border"], .integer(420))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
+    }
+
+    func testProviderResolveStructSchemaMismatch() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: ["size": .init(integer: 44)]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        XCTAssertThrowsError(
+            try provider.getObjectEvaluation(
+                key: "flag.size",
+                defaultValue: Value.structure(["test": .string("wrong_type")]),
+                context: context)
+        ) { error in
+            if let specificError = error as? OpenFeatureError {
+                XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
+            } else {
+                XCTFail("Expected a type mismatch error")
+            }
+        }
+    }
+
+    func testProviderResolveStructSchemaExtraValues() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: [
+                        "width": .init(integer: 200),
+                        "height": .init(integer: 400)
+                    ]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["width": .integer(100)]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        XCTAssertEqual(resultMap["width"], .integer(200))
+        XCTAssertEqual(resultMap["height"], .integer(400))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
+    }
+
+    func testProviderResolveStructHeterogenous() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: [
+                        "width": .init(integer: 200),
+                        "color": .init(string: "yellow")
+                    ]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["width": .integer(100), "color": .string("black")]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        XCTAssertEqual(resultMap["width"], .integer(200))
+        XCTAssertEqual(resultMap["color"], .string("yellow"))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
+    }
+
+    func testProviderResolveStructHeterogenousExtraValueInFlag() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: [
+                        "width": .init(integer: 200),
+                        "color": .init(string: "yellow"),
+                        "error": .init(string: "Unknown")
+                    ]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["width": .integer(100), "color": .string("black")]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        XCTAssertEqual(resultMap["width"], .integer(200))
+        XCTAssertEqual(resultMap["color"], .string("yellow"))
+        XCTAssertEqual(resultMap["error"], .string("Unknown"))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
+    }
+
+    func testProviderResolveStructHeterogenousExtraValueInDefaultValue() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let readyExpectation = XCTestExpectation(description: "Ready")
+        let storage = StorageMock()
+        class FakeClient: ConfidenceResolveClient {
+            var resolvedValues: [ResolvedValue] = [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: [
+                        "width": .init(integer: 200),
+                        "color": .init(string: "yellow")
+                    ]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true)
+            ]
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
+            if event == .ready {
+                readyExpectation.fulfill()
+            }
+        }
+        await fulfillment(of: [readyExpectation], timeout: 1.0)
+        cancellable.cancel()
+
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["width": .integer(100), "color": .string("black"), "error": .string("Unknown")]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        // The returned structure should only contain the keys from the flag response
+        XCTAssertEqual(resultMap["width"], .integer(200))
+        XCTAssertEqual(resultMap["color"], .string("yellow"))
+        XCTAssertNil(resultMap["error"]) // Extra key from default should not appear
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "targetingMatch")
     }
 }
 

@@ -99,8 +99,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)
     throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
-        // Convert Struct Value to 
-        try confidence.getEvaluation(key: key, defaultValue: defaultValue).toProviderEvaluation()
+        guard let nativeDefault = defaultValue.asNativeDictionary() else {
+            throw OpenFeatureError.generalError(message: "Unexpected error handling the default value")
+        }
+        let evaluation = confidence.getEvaluation(key: key, defaultValue: nativeDefault)
+        return try evaluation.toProviderEvaluationWithValueConversion()
     }
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent?, Never> {
@@ -118,7 +121,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 }
 
 extension Evaluation {
-    func toProviderEvaluation() throws -> ProviderEvaluation<T> {
+    /// Throws an OpenFeature error if this evaluation contains an error code
+    private func throwIfError() throws {
         if let errorCode = self.errorCode {
             switch errorCode {
             case .providerNotReady:
@@ -137,10 +141,28 @@ extension Evaluation {
                 throw OpenFeatureError.generalError(message: message)
             }
         }
+    }
+
+    func toProviderEvaluation() throws -> ProviderEvaluation<T> {
+        try throwIfError()
         return ProviderEvaluation(
             value: self.value,
             variant: self.variant,
-            reason: self.reason.rawValue,
+            reason: Reason.targetingMatch.rawValue, // TODO VERIFY THIS!
+            errorCode: nil,
+            errorMessage: nil
+        )
+    }
+}
+
+extension Evaluation where T == [String: Any] {
+    func toProviderEvaluationWithValueConversion() throws -> ProviderEvaluation<OpenFeature.Value> {
+        try throwIfError()
+        let openFeatureValue = try OpenFeature.Value.fromNativeDictionary(self.value)
+        return ProviderEvaluation(
+            value: openFeatureValue,
+            variant: self.variant,
+            reason: Reason.targetingMatch.rawValue, // TODO VERIFY THIS!
             errorCode: nil,
             errorMessage: nil
         )
