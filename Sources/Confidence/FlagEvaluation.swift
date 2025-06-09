@@ -203,7 +203,7 @@ extension FlagResolution {
             result = value.asDate()
         case .timestamp:
             result = value.asDateComponents()
-        // TODO asListNative?
+        // TODO We should align List and Structure to return the same data type - asListNative?
         case .list:
             result = value.asList()
         case .structure:
