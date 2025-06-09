@@ -233,7 +233,6 @@ class ConfidenceTest: XCTestCase {
             defaultValue: ["size": 0]
         )
 
-        print(evaluation)
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value, ["size": 3])
         XCTAssertNil(evaluation.errorCode)
@@ -273,12 +272,12 @@ class ConfidenceTest: XCTestCase {
 
         try await confidence.fetchAndActivate()
         let evaluation = confidence.getEvaluation(
-            key: "flag.size",
-            defaultValue: ["border": 0]
+            key: "flag",
+            defaultValue: ["size": ["border": 0]]
         )
 
         XCTAssertEqual(client.resolveStats, 1)
-        XCTAssertEqual(evaluation.value, ["border": 420])
+        XCTAssertEqual(evaluation.value, ["size": ["border": 420]])
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, .match)
@@ -366,7 +365,6 @@ class ConfidenceTest: XCTestCase {
             defaultValue: ["width": 100]
         )
 
-        print(evaluation)
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value, ["width": 200, "height": 400])
         XCTAssertNil(evaluation.errorCode)
