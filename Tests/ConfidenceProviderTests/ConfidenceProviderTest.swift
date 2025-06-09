@@ -213,7 +213,10 @@ class ConfidenceProviderTest: XCTestCase {
         await fulfillment(of: [readyExpectation], timeout: 1.0)
         cancellable.cancel()
         XCTAssertThrowsError(
-            try provider.getObjectEvaluation(key: "flagName", defaultValue: Value.structure(["int": .integer(3)]), context: context))
+            try provider.getObjectEvaluation(
+                key: "flagName",
+                defaultValue: Value.structure(["int": .integer(3)]),
+                context: context))
         { error in
             if let specificError = error as? OpenFeatureError {
                 XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
