@@ -20,11 +20,11 @@
       },
       {
         "name": "getEvaluation(key:defaultValue:)",
-        "declaration": "public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T>"
+        "declaration": "public func getEvaluation<T: Decodable>(key: String, defaultValue: T) -> Evaluation<T>"
       },
       {
         "name": "getValue(key:defaultValue:)",
-        "declaration": "public func getValue<T>(key: String, defaultValue: T) -> T"
+        "declaration": "public func getValue<T: Decodable>(key: String, defaultValue: T) -> T"
       },
       {
         "name": "getContext()",

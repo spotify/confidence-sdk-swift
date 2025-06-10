@@ -119,7 +119,7 @@ public class Confidence: ConfidenceEventSender {
     - Parameter key:expects dot-notation to retrieve a specific entry in the flag's value, e.g. "flagname.myentry"
     - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
     */
-    public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T> {
+    public func getEvaluation<T: Decodable>(key: String, defaultValue: T) -> Evaluation<T> {
         cacheQueue.sync {  [weak self] in
             guard let self = self else {
                 return Evaluation(
@@ -145,7 +145,7 @@ public class Confidence: ConfidenceEventSender {
     - Parameter key:expects dot-notation to retrieve a specific entry in the flag's value, e.g. "flagname.myentry"
     - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
     */
-    public func getValue<T>(key: String, defaultValue: T) -> T {
+    public func getValue<T: Decodable>(key: String, defaultValue: T) -> T {
         return getEvaluation(key: key, defaultValue: defaultValue).value
     }
 
