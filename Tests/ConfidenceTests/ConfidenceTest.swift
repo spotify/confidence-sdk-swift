@@ -366,7 +366,8 @@ class ConfidenceTest: XCTestCase {
         )
 
         XCTAssertEqual(client.resolveStats, 1)
-        XCTAssertEqual(evaluation.value, ["width": 200, "height": 400])
+        // New behavior: extra keys from flag are filtered out, only required keys from defaultValue are returned
+        XCTAssertEqual(evaluation.value, ["width": 200])
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertEqual(evaluation.reason, .match)
@@ -460,7 +461,8 @@ class ConfidenceTest: XCTestCase {
         )
 
         XCTAssertEqual(client.resolveStats, 1)
-        let expected: [String: AnyHashable] = ["width": 200, "color": "yellow", "error": "Unknown"]
+        // New behavior: extra keys from flag are filtered out, only required keys from defaultValue are returned
+        let expected: [String: AnyHashable] = ["width": 200, "color": "yellow"]
         XCTAssertEqual(evaluation.value as? [String: AnyHashable], expected)
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
@@ -507,15 +509,15 @@ class ConfidenceTest: XCTestCase {
         )
 
         XCTAssertEqual(client.resolveStats, 1)
-        let expected: [String: AnyHashable] = ["width": 200, "color": "yellow"]
-        XCTAssertEqual(evaluation.value as? [String: AnyHashable], expected)
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.variant, "control")
+        // New behavior: should fail because the "error" key is missing from the flag structure
+        XCTAssertEqual(evaluation.value as? [String: AnyHashable], ["width": 100, "color": "black", "error": "Unknown"])
+        XCTAssertEqual(evaluation.errorCode, .typeMismatch(
+            message: "Default value key \'error\' not found in flag"))
+        XCTAssertEqual(evaluation.errorMessage, "Default value key \'error\' not found in flag")
+        XCTAssertEqual(evaluation.reason, .error)
+        XCTAssertNil(evaluation.variant)
         XCTAssertEqual(client.resolveStats, 1)
-        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
-        XCTAssertEqual(flagApplier.applyCallCount, 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
     func testResolveStructHeterogenousMismatch() async throws {
@@ -533,7 +535,7 @@ class ConfidenceTest: XCTestCase {
             ResolvedValue(
                 variant: "control",
                 value: .init(structure: [
-                    "width": .init(integer: 200),
+                    "width": .init(string: "200"),
                     "color": .init(string: "yellow")
                 ]),
                 flag: "flag",
@@ -555,17 +557,18 @@ class ConfidenceTest: XCTestCase {
 
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value, ["width": 100])
+        // New behavior: type mismatch should be detected at the individual key level
         if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertTrue(message.hasSuffix("cannot be cast to Dictionary<String, Int>"))
-            XCTAssertTrue(message.contains("\"width\": \"200\""))
-            XCTAssertTrue(message.contains("\"color\": \"yellow\""))
+            XCTAssertEqual(
+                message,
+                "Default value key \'width\' has incompatible type. Expected from flag is \'Int\', got \'string\'"
+            )
         } else {
             XCTFail("Expected .typeMismatch but got \(String(describing: evaluation.errorCode))")
         }
         let errorMessage = evaluation.errorMessage ?? ""
-        XCTAssertTrue(errorMessage.hasSuffix("cannot be cast to Dictionary<String, Int>"))
-        XCTAssertTrue(errorMessage.contains("\"width\": \"200\""))
-        XCTAssertTrue(errorMessage.contains("\"color\": \"yellow\""))
+        XCTAssertTrue(errorMessage.contains(
+            "Default value key \'width\' has incompatible type. Expected from flag is \'Int\', got \'string\'"))
         XCTAssertEqual(evaluation.reason, .error)
         XCTAssertNil(evaluation.variant)
         XCTAssertEqual(client.resolveStats, 1)
@@ -606,8 +609,8 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value, ConfidenceValue.init(structure: ["size": .init(integer: 4)]))
         XCTAssertEqual(evaluation.errorCode, .typeMismatch(
-            message: "Value [\"size\": \"3\"] cannot be cast to ConfidenceValue"))
-        XCTAssertEqual(evaluation.errorMessage, "Value [\"size\": \"3\"] cannot be cast to ConfidenceValue")
+            message: "Expected a Dictionary as default value, but got a different type"))
+        XCTAssertEqual(evaluation.errorMessage, "Expected a Dictionary as default value, but got a different type")
         XCTAssertEqual(evaluation.reason, .error)
         XCTAssertNil(evaluation.variant)
         XCTAssertEqual(client.resolveStats, 1)

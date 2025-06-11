@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import ConfidenceProvider
 import Combine
@@ -6,6 +7,7 @@ import XCTest
 
 @testable import Confidence
 
+// swiftlint:disable:next type_body_length
 class ConfidenceProviderTest: XCTestCase {
     func testErrorFetchOnInit() async throws {
         let readyExpectation = XCTestExpectation(description: "Ready")
@@ -430,7 +432,7 @@ class ConfidenceProviderTest: XCTestCase {
         }
 
         XCTAssertEqual(resultMap["width"], .integer(200))
-        XCTAssertEqual(resultMap["height"], .integer(400))
+        XCTAssertNil(resultMap["height"])
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "targetingMatch")
     }
@@ -538,7 +540,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         XCTAssertEqual(resultMap["width"], .integer(200))
         XCTAssertEqual(resultMap["color"], .string("yellow"))
-        XCTAssertEqual(resultMap["error"], .string("Unknown"))
+        XCTAssertNil(resultMap["error"])
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "targetingMatch")
     }
@@ -580,22 +582,26 @@ class ConfidenceProviderTest: XCTestCase {
         await fulfillment(of: [readyExpectation], timeout: 1.0)
         cancellable.cancel()
 
-        let evaluation = try provider.getObjectEvaluation(
-            key: "flag",
-            defaultValue: Value.structure(["width": .integer(100), "color": .string("black"), "error": .string("Unknown")]),
-            context: context)
+        let defaultStructure = Value.structure([
+            "width": .integer(100),
+            "color": .string("black"),
+            "error": .string("Unknown")
+        ])
 
-        guard case let .structure(resultMap) = evaluation.value else {
-            XCTFail("Expected structure value")
-            return
+        // With the new validation behavior, this should throw an error because
+        // the "error" key is missing from the flag structure
+        do {
+            _ = try provider.getObjectEvaluation(
+                key: "flag",
+                defaultValue: defaultStructure,
+                context: context)
+            XCTFail("Expected an error to be thrown because 'error' key is missing from flag structure")
+        } catch {
+            // This is expected - the validation should catch that the required "error" key is missing
+            XCTAssertTrue(error.localizedDescription.contains("Type mismatch") ||
+    error.localizedDescription.contains("missing required keys") ||
+    error.localizedDescription.contains("error"))
         }
-
-        // The returned structure should only contain the keys from the flag response
-        XCTAssertEqual(resultMap["width"], .integer(200))
-        XCTAssertEqual(resultMap["color"], .string("yellow"))
-        XCTAssertNil(resultMap["error"]) // Extra key from default should not appear
-        XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
     }
 }
 

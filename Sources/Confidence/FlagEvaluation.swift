@@ -73,7 +73,7 @@ extension FlagResolution {
             }
 
             let parsedValue = try getValueForPath(path: parsedKey.path, value: value)
-            let typedValue: T? = try getTyped(value: parsedValue)
+            let typedValue: T? = try getTyped(value: parsedValue, defaultValue: defaultValue)
 
             if resolvedFlag.resolveReason == .match {
                 var resolveReason: ResolveReason = .match
@@ -178,7 +178,7 @@ extension FlagResolution {
     }
 
     // swiftlint:disable:next cyclomatic_complexity
-    private func getTyped<T>(value: ConfidenceValue) throws -> T? {
+    private func getTyped<T>(value: ConfidenceValue, defaultValue: T) throws -> T? {
         if let value = self as? T {
             return value
         }
@@ -207,15 +207,99 @@ extension FlagResolution {
         case .list:
             result = value.asList()
         case .structure:
-            result = value.asStructureNative()
+            guard let defaultDict = defaultValue as? [String: Any] else {
+                throw ConfidenceError
+                    .typeMismatch(
+                        message: "Expected a Dictionary as default value, but got a different type"
+                    )
+            }
+            guard let structure = value.asStructure() else {
+                throw ConfidenceError
+                    .typeMismatch(
+                        message: "Unexpected error with internal ConfidenceStruct conversion"
+                    )
+            }
+            try validateDictionaryStructureCompatibility(
+                structure: structure,
+                defaultDict: defaultDict
+            )
+            // Filter only the entries in the original default value
+            var filteredNative: [String: Any] = [:]
+            for requiredKey in defaultDict.keys {
+                if let confidenceValue = structure[requiredKey] {
+                    filteredNative[requiredKey] = confidenceValue.asNative()
+                }
+            }
+            result = filteredNative
         case .null:
             return nil
         }
 
         if let typedResult = result as? T {
             return typedResult
+        } else {
+            throw ConfidenceError.typeMismatch(message: "Value \(value) cannot be cast to \(T.self)")
         }
-        throw ConfidenceError.typeMismatch(message: "Value \(value) cannot be cast to \(T.self)")
+    }
+
+    private func validateDictionaryStructureCompatibility(
+        structure: ConfidenceStruct,
+        defaultDict: [String: Any]
+    ) throws {
+        for defaultValueKey in defaultDict.keys {
+            guard let confidenceValue = structure[defaultValueKey] else {
+                throw ConfidenceError.typeMismatch(
+                    message: "Default value key '\(defaultValueKey)' not found in flag"
+                )
+            }
+
+            let defaultValueValue: Any? = defaultDict[defaultValueKey]
+            if !isValueCompatibleWithDefaultValue(
+                confidenceType: confidenceValue.type(),
+                defaultValue: defaultValueValue
+            ) {
+                let message = "Default value key '\(defaultValueKey)' has incompatible type. " +
+                    "Expected from flag is '\(printIntrinsicType(of: defaultValueValue))', " +
+                    "got '\(confidenceValue.type())'"
+                throw ConfidenceError.typeMismatch(message: message)
+            }
+        }
+    }
+
+    private func printIntrinsicType(of value: Any?) -> String {
+        if let unwrapped = value {
+            return "\(type(of: unwrapped))"
+        } else {
+            return "nil"
+        }
+    }
+
+    private func isValueCompatibleWithDefaultValue(
+        confidenceType: ConfidenceValueType,
+        defaultValue: Any?
+    ) -> Bool {
+        switch defaultValue {
+        case is String:
+            return confidenceType == .string
+        case is Int, is Int32, is Int64:
+            return confidenceType == .integer
+        case is Double, is Float:
+            return confidenceType == .double
+        case is Bool:
+            return confidenceType == .boolean
+        case is Date:
+            return confidenceType == .timestamp
+        case is DateComponents:
+            return confidenceType == .date
+        case is Array<Any>:
+            return confidenceType == .list
+        case is [String: Any]:
+            return confidenceType == .structure
+        case .none: // TODO This requires extra care
+            return confidenceType == .null
+        default:
+            return false
+        }
     }
 
     private func getValueForPath(path: [String], value: ConfidenceValue) throws -> ConfidenceValue {
