@@ -218,7 +218,7 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         return nil
     }
 
-    private func asNative() -> Any {
+    func asNative() -> Any {
         switch value {
         case .boolean(let bool):
             return bool
