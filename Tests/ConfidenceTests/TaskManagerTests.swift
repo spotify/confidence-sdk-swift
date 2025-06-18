@@ -68,6 +68,21 @@ class TaskManagerTests: XCTestCase {
         XCTAssertEqual(finalSignal2, true)
     }
 
+    func testConcurrentSetCurrentTask() async {
+        let taskManager = TaskManager()
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0..<10000 {
+                group.addTask {
+                    let task = Task { await Task.yield() }
+                    taskManager.currentTask = task
+                }
+            }
+        }
+        await taskManager.awaitReconciliation()
+        // If we reach here without a crash, the test passes
+        XCTAssertTrue(true)
+    }
+
     private actor SignalManager {
         private var _signal1 = false
         private var _signal2 = false
