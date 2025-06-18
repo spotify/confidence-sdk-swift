@@ -1,10 +1,17 @@
 import Foundation
 
 internal class TaskManager {
+    private let queue = DispatchQueue(label: "com.confidence.taskmanager")
+    private var _currentTask: Task<(), Never>?
+
     public var currentTask: Task<(), Never>? {
-        didSet {
-            if let oldTask = oldValue {
-                oldTask.cancel()
+        get { queue.sync { _currentTask } }
+        set {
+            queue.sync {
+                if let oldTask = _currentTask {
+                    oldTask.cancel()
+                }
+                _currentTask = newValue
             }
         }
     }

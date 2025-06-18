@@ -915,6 +915,20 @@ class ConfidenceTest: XCTestCase {
             }
         }
     }
+
+    func testConcurrentPutContextAndWait() async {
+        let confidence = Confidence.Builder(clientSecret: "test").build()
+        await withTaskGroup(of: Void.self) { group in
+            for i in 0..<1000 {
+                group.addTask {
+                    await confidence.putContextAndWait(key: "key\(i)", value: ConfidenceValue(string: "value\(i)"))
+                }
+            }
+        }
+        await confidence.awaitReconciliation()
+        // If we reach here without a crash, the test passes
+        XCTAssertTrue(true)
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {
