@@ -9,6 +9,32 @@ public enum ConfidenceError: Error, Equatable {
     case internalError(message: String)
     case parseError(message: String)
     case invalidContextInMessage
+    case typeMismatch(message: String = "Mismatch between default value and flag value type")
+
+    var errorCode: ErrorCode {
+        switch self {
+        case .grpcError(let message),
+            .cacheError(let message),
+            .corruptedCache(let message),
+            .badRequest(let message?),
+            .internalError(let message):
+            return .generalError(message: message)
+
+        case .flagNotFoundError:
+            return .flagNotFound
+
+        case .parseError(let message):
+            return .parseError(message: message)
+
+        case .invalidContextInMessage:
+            return .invalidContext
+        case .badRequest(message: .none):
+            return .generalError(message: "unknown error")
+
+        case .typeMismatch(let message):
+            return .typeMismatch(message: message)
+        }
+    }
 }
 
 extension ConfidenceError: CustomStringConvertible {
@@ -33,6 +59,8 @@ extension ConfidenceError: CustomStringConvertible {
             return "Parse error occurred: \(message)"
         case .invalidContextInMessage:
             return "Field 'context' is not allowed in event's data"
+        case .typeMismatch(message: let message):
+            return message
         }
     }
 }
