@@ -259,14 +259,14 @@ extension FlagResolution {
                 defaultValue: defaultValueValue
             ) {
                 let message = "Default value key '\(defaultValueKey)' has incompatible type. " +
-                    "Expected from flag is '\(printIntrinsicType(of: defaultValueValue))', " +
+                    "Expected from flag is '\(getIntrinsicType(of: defaultValueValue))', " +
                     "got '\(confidenceValue.type())'"
                 throw ConfidenceError.typeMismatch(message: message)
             }
         }
     }
 
-    private func printIntrinsicType(of value: Any?) -> String {
+    private func getIntrinsicType(of value: Any?) -> String {
         if let unwrapped = value {
             return "\(type(of: unwrapped))"
         } else {
