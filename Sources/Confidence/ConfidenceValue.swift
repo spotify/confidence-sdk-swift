@@ -220,8 +220,21 @@ extension ConfidenceValue {
             case .string(let v): return v
             case .integer(let v): return v
             case .double(let v): return v
-            case .date(let v): return v
-            case .timestamp(let v): return v
+            case .date(let v):
+                // Convert DateComponents to ISO8601 string for JSON serialization
+                if let date = Calendar.current.date(from: v) {
+                    let formatter = ISO8601DateFormatter()
+                    formatter.timeZone = TimeZone.current
+                    formatter.formatOptions = [.withFullDate]
+                    return formatter.string(from: date)
+                }
+                return nil
+            case .timestamp(let v):
+                // Convert Date to ISO8601 string for JSON serialization
+                let formatter = ISO8601DateFormatter()
+                formatter.timeZone = TimeZone.current
+                formatter.formatOptions = [.withInternetDateTime]
+                return formatter.string(from: v)
             case .list(let values):
                 return values.compactMap { flatten($0) }
             case .structure(let values):

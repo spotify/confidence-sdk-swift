@@ -6,6 +6,27 @@ import XCTest
 
 @testable import Confidence
 
+extension Date {
+    var ISO8601String: String {
+        let formatter = ISO8601DateFormatter()
+        formatter.timeZone = TimeZone.current
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.string(from: self)
+    }
+}
+
+extension DateComponents {
+    var ISO8601String: String {
+        if let date = Calendar.current.date(from: self) {
+            let formatter = ISO8601DateFormatter()
+            formatter.timeZone = TimeZone.current
+            formatter.formatOptions = [.withFullDate]
+            return formatter.string(from: date)
+        }
+        return ""
+    }
+}
+
 @available(macOS 13.0, iOS 16.0, *)
 class ConfidenceTest: XCTestCase {
     private var flagApplier = FlagApplierMock()
@@ -860,6 +881,134 @@ class ConfidenceTest: XCTestCase {
         // Should handle array fields correctly
         XCTAssertEqual(evaluation.items, ["item1", "item2", "item3"])
         XCTAssertEqual(evaluation.numbers, [1, 2, 3])
+    }
+
+    func testResolveCodableAllTypes() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+
+        // Create a date and date components for testing
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+        let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    // Boolean type
+                    "booleanValue": .init(boolean: true),
+                    // String type
+                    "stringValue": .init(string: "resolved string"),
+                    // Integer type
+                    "integerValue": .init(integer: 42),
+                    // Double type
+                    "doubleValue": .init(double: 3.14159),
+                    // Date type (timestamp)
+                    "dateValue": .init(timestamp: testDate),
+                    // DateComponents type
+                    "dateComponentsValue": .init(date: testDateComponents),
+                    // List types
+                    "booleanList": .init(booleanList: [true, false, true]),
+                    "stringList": .init(stringList: ["a", "b", "c"]),
+                    "integerList": .init(integerList: [1, 2, 3]),
+                    "doubleList": .init(doubleList: [1.1, 2.2, 3.3]),
+                    "dateList": .init(dateList: [testDateComponents, testDateComponents]),
+                    "timestampList": .init(timestampList: [testDate, testDate]),
+                    "anotherList": .init(integerList: [2, 4, 6]),
+                    // Nested structure
+                    "nestedStruct": .init(structure: [
+                        "nestedString": .init(string: "nested value"),
+                        "nestedInteger": .init(integer: 100)
+                    ]),
+                    // Null value
+                    "nullValue": .init(null: ())
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct NestedStruct: Codable {
+            let nestedString: String
+            let nestedInteger: Int
+        }
+
+        struct AllTypesFlag: Codable {
+            let booleanValue: Bool
+            let stringValue: String
+            let integerValue: Int
+            let doubleValue: Double
+            let dateValue: String // Date serialized as ISO8601 string
+            let dateComponentsValue: String // DateComponents serialized as ISO8601 string
+            let booleanList: [Bool]
+            let stringList: [String]
+            let integerList: [Int]
+            let doubleList: [Double]
+            let dateList: [String] // DateComponents list serialized as ISO8601 strings
+            let timestampList: [String] // Date list serialized as ISO8601 strings
+            let anotherList: [Int]
+            let nestedStruct: NestedStruct
+            let nullValue: String? // Optional to handle null
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+
+        // Create default values with different types
+        let defaultDate = Date(timeIntervalSince1970: 0) // 1970-01-01 00:00:00 UTC
+        let defaultDateComponents = DateComponents(year: 1970, month: 1, day: 1)
+        let defaultValue = AllTypesFlag(
+            booleanValue: false,
+            stringValue: "default string",
+            integerValue: 0,
+            doubleValue: 0.0,
+            dateValue: defaultDate.ISO8601String,
+            dateComponentsValue: defaultDateComponents.ISO8601String,
+            booleanList: [],
+            stringList: [],
+            integerList: [],
+            doubleList: [],
+            dateList: [],
+            timestampList: [],
+            anotherList: [],
+            nestedStruct: NestedStruct(nestedString: "default nested", nestedInteger: 0),
+            nullValue: "default null"
+        )
+
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Verify all types are correctly resolved
+        XCTAssertEqual(evaluation.booleanValue, true)
+        XCTAssertEqual(evaluation.stringValue, "resolved string")
+        XCTAssertEqual(evaluation.integerValue, 42)
+        XCTAssertEqual(evaluation.doubleValue, 3.14159, accuracy: 0.00001)
+        XCTAssertEqual(evaluation.dateValue, testDate.ISO8601String)
+        XCTAssertEqual(evaluation.dateComponentsValue, testDateComponents.ISO8601String)
+        XCTAssertEqual(evaluation.booleanList, [true, false, true])
+        XCTAssertEqual(evaluation.stringList, ["a", "b", "c"])
+        XCTAssertEqual(evaluation.integerList, [1, 2, 3])
+        XCTAssertEqual(evaluation.doubleList, [1.1, 2.2, 3.3])
+        XCTAssertEqual(evaluation.dateList, [testDateComponents.ISO8601String, testDateComponents.ISO8601String])
+        XCTAssertEqual(evaluation.timestampList, [testDate.ISO8601String, testDate.ISO8601String])
+        XCTAssertEqual(evaluation.anotherList, [2, 4, 6])
+        XCTAssertEqual(evaluation.nestedStruct.nestedString, "nested value")
+        XCTAssertEqual(evaluation.nestedStruct.nestedInteger, 100)
+        XCTAssertNil(evaluation.nullValue) // Should be nil for null values
     }
 
     func testResolveAndApplyIntegerFlagNoSegmentMatch() async throws {
