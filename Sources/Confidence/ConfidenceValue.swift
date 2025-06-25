@@ -210,6 +210,56 @@ extension ConfidenceValue {
     }
 }
 
+extension ConfidenceValue {
+    // swiftlint:disable cyclomatic_complexity
+    // swiftlint:disable identifier_name
+    public func asJSONData() -> Data? {
+        func flatten(_ value: ConfidenceValueInternal) -> Any? {
+            switch value {
+            case .boolean(let v): return v
+            case .string(let v): return v
+            case .integer(let v): return v
+            case .double(let v): return v
+            case .date(let v):
+                // Convert DateComponents to ISO8601 string for JSON serialization
+                if let date = Calendar.current.date(from: v) {
+                    let formatter = ISO8601DateFormatter()
+                    formatter.timeZone = TimeZone.current
+                    formatter.formatOptions = [.withFullDate]
+                    return formatter.string(from: date)
+                }
+                return nil
+            case .timestamp(let v):
+                // Convert Date to ISO8601 string for JSON serialization
+                let formatter = ISO8601DateFormatter()
+                formatter.timeZone = TimeZone.current
+                formatter.formatOptions = [.withInternetDateTime]
+                return formatter.string(from: v)
+            case .list(let values):
+                return values.compactMap { flatten($0) }
+            case .structure(let values):
+                var dict: [String: Any] = [:]
+                for (key, val) in values {
+                    if let flattened = flatten(val) {
+                        dict[key] = flattened
+                    }
+                }
+                return dict
+            case .null:
+                return NSNull()
+            }
+        }
+
+        if let flattened = flatten(self.value) {
+            return try? JSONSerialization.data(withJSONObject: flattened, options: .sortedKeys)
+        }
+        return nil
+    }
+    // swiftlint:enable cyclomatic_complexity
+    // swiftlint:enable identifier_name
+}
+
+
 public enum ConfidenceValueType: CaseIterable {
     case boolean
     case string
