@@ -1,6 +1,7 @@
 import XCTest
 @testable import Confidence
 
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 final class DeviceInfoContextDecoratorTests: XCTestCase {
     func testEmptyConstructMakesNoOp() {
         let result = ConfidenceDeviceInfoContextDecorator().decorated(context: [:])
@@ -32,3 +33,4 @@ final class DeviceInfoContextDecoratorTests: XCTestCase {
         XCTAssertNotNil(result["device"])
     }
 }
+#endif
