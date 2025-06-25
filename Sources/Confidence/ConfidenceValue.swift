@@ -211,75 +211,37 @@ extension ConfidenceValue {
 }
 
 extension ConfidenceValue {
-    // swiftlint:disable function_body_length
     // swiftlint:disable cyclomatic_complexity
     // swiftlint:disable identifier_name
     public func asJSONData() -> Data? {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-
-        switch value {
-        case .boolean(let value):
-            return try? encoder.encode(value)
-        case .string(let value):
-            return try? encoder.encode(value)
-        case .integer(let value):
-            return try? encoder.encode(value)
-        case .double(let value):
-            return try? encoder.encode(value)
-        case .date(let value):
-            return try? encoder.encode(value)
-        case .timestamp(let value):
-            return try? encoder.encode(value)
-        case .structure(let values):
-            var flattened: [String: Any] = [:]
-            for (key, value) in values {
-                switch value {
-                case .boolean(let v): flattened[key] = v
-                case .string(let v): flattened[key] = v
-                case .integer(let v): flattened[key] = v
-                case .double(let v): flattened[key] = v
-                case .date(let v): flattened[key] = v
-                case .timestamp(let v): flattened[key] = v
-                case .structure(let v):
-                    var nested: [String: Any] = [:]
-                    for (nestedKey, nestedValue) in v {
-                        switch nestedValue {
-                        case .boolean(let v): nested[nestedKey] = v
-                        case .string(let v): nested[nestedKey] = v
-                        case .integer(let v): nested[nestedKey] = v
-                        case .double(let v): nested[nestedKey] = v
-                        case .date(let v): nested[nestedKey] = v
-                        case .timestamp(let v): nested[nestedKey] = v
-                        case .structure(let v):
-                            var innerNested: [String: Any] = [:]
-                            for (innerKey, innerValue) in v {
-                                switch innerValue {
-                                case .boolean(let v): innerNested[innerKey] = v
-                                case .string(let v): innerNested[innerKey] = v
-                                case .integer(let v): innerNested[innerKey] = v
-                                case .double(let v): innerNested[innerKey] = v
-                                case .date(let v): innerNested[innerKey] = v
-                                case .timestamp(let v): innerNested[innerKey] = v
-                                default: break
-                                }
-                            }
-                            nested[nestedKey] = innerNested
-                        default: break
-                        }
+        func flatten(_ value: ConfidenceValueInternal) -> Any? {
+            switch value {
+            case .boolean(let v): return v
+            case .string(let v): return v
+            case .integer(let v): return v
+            case .double(let v): return v
+            case .date(let v): return v
+            case .timestamp(let v): return v
+            case .list(let values):
+                return values.compactMap { flatten($0) }
+            case .structure(let values):
+                var dict: [String: Any] = [:]
+                for (key, val) in values {
+                    if let flattened = flatten(val) {
+                        dict[key] = flattened
                     }
-                    flattened[key] = nested
-                default: break
                 }
+                return dict
+            case .null:
+                return NSNull()
             }
-            return try? JSONSerialization.data(withJSONObject: flattened, options: .sortedKeys)
-        case .null:
-            return try? JSONSerialization.data(withJSONObject: NSNull())
-        default:
-            return nil
         }
+
+        if let flattened = flatten(self.value) {
+            return try? JSONSerialization.data(withJSONObject: flattened, options: .sortedKeys)
+        }
+        return nil
     }
-    // swiftlint:enable function_body_length
     // swiftlint:enable cyclomatic_complexity
     // swiftlint:enable identifier_name
 }
