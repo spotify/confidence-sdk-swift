@@ -329,6 +329,539 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.blob.name, expected.blob.name)
     }
 
+    func testResolveCodableMissingFieldsInResolvedValue() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Resolved value missing the "blob" field
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["string": .init(string: "test")]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should fall back to default value when fields are missing
+        XCTAssertEqual(evaluation.string, "")
+        XCTAssertEqual(evaluation.blob.size, 0) // Default value
+        XCTAssertEqual(evaluation.blob.name, "") // Default value
+    }
+
+    func testResolveCodableExtraFieldsInResolvedValue() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Resolved value has extra fields not in the struct
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(string: "test"),
+                    "blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")]),
+                    "extraField": .init(string: "extra"),
+                    "anotherExtra": .init(integer: 42)
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should ignore extra fields and use only the matching ones
+        XCTAssertEqual(evaluation.string, "test")
+        XCTAssertEqual(evaluation.blob.size, 3)
+        XCTAssertEqual(evaluation.blob.name, "testInner")
+    }
+
+    func testResolveCodableNestedMissingFields() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Nested blob missing the "name" field
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(string: "test"),
+                    "blob": .init(structure: ["size": .init(integer: 3)])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should use default value due to missing name
+        XCTAssertEqual(evaluation.string, "")
+        XCTAssertEqual(evaluation.blob.size, 0)
+        XCTAssertEqual(evaluation.blob.name, "")
+    }
+
+    func testResolveCodableNestedMissingFieldsDefaultValue() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Nested blob missing the "name" field
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(string: "test"),
+                    "blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "Bob")])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", blob: Blob(size: 0))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should use default value due to missing name
+        XCTAssertEqual(evaluation.string, "test")
+        XCTAssertEqual(evaluation.blob.size, 3)
+    }
+
+    func testResolveCodableTypeMismatch() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Type mismatch: size is string instead of integer
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(string: "test"),
+                    "blob": .init(structure: [
+                        "size": .init(string: "not-a-number"),
+                        "name": .init(string: "testInner")
+                    ])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should fall back to default value when type conversion fails
+        XCTAssertEqual(evaluation.string, "")
+        XCTAssertEqual(evaluation.blob.size, 0) // Default value due to type mismatch
+        XCTAssertEqual(evaluation.blob.name, "")
+    }
+
+    func testResolveCodableNullValues() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Some fields are null
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(null: ()),
+                    "blob": .init(structure: ["size": .init(null: ()), "name": .init(string: "foo")])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "default", blob: Blob(size: 2, name: "default"))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // TODO Not the entire resolved value should be default, only the null fields
+        XCTAssertEqual(evaluation.string, "default")
+        XCTAssertEqual(evaluation.blob.size, 2)
+        XCTAssertEqual(evaluation.blob.name, "default")
+    }
+
+    func testResolveCodableOptionalFields() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(string: "test"),
+                    "optionalField": .init(string: "optional"),
+                    "blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let optionalField: String?
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", optionalField: nil, blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should handle optional fields correctly
+        XCTAssertEqual(evaluation.string, "test")
+        XCTAssertEqual(evaluation.optionalField, "optional")
+        XCTAssertEqual(evaluation.blob.size, 3)
+        XCTAssertEqual(evaluation.blob.name, "testInner")
+    }
+
+    func testResolveCodableOptionalFieldsMissing() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        // Missing optional field
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "string": .init(string: "test"),
+                    "blob": .init(structure: ["size": .init(integer: 3), "name": .init(string: "testInner")])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Blob: Codable {
+            let size: Int
+            let name: String
+        }
+
+        struct Flag: Codable {
+            let string: String
+            let optionalField: String?
+            let blob: Blob
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = Flag(string: "", optionalField: "default", blob: Blob(size: 0, name: ""))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should use default value for missing optional field
+        XCTAssertEqual(evaluation.string, "test")
+        XCTAssertNil(evaluation.optionalField, "")
+        XCTAssertEqual(evaluation.blob.size, 3)
+        XCTAssertEqual(evaluation.blob.name, "testInner")
+    }
+
+    func testResolveCodableDeepNestedStructure() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "level1": .init(structure: [
+                        "level2": .init(structure: [
+                            "level3": .init(structure: [
+                                "finalValue": .init(string: "deep")
+                            ])
+                        ])
+                    ])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct Level3: Codable {
+            let finalValue: String
+        }
+
+        struct Level2: Codable {
+            let level3: Level3
+        }
+
+        struct Level1: Codable {
+            let level2: Level2
+        }
+
+        struct DeepFlag: Codable {
+            let level1: Level1
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = DeepFlag(level1: Level1(level2: Level2(level3: Level3(finalValue: "default"))))
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should handle deep nested structures correctly
+        XCTAssertEqual(evaluation.level1.level2.level3.finalValue, "deep")
+    }
+
+    func testResolveCodableArrayFields() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "items": .init(list: [
+                        .init(string: "item1"),
+                        .init(string: "item2"),
+                        .init(string: "item3")
+                    ]),
+                    "numbers": .init(list: [
+                        .init(integer: 1),
+                        .init(integer: 2),
+                        .init(integer: 3)
+                    ])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: false)
+        ]
+
+        struct ArrayFlag: Codable {
+            let items: [String]
+            let numbers: [Int]
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let defaultValue = ArrayFlag(items: [], numbers: [])
+        let evaluation = confidence.getValue(
+            key: "flag",
+            defaultValue: defaultValue)
+
+        // Should handle array fields correctly
+        XCTAssertEqual(evaluation.items, ["item1", "item2", "item3"])
+        XCTAssertEqual(evaluation.numbers, [1, 2, 3])
+    }
+
     func testResolveAndApplyIntegerFlagNoSegmentMatch() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
