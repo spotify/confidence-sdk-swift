@@ -148,7 +148,7 @@ extension Evaluation {
         return ProviderEvaluation(
             value: self.value,
             variant: self.variant,
-            reason: Reason.targetingMatch.rawValue, // TODO VERIFY THIS!
+            reason: self.reason.rawValue,
             errorCode: nil,
             errorMessage: nil
         )
@@ -162,7 +162,7 @@ extension Evaluation where T == [String: Any] {
         return ProviderEvaluation(
             value: openFeatureValue,
             variant: self.variant,
-            reason: Reason.targetingMatch.rawValue, // TODO VERIFY THIS!
+            reason: self.reason.rawValue,
             errorCode: nil,
             errorMessage: nil
         )

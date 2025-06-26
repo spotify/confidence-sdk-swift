@@ -265,7 +265,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         XCTAssertEqual(resultMap["int"], .integer(42))
         XCTAssertEqual(evaluation.variant, "variant1")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
     func testProviderResolveStruct() async throws {
@@ -299,7 +299,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         XCTAssertEqual(resultMap["size"], .integer(3))
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
     }
@@ -340,7 +340,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         XCTAssertEqual(sizeMap["border"], .integer(420))
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
     func testProviderResolveStructSchemaMismatch() async throws {
@@ -411,7 +411,7 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(resultMap["width"], .integer(200))
         XCTAssertNil(resultMap["height"])
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
     func testProviderResolveStructHeterogenous() async throws {
@@ -449,7 +449,7 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(resultMap["width"], .integer(200))
         XCTAssertEqual(resultMap["color"], .string("yellow"))
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
     func testProviderResolveStructHeterogenousExtraValueInFlag() async throws {
@@ -489,7 +489,7 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(resultMap["color"], .string("yellow"))
         XCTAssertNil(resultMap["error"])
         XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(evaluation.reason, "targetingMatch")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
     func testProviderResolveStructHeterogenousExtraValueInDefaultValue() async throws {
