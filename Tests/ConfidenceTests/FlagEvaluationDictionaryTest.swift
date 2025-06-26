@@ -60,7 +60,8 @@ class FlagEvaluationDictionaryTest: XCTestCase {
 
         XCTAssertEqual(evaluation.reason, .error)
         if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertEqual(message, "Default value key \'key2\' has incompatible type. Expected from flag is \'String\', got \'integer\'")
+            XCTAssertEqual(message, "Default value key \'key2\' has incompatible type. " +
+    "Expected from flag is \'String\', got \'integer\'")
         } else {
             XCTFail("Expected .typeMismatch error code")
         }
@@ -547,8 +548,6 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         }
         XCTAssertNil(evaluation.errorCode)
     }
-
-    // swiftlint:enable function_body_length
 
     func testHeterogenousMismatch() throws {
         let resolvedValue = ResolvedValue(
