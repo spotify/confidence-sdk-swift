@@ -148,6 +148,10 @@ let messageValue = messageFlag.value
 // message and messageValue are the same
 ```
 
+It's also possible to pass a Dictionary as evaluation type, for flags with a complex schema. The dictionary can
+only contain keys that map to properties in the complex flag, both in terms of property name and property type, otherwise
+the default value is returned with a `typeMismatch` error.
+
 ### Tracking events
 The Confidence instance offers APIs to track events, which are uploaded to the Confidence backend:
 ```swift
