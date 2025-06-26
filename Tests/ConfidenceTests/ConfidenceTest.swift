@@ -1372,6 +1372,162 @@ class ConfidenceTest: XCTestCase {
         // If we reach here without a crash, the test passes
         XCTAssertTrue(true)
     }
+
+    func testResolveStructWithNullFieldMerging() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "active": .init(boolean: true),
+                    "message": .init(null: ())
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: [
+                "active": false,
+                "message": "default message"
+            ]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+
+        let result = evaluation.value
+        XCTAssertEqual(result["active"] as? Bool, true)
+        XCTAssertEqual(result["message"] as? String, "default message")
+
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
+    // swiftlint:disable:next function_body_length
+    func testResolveStructAllNullsFallsBackToDefault() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+        let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "booleanValue": .init(null: ()),
+                    "stringValue": .init(null: ()),
+                    "integerValue": .init(null: ()),
+                    "doubleValue": .init(null: ()),
+                    "dateValue": .init(null: ()),
+                    "dateComponentsValue": .init(null: ()),
+                    "booleanList": .init(null: ()),
+                    "stringList": .init(null: ()),
+                    "integerList": .init(null: ()),
+                    "doubleList": .init(null: ()),
+                    "dateList": .init(null: ()),
+                    "timestampList": .init(null: ()),
+                    "nestedStruct": .init(null: ())
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: [
+                "booleanValue": true,
+                "stringValue": "default string",
+                "integerValue": 42,
+                "doubleValue": 3.14159,
+                "dateValue": testDate,
+                "dateComponentsValue": testDateComponents,
+                "booleanList": [true, false, true],
+                "stringList": ["a", "b", "c"],
+                "integerList": [1, 2, 3],
+                "doubleList": [1.1, 2.2, 3.3],
+                "dateList": [testDateComponents, testDateComponents],
+                "timestampList": [testDate, testDate],
+                "nestedStruct": [
+                    "nestedString": "default nested",
+                    "nestedInteger": 0,
+                    "nestedBoolean": true
+                ]
+            ]
+        )
+
+        XCTAssertEqual(client.resolveStats, 1)
+        let result = evaluation.value
+        XCTAssertEqual(result["booleanValue"] as? Bool, true)
+        XCTAssertEqual(result["stringValue"] as? String, "default string")
+        XCTAssertEqual(result["integerValue"] as? Int, 42)
+        if let doubleValue = result["doubleValue"] as? Double {
+            XCTAssertEqual(doubleValue, 3.14159, accuracy: 0.00001)
+        } else {
+            XCTFail("Expected doubleValue to be a Double")
+        }
+        XCTAssertEqual(result["dateValue"] as? Date, testDate)
+        XCTAssertEqual(result["dateComponentsValue"] as? DateComponents, testDateComponents)
+        XCTAssertEqual(result["booleanList"] as? [Bool], [true, false, true])
+        XCTAssertEqual(result["stringList"] as? [String], ["a", "b", "c"])
+        XCTAssertEqual(result["integerList"] as? [Int], [1, 2, 3])
+        XCTAssertEqual(result["doubleList"] as? [Double], [1.1, 2.2, 3.3])
+        XCTAssertEqual(result["dateList"] as? [DateComponents], [testDateComponents, testDateComponents])
+        XCTAssertEqual(result["timestampList"] as? [Date], [testDate, testDate])
+        if let nestedStruct = result["nestedStruct"] as? [String: Any] {
+            XCTAssertEqual(nestedStruct["nestedString"] as? String, "default nested")
+            XCTAssertEqual(nestedStruct["nestedInteger"] as? Int, 0)
+            XCTAssertEqual(nestedStruct["nestedBoolean"] as? Bool, true)
+        } else {
+            XCTFail("Expected nestedStruct to be a dictionary")
+        }
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 5)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {

@@ -207,30 +207,7 @@ extension FlagResolution {
         case .list:
             result = value.asList()
         case .structure:
-            guard let defaultDict = defaultValue as? [String: Any] else {
-                throw ConfidenceError
-                    .typeMismatch(
-                        message: "Expected a Dictionary as default value, but got a different type"
-                    )
-            }
-            guard let structure = value.asStructure() else {
-                throw ConfidenceError
-                    .typeMismatch(
-                        message: "Unexpected error with internal ConfidenceStruct conversion"
-                    )
-            }
-            try validateDictionaryStructureCompatibility(
-                structure: structure,
-                defaultDict: defaultDict
-            )
-            // Filter only the entries in the original default value
-            var filteredNative: [String: Any] = [:]
-            for requiredKey in defaultDict.keys {
-                if let confidenceValue = structure[requiredKey] {
-                    filteredNative[requiredKey] = confidenceValue.asNative()
-                }
-            }
-            result = filteredNative
+            result = try handleStructureValue(value: value, defaultValue: defaultValue)
         case .null:
             return nil
         }
@@ -242,6 +219,38 @@ extension FlagResolution {
         }
     }
 
+    private func handleStructureValue<T>(value: ConfidenceValue, defaultValue: T) throws -> [String: Any] {
+        guard let defaultDict = defaultValue as? [String: Any] else {
+            throw ConfidenceError
+                .typeMismatch(
+                    message: "Expected a Dictionary as default value, but got a different type"
+                )
+        }
+        guard let structure = value.asStructure() else {
+            throw ConfidenceError
+                .typeMismatch(
+                    message: "Unexpected error with internal ConfidenceStruct conversion"
+                )
+        }
+        try validateDictionaryStructureCompatibility(
+            structure: structure,
+            defaultDict: defaultDict
+        )
+        // Filter only the entries in the original default value
+        var filteredNative: [String: Any] = [:]
+        for requiredKey in defaultDict.keys {
+            if let confidenceValue = structure[requiredKey] {
+                // If the resolved value is null, use the default value instead
+                if confidenceValue.isNull() {
+                    filteredNative[requiredKey] = defaultDict[requiredKey]
+                } else {
+                    filteredNative[requiredKey] = confidenceValue.asNative()
+                }
+            }
+        }
+        return filteredNative
+    }
+
     private func validateDictionaryStructureCompatibility(
         structure: ConfidenceStruct,
         defaultDict: [String: Any]
@@ -251,6 +260,11 @@ extension FlagResolution {
                 throw ConfidenceError.typeMismatch(
                     message: "Default value key '\(defaultValueKey)' not found in flag"
                 )
+            }
+
+            // If the resolved value is null, it's compatible with any type (we'll use default value)
+            if confidenceValue.isNull() {
+                continue
             }
 
             let defaultValueValue: Any? = defaultDict[defaultValueKey]
