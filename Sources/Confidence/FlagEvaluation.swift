@@ -177,6 +177,52 @@ extension FlagResolution {
         }
     }
 
+    private func swiftTypeToConfidenceType(_ type: Any.Type) -> ConfidenceValueType {
+        if type == String.self { return .string }
+        if type == Int.self || type == Int32.self || type == Int64.self { return .integer }
+        if type == Double.self || type == Float.self { return .double }
+        if type == Bool.self { return .boolean }
+        if type == Date.self { return .timestamp }
+        if type == DateComponents.self { return .date }
+        if type == Array<Any>.self { return .list }
+        if type == Dictionary<String, Any>.self { return .structure }
+        return .null
+    }
+
+    private func checkListElementTypeCompatibility(
+        defaultList: [Any],
+        resolvedList: [ConfidenceValue],
+        errorContext: String? = nil
+    ) throws {
+        guard !defaultList.isEmpty && !resolvedList.isEmpty else { return }
+
+        let defaultElementType = type(of: defaultList[0])
+        let resolvedElementType = resolvedList[0].type()
+        let defaultElementConfidenceType = swiftTypeToConfidenceType(defaultElementType)
+
+        guard resolvedElementType == defaultElementConfidenceType else {
+            let message = buildTypeMismatchMessage(
+                expected: defaultElementConfidenceType,
+                actual: resolvedElementType,
+                context: errorContext
+            )
+            throw ConfidenceError.typeMismatch(message: message)
+        }
+    }
+
+    private func buildTypeMismatchMessage(
+        expected: ConfidenceValueType,
+        actual: ConfidenceValueType,
+        context: String?
+    ) -> String {
+        if let context = context {
+            return "Default value key '\(context)' has incompatible list element type. " +
+                "Expected element type '\(expected)', got '\(actual)'"
+        } else {
+            return "List has incompatible element type. Expected \(expected), got \(actual)"
+        }
+    }
+
     // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue, defaultValue: T) throws -> T? {
         if let value = self as? T {
@@ -203,9 +249,14 @@ extension FlagResolution {
             result = value.asDate()
         case .timestamp:
             result = value.asDateComponents()
-        // TODO We should align List and Structure to return the same data type - asListNative?
         case .list:
-            result = value.asList()
+            if let defaultList = defaultValue as? [Any], let resolvedList = value.asList() {
+                try checkListElementTypeCompatibility(
+                    defaultList: defaultList,
+                    resolvedList: resolvedList
+                )
+            }
+            result = value.asNative()
         case .structure:
             result = try handleStructureValue(value: value, defaultValue: defaultValue)
         case .null:
@@ -276,6 +327,15 @@ extension FlagResolution {
                     "Expected from flag is '\(getIntrinsicType(of: defaultValueValue))', " +
                     "got '\(confidenceValue.type())'"
                 throw ConfidenceError.typeMismatch(message: message)
+            }
+            if confidenceValue.type() == .list,
+                let defaultList = defaultValueValue as? [Any],
+                let resolvedList = confidenceValue.asList() {
+                try checkListElementTypeCompatibility(
+                    defaultList: defaultList,
+                    resolvedList: resolvedList,
+                    errorContext: defaultValueKey
+                )
             }
         }
     }

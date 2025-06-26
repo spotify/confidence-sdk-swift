@@ -60,8 +60,10 @@ class FlagEvaluationDictionaryTest: XCTestCase {
 
         XCTAssertEqual(evaluation.reason, .error)
         if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertEqual(message, "Default value key \'key2\' has incompatible type. " +
-    "Expected from flag is \'String\', got \'integer\'")
+            XCTAssertEqual(
+                message,
+                "Default value key 'key2' has incompatible type. Expected from flag is 'String', got 'integer'"
+            )
         } else {
             XCTFail("Expected .typeMismatch error code")
         }
@@ -584,40 +586,6 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    func testHeterogenousMismatch() throws {
-        let resolvedValue = ResolvedValue(
-            variant: "control",
-            value: .init(structure: [
-                "width": .init(string: "200"),
-                "color": .init(string: "yellow")
-            ]),
-            flag: "flag",
-            resolveReason: .match,
-            shouldApply: true
-        )
-
-        let flagResolution = FlagResolution(
-            context: [:],
-            flags: [resolvedValue],
-            resolveToken: ""
-        )
-
-        let evaluation: Evaluation<[String: Int]> = flagResolution.evaluate(
-            flagName: "flag",
-            defaultValue: ["width": 100],
-            context: [:]
-        )
-
-        XCTAssertEqual(evaluation.reason, .error)
-        if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertTrue(message.contains("incompatible type") || message.contains("cannot be cast"))
-        } else {
-            XCTFail("Expected .typeMismatch error code")
-        }
-        // Should return default values when there's an error
-        XCTAssertEqual(evaluation.value["width"], 100)
-    }
-
     // MARK: - Helper Methods
 
     private func validateTopLevelValues(_ evaluation: Evaluation<[String: Any]>) {
@@ -653,5 +621,93 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertEqual(tags.count, 2)
         XCTAssertEqual(tags[0] as? String, "premium")
         XCTAssertEqual(tags[1] as? String, "verified")
+    }
+
+    func testDirectListEvaluation() throws {
+        let resolvedValue = ResolvedValue(
+            value: .init(structure: ["list": .init(stringList: ["a", "b", "c"])]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String]> = flagResolution.evaluate(
+            flagName: "flag.list",
+            defaultValue: ["x", "y"],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.value, ["a", "b", "c"])
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    func testDirectListTypeMismatch() throws {
+        let resolvedValue = ResolvedValue(
+            value: .init(structure: ["list": .init(integerList: [1, 2, 3])]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String]> = flagResolution.evaluate(
+            flagName: "flag.list",
+            defaultValue: ["a", "b", "c"],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .error)
+        if case let .typeMismatch(message) = evaluation.errorCode {
+            XCTAssertTrue(message.contains("cannot be cast") || message.contains("incompatible"))
+        } else {
+            XCTFail("Expected .typeMismatch error code")
+        }
+        XCTAssertEqual(evaluation.value, ["a", "b", "c"]) // Should return default value
+    }
+
+    func testHeterogenousMismatch() throws {
+        let resolvedValue = ResolvedValue(
+            variant: "control",
+            value: .init(structure: [
+                "width": .init(string: "200"),
+                "color": .init(string: "yellow")
+            ]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String: Int]> = flagResolution.evaluate(
+            flagName: "flag",
+            defaultValue: ["width": 100],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .error)
+        if case let .typeMismatch(message) = evaluation.errorCode {
+            XCTAssertTrue(message.contains("incompatible type") || message.contains("cannot be cast"))
+        } else {
+            XCTFail("Expected .typeMismatch error code")
+        }
+        // Should return default values when there's an error
+        XCTAssertEqual(evaluation.value["width"], 100)
     }
 }

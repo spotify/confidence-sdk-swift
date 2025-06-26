@@ -663,6 +663,48 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testResolveListFlag() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(stringList: ["size", "access"]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["test"])
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["size", "access"])
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(client.resolveStats, 1)
+        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
+        XCTAssertEqual(flagApplier.applyCallCount, 1)
+    }
+
     func testResolveNullValues() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -783,7 +825,7 @@ class ConfidenceTest: XCTestCase {
         }
     }
 
-        func testTypeMismatch() async throws {
+    func testTypeMismatch() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
@@ -884,6 +926,210 @@ class ConfidenceTest: XCTestCase {
         await confidence.awaitReconciliation()
         // If we reach here without a crash, the test passes
         XCTAssertTrue(true)
+    }
+
+    func testListType() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["list": .init(integerList: [1, 2, 3])]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: ["list": [1]])
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value["list"], [1, 2, 3])
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    // swiftlint:disable:next function_body_length
+    func testAllListTypes() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+        let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: [
+                    "booleanList": .init(booleanList: [true, false, true]),
+                    "stringList": .init(stringList: ["a", "b", "c"]),
+                    "integerList": .init(integerList: [1, 2, 3]),
+                    "doubleList": .init(doubleList: [1.1, 2.2, 3.3]),
+                    "dateList": .init(dateList: [testDateComponents, testDateComponents]),
+                    "timestampList": .init(timestampList: [testDate, testDate]),
+                    "nullList": .init(nullList: [(), ()]),
+                    "structureList": .init(list: [
+                        .init(structure: ["nested": .init(string: "value1")]),
+                        .init(structure: ["nested": .init(string: "value2")])
+                    ])
+                ]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: [
+                "booleanList": [false],
+                "stringList": ["default"],
+                "integerList": [0],
+                "doubleList": [0.0],
+                "dateList": [testDateComponents],
+                "timestampList": [testDate],
+                "nullList": [NSNull()],
+                "structureList": [["nested": "default"] as [String: Any]]
+            ])
+
+        XCTAssertEqual(client.resolveStats, 1)
+
+        // Verify all list types are correctly resolved
+        XCTAssertEqual(evaluation.value["booleanList"] as? [Bool], [true, false, true])
+        XCTAssertEqual(evaluation.value["stringList"] as? [String], ["a", "b", "c"])
+        XCTAssertEqual(evaluation.value["integerList"] as? [Int], [1, 2, 3])
+        XCTAssertEqual(evaluation.value["doubleList"] as? [Double], [1.1, 2.2, 3.3])
+        XCTAssertEqual(evaluation.value["dateList"] as? [DateComponents], [testDateComponents, testDateComponents])
+        XCTAssertEqual(evaluation.value["timestampList"] as? [Date], [testDate, testDate])
+        XCTAssertEqual(evaluation.value["nullList"] as? [NSNull], [NSNull(), NSNull()])
+
+        // Verify nested structure list
+        if let structureList = evaluation.value["structureList"] as? [[String: Any]] {
+            XCTAssertEqual(structureList.count, 2)
+            XCTAssertEqual(structureList[0]["nested"] as? String, "value1")
+            XCTAssertEqual(structureList[1]["nested"] as? String, "value2")
+        } else {
+            XCTFail("Expected structureList to be an array of dictionaries")
+        }
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    func testListTypeDirect() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["list": .init(integerList: [1, 2, 3])]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.list",
+            defaultValue: [1])
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, [1, 2, 3])
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    func testListTypeMismatch() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var resolveStats: Int = 0
+            var resolvedValues: [ResolvedValue] = []
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                self.resolveStats += 1
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let client = FakeClient()
+        client.resolvedValues = [
+            ResolvedValue(
+                variant: "control",
+                value: .init(structure: ["list": .init(integerList: [1, 2, 3])]),
+                flag: "flag",
+                resolveReason: .match,
+                shouldApply: true)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag.list",
+            defaultValue: ["a", "b", "c"])
+
+        XCTAssertEqual(client.resolveStats, 1)
+        XCTAssertEqual(evaluation.value, ["a", "b", "c"])
+        XCTAssertEqual(evaluation.reason, .error)
+        if case .typeMismatch = evaluation.errorCode {
+            // success
+        } else {
+            XCTFail("Expected .typeMismatch error code")
+        }
+        XCTAssertEqual(evaluation.errorMessage, "List has incompatible element type. Expected string, got integer")
+        XCTAssertNotNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.variant)
     }
 }
 

@@ -305,6 +305,8 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(sizeMap["border"], .integer(420))
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
     }
 
     func testProviderResolveStructSchemaMismatch() async throws {
@@ -376,6 +378,8 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(resultMap["height"])
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
     }
 
     func testProviderResolveStructHeterogenous() async throws {
@@ -414,6 +418,8 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(resultMap["color"], .string("yellow"))
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
     }
 
     func testProviderResolveStructNullFields() async throws {
@@ -452,6 +458,8 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(resultMap["color"], .string("black"))
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
     }
 
     func testProviderResolveStructExtraDefaultValue() async throws {
@@ -617,6 +625,215 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(nestedStruct["nestedString"], .string("nested value"))
         XCTAssertEqual(nestedStruct["nestedInteger"], .integer(100))
         XCTAssertEqual(nestedStruct["nestedBoolean"], .boolean(false))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
+
+    func testProviderResolveList() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let storage = StorageMock()
+
+        let resolvedValue = createResolvedValue(
+            structure: ["list": .init(stringList: ["a", "b", "c"])]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["list": .list([.string("x"), .string("y")])]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+        guard case let .list(resultList) = resultMap["list"] else {
+            XCTFail("Expected list value")
+            return
+        }
+        XCTAssertEqual(resultList, [.string("a"), .string("b"), .string("c")])
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
+
+    func testProviderResolveListTypeMismatch() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let storage = StorageMock()
+
+        let resolvedValue = createResolvedValue(
+            structure: ["list": .init(integerList: [1, 2, 3])]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        do {
+            _ = try provider.getObjectEvaluation(
+                key: "flag",
+                defaultValue: Value.structure(["list": .list([.string("a"), .string("b"), .string("c")])]),
+                context: context)
+            XCTFail("Expected a type mismatch error")
+        } catch let error as OpenFeatureError {
+            XCTAssertEqual(error.errorCode(), ErrorCode.typeMismatch)
+            XCTAssertTrue(error.description.contains("Type mismatch"))
+        } catch {
+            XCTFail("Expected an OpenFeatureError")
+        }
+    }
+
+    func testProviderResolveListDirect() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let storage = StorageMock()
+
+        let resolvedValue = createResolvedValue(
+            structure: ["list": .init(stringList: ["a", "b", "c"])]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag.list",
+            defaultValue: Value.list([.string("x"), .string("y")]),
+            context: context)
+
+        guard case let .list(resultList) = evaluation.value else {
+            XCTFail("Expected list value")
+            return
+        }
+        XCTAssertEqual(resultList, [.string("a"), .string("b"), .string("c")])
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
+
+    func testProviderResolveDirectListTypeMismatch() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let storage = StorageMock()
+
+        let resolvedValue = createResolvedValue(
+            structure: ["list": .init(integerList: [1, 2, 3])]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        do {
+            _ = try provider.getObjectEvaluation(
+                key: "flag.list",
+                defaultValue: Value.list([.string("a"), .string("b"), .string("c")]),
+                context: context)
+            XCTFail("Expected a type mismatch error")
+        } catch let error as OpenFeatureError {
+            XCTAssertEqual(error.errorCode(), ErrorCode.typeMismatch)
+            XCTAssertTrue(error.description.contains("Type mismatch"))
+        } catch {
+            XCTFail("Expected an OpenFeatureError")
+        }
+    }
+
+    func testProviderResolveAllListTypes() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let storage = StorageMock()
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+
+        let isoDateString = "2022-01-01"
+        let resolvedValue = createResolvedValue(
+            structure: [
+                "booleanList": .init(booleanList: [true, false, true]),
+                "stringList": .init(stringList: ["a", "b", "c"]),
+                "integerList": .init(integerList: [1, 2, 3]),
+                "doubleList": .init(doubleList: [1.1, 2.2, 3.3]),
+                "dateList": .init(stringList: [isoDateString, isoDateString]),
+                "timestampList": .init(timestampList: [testDate, testDate]),
+                "nullList": .init(nullList: [(), ()]),
+                "structureList": .init(list: [
+                    .init(structure: ["nested": .init(string: "value1")]),
+                    .init(structure: ["nested": .init(string: "value2")])
+                ])
+            ]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: .structure([
+                "booleanList": .list([.boolean(false)]),
+                "stringList": .list([.string("default")]),
+                "integerList": .list([.integer(0)]),
+                "doubleList": .list([.double(0.0)]),
+                "dateList": .list([.string(isoDateString)]),
+                "timestampList": .list([.date(testDate)]),
+                "nullList": .list([.null]),
+                "structureList": .list([.structure(["nested": .string("default")])])
+            ]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        XCTAssertEqual(resultMap["booleanList"], Value.list([.boolean(true), .boolean(false), .boolean(true)]))
+        XCTAssertEqual(resultMap["stringList"], Value.list([.string("a"), .string("b"), .string("c")]))
+        XCTAssertEqual(resultMap["integerList"], Value.list([.integer(1), .integer(2), .integer(3)]))
+        XCTAssertEqual(resultMap["doubleList"], Value.list([.double(1.1), .double(2.2), .double(3.3)]))
+        XCTAssertEqual(resultMap["dateList"], Value.list([.string(isoDateString), .string(isoDateString)]))
+        XCTAssertEqual(resultMap["timestampList"], Value.list([.date(testDate), .date(testDate)]))
+        XCTAssertEqual(resultMap["nullList"], Value.list([.null, .null]))
+        XCTAssertEqual(resultMap["structureList"], Value.list([
+            .structure(["nested": .string("value1")]),
+            .structure(["nested": .string("value2")])
+        ]))
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
         XCTAssertNil(evaluation.errorCode)
