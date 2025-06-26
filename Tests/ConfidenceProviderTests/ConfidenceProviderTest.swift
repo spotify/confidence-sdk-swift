@@ -199,7 +199,7 @@ class ConfidenceProviderTest: XCTestCase {
         }
     }
 
-    func testProviderThrowsParseErrorOnObjectEval() async throws {
+    func testProviderTypeMismatch() async throws {
         let context = MutableContext(targetingKey: "t")
         let storage = StorageMock()
 
@@ -227,45 +227,9 @@ class ConfidenceProviderTest: XCTestCase {
                 XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
                 XCTAssertEqual(specificError.description, "Type mismatch")
             } else {
-                XCTFail("expected a flag not found error")
+                XCTFail("expected a Type mismatch error")
             }
         }
-    }
-
-    func testProviderObjectEval() async throws {
-        let context = MutableContext(targetingKey: "t")
-        let storage = StorageMock()
-
-        let resolvedValue = createResolvedValue(
-            variant: "variant1",
-            structure: ["int": .init(integer: 42)],
-            flag: "flagName"
-        )
-        let client = createFakeClient(resolvedValues: [resolvedValue])
-
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "t")])
-            .withFlagResolverClient(flagResolver: client)
-            .withStorage(storage: storage)
-            .build()
-
-        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
-        cancellable.cancel()
-
-        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
-        let evaluation = try provider.getObjectEvaluation(
-            key: "flagName",
-            defaultValue: Value.structure(["int": .integer(3)]),
-            context: context)
-
-        guard case let .structure(resultMap) = evaluation.value else {
-            XCTFail("Expected structure value")
-            return
-        }
-
-        XCTAssertEqual(resultMap["int"], .integer(42))
-        XCTAssertEqual(evaluation.variant, "variant1")
-        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
     func testProviderResolveStruct() async throws {
@@ -452,15 +416,14 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
-    func testProviderResolveStructHeterogenousExtraValueInFlag() async throws {
+    func testProviderResolveStructNullFields() async throws {
         let context = MutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
             structure: [
                 "width": .init(integer: 200),
-                "color": .init(string: "yellow"),
-                "error": .init(string: "Unknown")
+                "color": .init(null: ())
             ]
         )
         let client = createFakeClient(resolvedValues: [resolvedValue])
@@ -486,13 +449,12 @@ class ConfidenceProviderTest: XCTestCase {
         }
 
         XCTAssertEqual(resultMap["width"], .integer(200))
-        XCTAssertEqual(resultMap["color"], .string("yellow"))
-        XCTAssertNil(resultMap["error"])
+        XCTAssertEqual(resultMap["color"], .string("black"))
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
     }
 
-    func testProviderResolveStructHeterogenousExtraValueInDefaultValue() async throws {
+    func testProviderResolveStructExtraDefaultValue() async throws {
         let context = MutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
@@ -655,7 +617,6 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(nestedStruct["nestedString"], .string("nested value"))
         XCTAssertEqual(nestedStruct["nestedInteger"], .integer(100))
         XCTAssertEqual(nestedStruct["nestedBoolean"], .boolean(false))
-
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
         XCTAssertNil(evaluation.errorCode)

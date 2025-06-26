@@ -162,7 +162,6 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
 
     public func asStructure() -> [String: ConfidenceValue]? {
         if case let .structure(values) = value {
-            // Values here is a map of String to ConfidenceValueInternal
             return values.mapValues { ConfidenceValue(valueInternal: $0) }
         }
         return nil

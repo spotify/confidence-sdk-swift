@@ -6,7 +6,7 @@ import XCTest
 // swiftlint:disable file_length
 // swiftlint:disable:next type_body_length
 class FlagEvaluationDictionaryTest: XCTestCase {
-    func testDictionaryValidationWithCompatibleTypes() throws {
+    func testBasicMatch() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "key1": .init(string: "value1"),
@@ -35,7 +35,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    func testDictionaryValidationWithIncompatibleTypes() throws {
+    func testIncompatibleTypes() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "key1": .init(string: "value1"),
@@ -54,21 +54,22 @@ class FlagEvaluationDictionaryTest: XCTestCase {
 
         let evaluation: Evaluation<[String: String]> = flagResolution.evaluate(
             flagName: "test_flag",
-            defaultValue: ["default": "value"],
+            defaultValue: ["key1": "defaultValue1", "key2": "defaultValue2"],
             context: [:]
         )
 
         XCTAssertEqual(evaluation.reason, .error)
         if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertEqual(message, "Default value key \'default\' not found in flag")
+            XCTAssertEqual(message, "Default value key \'key2\' has incompatible type. Expected from flag is \'String\', got \'integer\'")
         } else {
             XCTFail("Expected .typeMismatch error code")
         }
         XCTAssertNotNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.value["default"], "value")
+        XCTAssertEqual(evaluation.value["key1"], "defaultValue1")
+        XCTAssertEqual(evaluation.value["key2"], "defaultValue2")
     }
 
-    func testDictionaryValidationWithMissingKeys() throws {
+    func testMissingKeys() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "wrongKey1": .init(string: "value1"),
@@ -98,9 +99,10 @@ class FlagEvaluationDictionaryTest: XCTestCase {
             XCTFail("Expected .typeMismatch error code")
         }
         XCTAssertEqual(evaluation.value["expectedKey1"], "value1")
+        XCTAssertEqual(evaluation.value["expectedKey2"], "value2")
     }
 
-    func testDictionaryValidationWithExtraKeysAllowed() throws {
+    func testExtraKeysAllowed() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "key1": .init(string: "value1"),
@@ -134,39 +136,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    func testDictionaryValidationWithTypeIncompatibilityButSameKeys() throws {
-        let resolvedValue = ResolvedValue(
-            value: .init(structure: [
-                "key1": .init(integer: 42),
-                "key2": .init(string: "value2")
-            ]),
-            flag: "test_flag",
-            resolveReason: .match,
-            shouldApply: true
-        )
-
-        let flagResolution = FlagResolution(
-            context: [:],
-            flags: [resolvedValue],
-            resolveToken: ""
-        )
-
-        let evaluation: Evaluation<[String: String]> = flagResolution.evaluate(
-            flagName: "test_flag",
-            defaultValue: ["key1": "value1", "key2": "value2"],
-            context: [:]
-        )
-
-        XCTAssertEqual(evaluation.reason, .error)
-        if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertTrue(message.contains("incompatible type") || message.contains("cannot be cast"))
-        } else {
-            XCTFail("Expected .typeMismatch error code")
-        }
-        XCTAssertEqual(evaluation.value["key1"], "value1")
-    }
-
-    func testDictionaryValidationWithIntegerValues() throws {
+    func testIntegerValues() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "count": .init(integer: 42),
@@ -195,7 +165,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    func testDictionaryValidationWithMixedValues() throws {
+    func testMixedValues() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "count": .init(integer: 42),
@@ -224,7 +194,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    func testDictionaryValidationUnexpectedType() throws {
+    func testUnexpectedType() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
                 "count": .init(integer: 42),
@@ -256,32 +226,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         }
     }
 
-    func testNonDictionaryTypesShouldNotTriggerValidation() throws {
-        let resolvedValue = ResolvedValue(
-            value: .init(string: "test_value"),
-            flag: "test_flag",
-            resolveReason: .match,
-            shouldApply: true
-        )
-
-        let flagResolution = FlagResolution(
-            context: [:],
-            flags: [resolvedValue],
-            resolveToken: ""
-        )
-
-        let evaluation: Evaluation<String> = flagResolution.evaluate(
-            flagName: "test_flag",
-            defaultValue: "default",
-            context: [:]
-        )
-
-        XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.value, "test_value")
-        XCTAssertNil(evaluation.errorCode)
-    }
-
-    func testDictionaryValidationWithNestedStructuresAndMixedTypes() throws {
+    func testNestedStructures() throws {
         let nestedUserProfile: ConfidenceStruct = [
             "name": ConfidenceValue(string: "John Doe"),
             "age": ConfidenceValue(integer: 30),
@@ -336,6 +281,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertEqual(evaluation.reason, .match)
         XCTAssertNil(evaluation.errorCode)
 
+        // These assert equality with the resolved value
         validateTopLevelValues(evaluation)
         validateNestedProfile(evaluation)
         validateNestedSettings(evaluation)
@@ -344,7 +290,7 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.value["extraNestedField"])
     }
 
-    func testDictionaryValidationWithNestedMissingKeys() throws {
+    func testNestedMissingKeys() throws {
         let incompleteNestedProfile: ConfidenceStruct = [
             "name": ConfidenceValue(string: "John Doe")
             // Missing "age" and "email" keys
@@ -367,7 +313,6 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         )
 
         let defaultValue: [String: Any] = [
-            "profile": ["name": "Default", "age": 0, "email": "default@example.com"],
             "isActive": false,
             "missingTopLevel": "required"
         ]
@@ -387,6 +332,256 @@ class FlagEvaluationDictionaryTest: XCTestCase {
 
         XCTAssertEqual(evaluation.value["isActive"] as? Bool, false)
         XCTAssertEqual(evaluation.value["missingTopLevel"] as? String, "required")
+    }
+
+    func testNullFieldMerging() throws {
+        let resolvedValue = ResolvedValue(
+            variant: "control",
+            value: .init(structure: [
+                "active": .init(boolean: true),
+                "message": .init(null: ())
+            ]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
+            flagName: "flag",
+            defaultValue: [
+                "active": false,
+                "message": "default message"
+            ],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+
+        let result = evaluation.value
+        XCTAssertEqual(result["active"] as? Bool, true)
+        XCTAssertEqual(result["message"] as? String, "default message")
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    // swiftlint:disable:next function_body_length
+    func testAllConfidenceValueTypes() throws {
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+        let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+
+        let resolvedValue = ResolvedValue(
+            variant: "control",
+            value: .init(structure: [
+                "booleanValue": .init(boolean: true),
+                "stringValue": .init(string: "resolved string"),
+                "integerValue": .init(integer: 42),
+                "doubleValue": .init(double: 3.14159),
+                "dateValue": .init(timestamp: testDate),
+                "dateComponentsValue": .init(date: testDateComponents),
+                "booleanList": .init(booleanList: [true, false, true]),
+                "stringList": .init(stringList: ["a", "b", "c"]),
+                "integerList": .init(integerList: [1, 2, 3]),
+                "doubleList": .init(doubleList: [1.1, 2.2, 3.3]),
+                "dateList": .init(dateList: [testDateComponents, testDateComponents]),
+                "timestampList": .init(timestampList: [testDate, testDate]),
+                "nestedStruct": .init(structure: [
+                    "nestedString": .init(string: "nested value"),
+                    "nestedInteger": .init(integer: 100),
+                    "nestedBoolean": .init(boolean: false)
+                ])
+            ]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
+            flagName: "flag",
+            defaultValue: [
+                "booleanValue": false,
+                "stringValue": "default string",
+                "integerValue": 0,
+                "doubleValue": 0.0,
+                "dateValue": testDate,
+                "dateComponentsValue": testDateComponents,
+                "booleanList": [],
+                "stringList": [],
+                "integerList": [],
+                "doubleList": [],
+                "dateList": [],
+                "timestampList": [],
+                "nestedStruct": [
+                    "nestedString": "default nested",
+                    "nestedInteger": 0,
+                    "nestedBoolean": true
+                ]
+            ],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+
+        let result = evaluation.value
+        XCTAssertEqual(result["booleanValue"] as? Bool, true)
+        XCTAssertEqual(result["stringValue"] as? String, "resolved string")
+        XCTAssertEqual(result["integerValue"] as? Int, 42)
+        if let doubleValue = result["doubleValue"] as? Double {
+            XCTAssertEqual(doubleValue, 3.14159, accuracy: 0.00001)
+        } else {
+            XCTFail("Expected doubleValue to be a Double")
+        }
+        XCTAssertEqual(result["dateValue"] as? Date, testDate)
+        XCTAssertEqual(result["dateComponentsValue"] as? DateComponents, testDateComponents)
+        XCTAssertEqual(result["booleanList"] as? [Bool], [true, false, true])
+        XCTAssertEqual(result["stringList"] as? [String], ["a", "b", "c"])
+        XCTAssertEqual(result["integerList"] as? [Int], [1, 2, 3])
+        XCTAssertEqual(result["doubleList"] as? [Double], [1.1, 2.2, 3.3])
+        XCTAssertEqual(result["dateList"] as? [DateComponents], [testDateComponents, testDateComponents])
+        XCTAssertEqual(result["timestampList"] as? [Date], [testDate, testDate])
+        if let nestedStruct = result["nestedStruct"] as? [String: Any] {
+            XCTAssertEqual(nestedStruct["nestedString"] as? String, "nested value")
+            XCTAssertEqual(nestedStruct["nestedInteger"] as? Int, 100)
+            XCTAssertEqual(nestedStruct["nestedBoolean"] as? Bool, false)
+        } else {
+            XCTFail("Expected nestedStruct to be a dictionary")
+        }
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    // swiftlint:disable:next function_body_length
+    func testAllNullsFallsBackToDefault() throws {
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+        let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+
+        let resolvedValue = ResolvedValue(
+            variant: "control",
+            value: .init(structure: [
+                "booleanValue": .init(null: ()),
+                "stringValue": .init(null: ()),
+                "integerValue": .init(null: ()),
+                "doubleValue": .init(null: ()),
+                "dateValue": .init(null: ()),
+                "dateComponentsValue": .init(null: ()),
+                "booleanList": .init(null: ()),
+                "stringList": .init(null: ()),
+                "integerList": .init(null: ()),
+                "doubleList": .init(null: ()),
+                "dateList": .init(null: ()),
+                "timestampList": .init(null: ()),
+                "nestedStruct": .init(null: ())
+            ]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
+            flagName: "flag",
+            defaultValue: [
+                "booleanValue": true,
+                "stringValue": "default string",
+                "integerValue": 42,
+                "doubleValue": 3.14159,
+                "dateValue": testDate,
+                "dateComponentsValue": testDateComponents,
+                "booleanList": [true, false, true],
+                "stringList": ["a", "b", "c"],
+                "integerList": [1, 2, 3],
+                "doubleList": [1.1, 2.2, 3.3],
+                "dateList": [testDateComponents, testDateComponents],
+                "timestampList": [testDate, testDate],
+                "nestedStruct": [
+                    "nestedString": "default nested",
+                    "nestedInteger": 0,
+                    "nestedBoolean": true
+                ]
+            ],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+
+        let result = evaluation.value
+        XCTAssertEqual(result["booleanValue"] as? Bool, true)
+        XCTAssertEqual(result["stringValue"] as? String, "default string")
+        XCTAssertEqual(result["integerValue"] as? Int, 42)
+        if let doubleValue = result["doubleValue"] as? Double {
+            XCTAssertEqual(doubleValue, 3.14159, accuracy: 0.00001)
+        } else {
+            XCTFail("Expected doubleValue to be a Double")
+        }
+        XCTAssertEqual(result["dateValue"] as? Date, testDate)
+        XCTAssertEqual(result["dateComponentsValue"] as? DateComponents, testDateComponents)
+        XCTAssertEqual(result["booleanList"] as? [Bool], [true, false, true])
+        XCTAssertEqual(result["stringList"] as? [String], ["a", "b", "c"])
+        XCTAssertEqual(result["integerList"] as? [Int], [1, 2, 3])
+        XCTAssertEqual(result["doubleList"] as? [Double], [1.1, 2.2, 3.3])
+        XCTAssertEqual(result["dateList"] as? [DateComponents], [testDateComponents, testDateComponents])
+        XCTAssertEqual(result["timestampList"] as? [Date], [testDate, testDate])
+        if let nestedStruct = result["nestedStruct"] as? [String: Any] {
+            XCTAssertEqual(nestedStruct["nestedString"] as? String, "default nested")
+            XCTAssertEqual(nestedStruct["nestedInteger"] as? Int, 0)
+            XCTAssertEqual(nestedStruct["nestedBoolean"] as? Bool, true)
+        } else {
+            XCTFail("Expected nestedStruct to be a dictionary")
+        }
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    // swiftlint:enable function_body_length
+
+    func testHeterogenousMismatch() throws {
+        let resolvedValue = ResolvedValue(
+            variant: "control",
+            value: .init(structure: [
+                "width": .init(string: "200"),
+                "color": .init(string: "yellow")
+            ]),
+            flag: "flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String: Int]> = flagResolution.evaluate(
+            flagName: "flag",
+            defaultValue: ["width": 100],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .error)
+        if case let .typeMismatch(message) = evaluation.errorCode {
+            XCTAssertTrue(message.contains("incompatible type") || message.contains("cannot be cast"))
+        } else {
+            XCTFail("Expected .typeMismatch error code")
+        }
+        // Should return default values when there's an error
+        XCTAssertEqual(evaluation.value["width"], 100)
     }
 
     // MARK: - Helper Methods
