@@ -195,6 +195,41 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
+    // TODO Null values in the resolve instructs the SDK to use the default value,
+    // but the type safety is lost in this implementation.
+    // (i.e. any type can be used for "color", regardless of the
+    // "color" type defined in the source of trust for the flag's schema)
+    // This can cause bugs if the remote value is later populated to an
+    // unexpected type.
+    func testNullValueAnyType() throws {
+        let resolvedValue = ResolvedValue(
+            value: .init(structure: [
+                "count": .init(integer: 42),
+                "color": .init(null: ()) // No type indication for this field
+            ]),
+            flag: "test_flag",
+            resolveReason: .match,
+            shouldApply: true
+        )
+
+        let flagResolution = FlagResolution(
+            context: [:],
+            flags: [resolvedValue],
+            resolveToken: ""
+        )
+
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
+            flagName: "test_flag",
+            defaultValue: ["count": 0, "color": 3.2],
+            context: [:]
+        )
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.value["count"] as? Int, 42)
+        XCTAssertEqual(evaluation.value["color"] as? Double, 3.2)
+        XCTAssertNil(evaluation.errorCode)
+    }
+
     func testUnexpectedType() throws {
         let resolvedValue = ResolvedValue(
             value: .init(structure: [
