@@ -532,6 +532,135 @@ class ConfidenceProviderTest: XCTestCase {
     error.localizedDescription.contains("error"))
         }
     }
+
+    // swiftlint:disable:next function_body_length
+    func testProviderResolveStructAllValueTypes() async throws {
+        let context = MutableContext(targetingKey: "user2")
+        let storage = StorageMock()
+
+        let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
+
+        let resolvedValue = createResolvedValue(
+            structure: [
+                "booleanValue": .init(boolean: true),
+                "stringValue": .init(string: "resolved string"),
+                "integerValue": .init(integer: 42),
+                "doubleValue": .init(double: 3.14159),
+                "dateValue": .init(timestamp: testDate),
+                "booleanList": .init(booleanList: [true, false, true]),
+                "stringList": .init(stringList: ["a", "b", "c"]),
+                "integerList": .init(integerList: [1, 2, 3]),
+                "doubleList": .init(doubleList: [1.1, 2.2, 3.3]),
+                "timestampList": .init(timestampList: [testDate, testDate]),
+                "nestedStruct": .init(structure: [
+                    "nestedString": .init(string: "nested value"),
+                    "nestedInteger": .init(integer: 100),
+                    "nestedBoolean": .init(boolean: false)
+                ])
+            ]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure([
+                "booleanValue": .boolean(false),
+                "stringValue": .string("default string"),
+                "integerValue": .integer(0),
+                "doubleValue": .double(0.0),
+                "dateValue": .date(testDate),
+                "booleanList": .list([.boolean(false)]),
+                "stringList": .list([.string("default")]),
+                "integerList": .list([.integer(0)]),
+                "doubleList": .list([.double(0.0)]),
+                "timestampList": .list([.date(testDate)]),
+                "nestedStruct": .structure([
+                    "nestedString": .string("default nested"),
+                    "nestedInteger": .integer(0),
+                    "nestedBoolean": .boolean(true)
+                ])
+            ]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
+        }
+
+        XCTAssertEqual(resultMap["booleanValue"], .boolean(true))
+        XCTAssertEqual(resultMap["stringValue"], .string("resolved string"))
+        XCTAssertEqual(resultMap["integerValue"], .integer(42))
+        XCTAssertEqual(resultMap["doubleValue"], .double(3.14159))
+        XCTAssertEqual(resultMap["dateValue"], .date(testDate))
+
+        // Test lists
+        guard case let .list(booleanList) = resultMap["booleanList"] else {
+            XCTFail("Expected boolean list")
+            return
+        }
+        XCTAssertEqual(booleanList.count, 3)
+        XCTAssertEqual(booleanList[0], .boolean(true))
+        XCTAssertEqual(booleanList[1], .boolean(false))
+        XCTAssertEqual(booleanList[2], .boolean(true))
+
+        guard case let .list(stringList) = resultMap["stringList"] else {
+            XCTFail("Expected string list")
+            return
+        }
+        XCTAssertEqual(stringList.count, 3)
+        XCTAssertEqual(stringList[0], .string("a"))
+        XCTAssertEqual(stringList[1], .string("b"))
+        XCTAssertEqual(stringList[2], .string("c"))
+
+        guard case let .list(integerList) = resultMap["integerList"] else {
+            XCTFail("Expected integer list")
+            return
+        }
+        XCTAssertEqual(integerList.count, 3)
+        XCTAssertEqual(integerList[0], .integer(1))
+        XCTAssertEqual(integerList[1], .integer(2))
+        XCTAssertEqual(integerList[2], .integer(3))
+
+        guard case let .list(doubleList) = resultMap["doubleList"] else {
+            XCTFail("Expected double list")
+            return
+        }
+        XCTAssertEqual(doubleList.count, 3)
+        XCTAssertEqual(doubleList[0], .double(1.1))
+        XCTAssertEqual(doubleList[1], .double(2.2))
+        XCTAssertEqual(doubleList[2], .double(3.3))
+
+        guard case let .list(timestampList) = resultMap["timestampList"] else {
+            XCTFail("Expected timestamp list")
+            return
+        }
+        XCTAssertEqual(timestampList.count, 2)
+        XCTAssertEqual(timestampList[0], .date(testDate))
+        XCTAssertEqual(timestampList[1], .date(testDate))
+
+        guard case let .structure(nestedStruct) = resultMap["nestedStruct"] else {
+            XCTFail("Expected nested structure value")
+            return
+        }
+        XCTAssertEqual(nestedStruct["nestedString"], .string("nested value"))
+        XCTAssertEqual(nestedStruct["nestedInteger"], .integer(100))
+        XCTAssertEqual(nestedStruct["nestedBoolean"], .boolean(false))
+
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
 }
 
 private class StorageMock: Storage {
