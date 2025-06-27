@@ -258,7 +258,13 @@ extension FlagResolution {
             }
             result = value.asNative()
         case .structure:
-            if (defaultValue as? ConfidenceStruct) != nil {
+            if let defaultStruct = defaultValue as? ConfidenceStruct,
+                let resolvedStruct = value.asStructure() {
+                result = StructMerger.mergeStructWithDefault(
+                    resolved: resolvedStruct,
+                    defaultStruct: defaultStruct
+                ) as? T
+            } else if (defaultValue as? ConfidenceStruct) != nil {
                 result = value.asStructure() as? T
             } else {
                 result = try handleStructureValue(value: value, defaultValue: defaultValue)

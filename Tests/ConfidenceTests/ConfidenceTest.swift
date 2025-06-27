@@ -1239,6 +1239,134 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertNil(evaluation.errorCode)
     }
+
+    // swiftlint:disable:next function_body_length
+    func testStructMergerOnlyReplacesNulls() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                let structValue: ConfidenceStruct = [
+                    "stringValue": ConfidenceValue(null: ()),
+                    "integerValue": ConfidenceValue(integer: 42),
+                    "booleanValue": ConfidenceValue(boolean: true),
+                    "doubleValue": ConfidenceValue(null: ()),
+                    "extraField": ConfidenceValue(string: "extra value"),
+                    "nullField": ConfidenceValue(null: ())
+                ]
+                return ResolvesResult(
+                    resolvedValues: [
+                        ResolvedValue(
+                            variant: "control",
+                            value: ConfidenceValue(structure: structValue),
+                            flag: "flag",
+                            resolveReason: .match,
+                            shouldApply: true
+                        )
+                    ],
+                    resolveToken: "token"
+                )
+            }
+        }
+
+        let defaultStruct: ConfidenceStruct = [
+            "stringValue": ConfidenceValue(string: "default string"),
+            "integerValue": ConfidenceValue(integer: 0),
+            "booleanValue": ConfidenceValue(boolean: false),
+            "doubleValue": ConfidenceValue(double: 0.0),
+            "missingField": ConfidenceValue(string: "should not appear")
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: defaultStruct
+        )
+
+        let result = evaluation.value
+
+        XCTAssertEqual(result["stringValue"]?.asString(), "default string")
+        XCTAssertEqual(result["doubleValue"]?.asDouble(), 0.0)
+        XCTAssertEqual(result["integerValue"]?.asInteger(), 42)
+        XCTAssertEqual(result["booleanValue"]?.asBoolean(), true)
+        XCTAssertEqual(result["extraField"]?.asString(), "extra value")
+        XCTAssertTrue(result["nullField"]?.isNull() ?? false)
+        XCTAssertNil(result["missingField"])
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.errorCode)
+    }
+
+    // swiftlint:disable:next function_body_length
+    func testStructMergerNestedNulls() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                let nestedStruct: ConfidenceStruct = [
+                    "nestedString": ConfidenceValue(null: ()),
+                    "nestedInteger": ConfidenceValue(integer: 100)
+                ]
+
+                let structValue: ConfidenceStruct = [
+                    "topLevelString": ConfidenceValue(null: ()),
+                    "topLevelInteger": ConfidenceValue(integer: 42),
+                    "nestedStruct": ConfidenceValue(structure: nestedStruct)
+                ]
+
+                return ResolvesResult(
+                    resolvedValues: [
+                        ResolvedValue(
+                            variant: "control",
+                            value: ConfidenceValue(structure: structValue),
+                            flag: "flag",
+                            resolveReason: .match,
+                            shouldApply: true
+                        )
+                    ],
+                    resolveToken: "token"
+                )
+            }
+        }
+
+        let nestedDefault: ConfidenceStruct = [
+            "nestedString": ConfidenceValue(string: "default nested string"),
+            "nestedInteger": ConfidenceValue(integer: 0)
+        ]
+
+        let defaultStruct: ConfidenceStruct = [
+            "topLevelString": ConfidenceValue(string: "default top level"),
+            "topLevelInteger": ConfidenceValue(integer: 0),
+            "nestedStruct": ConfidenceValue(structure: nestedDefault)
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: defaultStruct
+        )
+
+        let result = evaluation.value
+        XCTAssertEqual(result["topLevelString"]?.asString(), "default top level")
+        XCTAssertEqual(result["topLevelInteger"]?.asInteger(), 42)
+        if let nestedResult = result["nestedStruct"]?.asStructure() {
+            XCTAssertEqual(nestedResult["nestedString"]?.asString(), "default nested string")
+            XCTAssertEqual(nestedResult["nestedInteger"]?.asInteger(), 100)
+        } else {
+            XCTFail("Expected nestedStruct to be a structure")
+        }
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.errorCode)
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {
