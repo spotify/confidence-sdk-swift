@@ -99,11 +99,22 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)
     throws -> OpenFeature.ProviderEvaluation<OpenFeature.Value>
     {
-        guard let nativeDefault = defaultValue.asNativeDictionary() else {
-            throw OpenFeatureError.generalError(message: "Unexpected error handling the default value")
+        switch defaultValue {
+        case .structure:
+            guard let nativeDefault = defaultValue.asNativeDictionary() else {
+                throw OpenFeatureError.generalError(message: "Unexpected error handling the default value")
+            }
+            let evaluation = confidence.getEvaluation(key: key, defaultValue: nativeDefault)
+            return try evaluation.toProviderEvaluationWithValueConversion()
+        case .list(let values):
+            let nativeDefault = values.map { $0.asNativeType() }
+            return try confidence.getEvaluation(
+                key: key,
+                defaultValue: nativeDefault)
+            .toProviderEvaluationWithValueConversion()
+        default:
+            throw OpenFeatureError.generalError(message: "Unexpected default value type: must be Dictionary or Array")
         }
-        let evaluation = confidence.getEvaluation(key: key, defaultValue: nativeDefault)
-        return try evaluation.toProviderEvaluationWithValueConversion()
     }
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent?, Never> {
@@ -122,7 +133,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
 extension Evaluation {
     /// Throws an OpenFeature error if this evaluation contains an error code
-    private func throwIfError() throws {
+    internal func throwIfError() throws {
         if let errorCode = self.errorCode {
             switch errorCode {
             case .providerNotReady:
@@ -159,6 +170,20 @@ extension Evaluation where T == [String: Any] {
     func toProviderEvaluationWithValueConversion() throws -> ProviderEvaluation<OpenFeature.Value> {
         try throwIfError()
         let openFeatureValue = try OpenFeature.Value.fromNativeDictionary(self.value)
+        return ProviderEvaluation(
+            value: openFeatureValue,
+            variant: self.variant,
+            reason: self.reason.rawValue,
+            errorCode: nil,
+            errorMessage: nil
+        )
+    }
+}
+
+extension Evaluation where T == [Any] {
+    func toProviderEvaluationWithValueConversion() throws -> ProviderEvaluation<OpenFeature.Value> {
+        try throwIfError()
+        let openFeatureValue = try OpenFeature.Value.fromNativeType(self.value)
         return ProviderEvaluation(
             value: openFeatureValue,
             variant: self.variant,
