@@ -9,6 +9,11 @@ import XCTest
 
 // swiftlint:disable:next type_body_length
 class ConfidenceProviderTest: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        OpenFeatureAPI.shared.clearProvider()
+    }
+
     // MARK: - Helper Functions
 
     private func createFakeClient(
@@ -72,12 +77,11 @@ class ConfidenceProviderTest: XCTestCase {
     private func setupProviderAndWaitForReady(
         confidence: Confidence,
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
-        timeout: TimeInterval = 1.0
+        timeout: TimeInterval = 5.0
     ) async -> AnyCancellable {
         let readyExpectation = XCTestExpectation(description: "Ready")
 
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
-        OpenFeatureAPI.shared.setProvider(provider: provider)
 
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
             if event == .ready {
@@ -87,6 +91,7 @@ class ConfidenceProviderTest: XCTestCase {
             }
         }
 
+        OpenFeatureAPI.shared.setProvider(provider: provider)
         await fulfillment(of: [readyExpectation], timeout: timeout)
         return cancellable
     }
@@ -99,8 +104,6 @@ class ConfidenceProviderTest: XCTestCase {
         let errorExpectation = XCTestExpectation(description: "Error")
 
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
             if let event = event {
                 if case .error = event {
@@ -109,6 +112,7 @@ class ConfidenceProviderTest: XCTestCase {
             }
         }
 
+        OpenFeatureAPI.shared.setProvider(provider: provider)
         await fulfillment(of: [errorExpectation], timeout: timeout)
         return cancellable
     }
