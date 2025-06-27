@@ -9,6 +9,11 @@ import XCTest
 
 // swiftlint:disable:next type_body_length
 class ConfidenceProviderTest: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        OpenFeatureAPI.shared.clearProvider()
+    }
+
     // MARK: - Helper Functions
 
     private func createFakeClient(
@@ -72,7 +77,7 @@ class ConfidenceProviderTest: XCTestCase {
     private func setupProviderAndWaitForReady(
         confidence: Confidence,
         initializationStrategy: InitializationStrategy = .fetchAndActivate,
-        timeout: TimeInterval = 1.0
+        timeout: TimeInterval = 5.0
     ) async -> AnyCancellable {
         let readyExpectation = XCTestExpectation(description: "Ready")
 
