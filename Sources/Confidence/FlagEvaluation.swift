@@ -258,7 +258,11 @@ extension FlagResolution {
             }
             result = value.asNative()
         case .structure:
-            result = try handleStructureValue(value: value, defaultValue: defaultValue)
+            if (defaultValue as? ConfidenceStruct) != nil {
+                result = value.asStructure() as? T
+            } else {
+                result = try handleStructureValue(value: value, defaultValue: defaultValue)
+            }
         case .null:
             return nil
         }
