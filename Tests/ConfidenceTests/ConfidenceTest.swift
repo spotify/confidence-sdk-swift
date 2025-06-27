@@ -201,7 +201,6 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-
     func testResolveIntegerFlagWithInt64() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -239,7 +238,6 @@ class ConfidenceTest: XCTestCase {
         await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
-
 
     func testResolveAndApplyIntegerFlagNoSegmentMatch() async throws {
         class FakeClient: ConfidenceResolveClient {
@@ -665,48 +663,6 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testResolveObjectFlag() async throws {
-        class FakeClient: ConfidenceResolveClient {
-            var resolveStats: Int = 0
-            var resolvedValues: [ResolvedValue] = []
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                self.resolveStats += 1
-                return .init(resolvedValues: resolvedValues, resolveToken: "token")
-            }
-        }
-
-        let client = FakeClient()
-        let value = ResolvedValue(
-            variant: "control",
-            value: .init(structure: ["size": .init(structure: ["boolean": .init(boolean: true)])]),
-            flag: "flag",
-            resolveReason: .match,
-            shouldApply: true
-        )
-        client.resolvedValues = [value]
-
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
-            .withFlagResolverClient(flagResolver: client)
-            .withFlagApplier(flagApplier: flagApplier)
-            .build()
-
-        try await confidence.fetchAndActivate()
-        let evaluation = confidence.getEvaluation(
-            key: "flag.size",
-            defaultValue: [:])
-
-        XCTAssertEqual(client.resolveStats, 1)
-        XCTAssertEqual(evaluation.value as? ConfidenceStruct, ["boolean": .init(boolean: true)])
-        XCTAssertNil(evaluation.errorCode)
-        XCTAssertNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.variant, "control")
-        XCTAssertEqual(client.resolveStats, 1)
-        await fulfillment(of: [flagApplier.applyExpectation], timeout: 1)
-        XCTAssertEqual(flagApplier.applyCallCount, 1)
-    }
-
     func testResolveNullValues() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -827,7 +783,7 @@ class ConfidenceTest: XCTestCase {
         }
     }
 
-    func testTypeMismatch() async throws {
+        func testTypeMismatch() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
@@ -860,8 +816,8 @@ class ConfidenceTest: XCTestCase {
 
         XCTAssertEqual(client.resolveStats, 1)
         XCTAssertEqual(evaluation.value, 1)
-        XCTAssertEqual(evaluation.errorCode, .typeMismatch)
-        XCTAssertNil(evaluation.errorMessage, "")
+        XCTAssertEqual(evaluation.errorCode, .typeMismatch(message: "Value true cannot be cast to Int"))
+        XCTAssertEqual(evaluation.errorMessage, "Value true cannot be cast to Int")
         XCTAssertEqual(evaluation.reason, .error)
         XCTAssertEqual(evaluation.variant, nil)
         XCTAssertEqual(flagApplier.applyCallCount, 0)

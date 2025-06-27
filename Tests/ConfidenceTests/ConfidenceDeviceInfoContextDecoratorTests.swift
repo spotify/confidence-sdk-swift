@@ -1,3 +1,4 @@
+#if os(iOS) || os(tvOS) || os(visionOS) || targetEnvironment(macCatalyst)
 import XCTest
 @testable import Confidence
 
@@ -32,3 +33,4 @@ final class DeviceInfoContextDecoratorTests: XCTestCase {
         XCTAssertNotNil(result["device"])
     }
 }
+#endif

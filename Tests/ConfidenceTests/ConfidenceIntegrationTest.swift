@@ -44,6 +44,64 @@ class ConfidenceIntegrationTests: XCTestCase {
         XCTAssertNil(boolResult.errorMessage)
     }
 
+    func testConfidenceFeatureIntegrationDictionary() async throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
+        let ctx: ConfidenceStruct = [
+            "targeting_key": .init(string: "user_foo"),
+            "user": .init(structure: ["country": .init(string: "SE")])
+        ]
+
+        let defaultValue = [
+            "my-double": 1.01,
+            "my-integer": -1,
+            "my-boolean": false,
+            "my-string": "default",
+            "my-struct": [
+                "my-inner-boolean": false,
+                "my-inner-struct": [
+                    "my-inner-inner-string": "inner-inner-default"
+                ]
+            ]
+        ] as [String: Any]
+
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withContext(initialContext: ctx)
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(key: "\(resolveFlag)", defaultValue: defaultValue)
+
+        let result = evaluation.value
+
+        if let doubleValue = result["my-double"] as? Double {
+            XCTAssertEqual(doubleValue, 3.14, accuracy: 0.001)
+        } else {
+            XCTFail("Expected my-double to be a Double")
+        }
+        XCTAssertEqual(result["my-integer"] as? Int, 4)
+        XCTAssertEqual(result["my-boolean"] as? Bool, true)
+        // my-string is not set in the remote variant, so default is returned
+        XCTAssertEqual(result["my-string"] as? String, "default")
+        guard let myStruct = result["my-struct"] as? [String: Any] else {
+            XCTFail("Expected my-struct to be a dictionary")
+            return
+        }
+        XCTAssertEqual(myStruct["my-inner-boolean"] as? Bool, true)
+        guard let innerStruct = myStruct["my-inner-struct"] as? [String: Any] else {
+            XCTFail("Expected my-inner-struct to be a dictionary")
+            return
+        }
+        XCTAssertEqual(innerStruct["my-inner-inner-string"] as? String, "inner-inner-string-val")
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertNotNil(evaluation.variant)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
+
     func testTrackEventAllTypes() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken
