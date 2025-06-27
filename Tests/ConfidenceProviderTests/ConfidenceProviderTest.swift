@@ -200,18 +200,16 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderTypeMismatch() async throws {
-        let context = MutableContext(targetingKey: "t")
+        let context = MutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
-            variant: "variant1",
-            structure: ["int": .init(integer: 42)],
-            flag: "flagName"
+            structure: ["size": .init(integer: 3)]
         )
         let client = createFakeClient(resolvedValues: [resolvedValue])
 
         let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "t")])
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
             .withFlagResolverClient(flagResolver: client)
             .withStorage(storage: storage)
             .build()
@@ -221,7 +219,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
         XCTAssertThrowsError(
-            try provider.getIntegerEvaluation(key: "flagName", defaultValue: -1, context: context))
+            try provider.getIntegerEvaluation(key: "flag", defaultValue: -1, context: context))
         { error in
             if let specificError = error as? OpenFeatureError {
                 XCTAssertEqual(specificError.errorCode(), ErrorCode.typeMismatch)
@@ -375,7 +373,7 @@ class ConfidenceProviderTest: XCTestCase {
         }
 
         XCTAssertEqual(resultMap["width"], .integer(200))
-        XCTAssertNil(resultMap["height"])
+        XCTAssertEqual(resultMap["height"], .integer(400))
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
         XCTAssertNil(evaluation.errorCode)
@@ -490,17 +488,23 @@ class ConfidenceProviderTest: XCTestCase {
             "error": .string("Unknown")
         ])
 
-        do {
-            _ = try provider.getObjectEvaluation(
-                key: "flag",
-                defaultValue: defaultStructure,
-                context: context)
-            XCTFail("Expected an error to be thrown because 'error' key is missing from flag structure")
-        } catch {
-            XCTAssertTrue(error.localizedDescription.contains("Type mismatch") ||
-    error.localizedDescription.contains("missing required keys") ||
-    error.localizedDescription.contains("error"))
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: defaultStructure,
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
         }
+
+        // Should succeed and return resolved values
+        XCTAssertEqual(resultMap["width"], .integer(200))
+        XCTAssertEqual(resultMap["color"], .string("yellow"))
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
     }
 
     // swiftlint:disable:next function_body_length
@@ -689,18 +693,26 @@ class ConfidenceProviderTest: XCTestCase {
         cancellable.cancel()
 
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
-        do {
-            _ = try provider.getObjectEvaluation(
-                key: "flag",
-                defaultValue: Value.structure(["list": .list([.string("a"), .string("b"), .string("c")])]),
-                context: context)
-            XCTFail("Expected a type mismatch error")
-        } catch let error as OpenFeatureError {
-            XCTAssertEqual(error.errorCode(), ErrorCode.typeMismatch)
-            XCTAssertTrue(error.description.contains("Type mismatch"))
-        } catch {
-            XCTFail("Expected an OpenFeatureError")
+        let evaluation = try provider.getObjectEvaluation(
+            key: "flag",
+            defaultValue: Value.structure(["list": .list([.string("a"), .string("b"), .string("c")])]),
+            context: context)
+
+        guard case let .structure(resultMap) = evaluation.value else {
+            XCTFail("Expected structure value")
+            return
         }
+
+        // Should succeed and return resolved values without type validation
+        guard case let .list(resultList) = resultMap["list"] else {
+            XCTFail("Expected list value")
+            return
+        }
+        XCTAssertEqual(resultList, [.integer(1), .integer(2), .integer(3)])
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertEqual(evaluation.reason, "RESOLVE_REASON_MATCH")
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
     }
 
     func testProviderResolveListDirect() async throws {

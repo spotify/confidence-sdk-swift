@@ -1240,7 +1240,6 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    // swiftlint:disable:next function_body_length
     func testStructMergerOnlyReplacesNulls() async throws {
         class FakeClient: ConfidenceResolveClient {
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
@@ -1301,7 +1300,6 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
     }
 
-    // swiftlint:disable:next function_body_length
     func testStructMergerNestedNulls() async throws {
         class FakeClient: ConfidenceResolveClient {
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {

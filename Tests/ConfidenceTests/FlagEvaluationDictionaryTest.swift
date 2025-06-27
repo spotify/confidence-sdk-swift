@@ -52,24 +52,16 @@ class FlagEvaluationDictionaryTest: XCTestCase {
             resolveToken: ""
         )
 
-        let evaluation: Evaluation<[String: String]> = flagResolution.evaluate(
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
             flagName: "test_flag",
             defaultValue: ["key1": "defaultValue1", "key2": "defaultValue2"],
             context: [:]
         )
 
-        XCTAssertEqual(evaluation.reason, .error)
-        if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertEqual(
-                message,
-                "Default value key 'key2' has incompatible type. Expected from flag is 'String', got 'integer'"
-            )
-        } else {
-            XCTFail("Expected .typeMismatch error code")
-        }
-        XCTAssertNotNil(evaluation.errorMessage)
-        XCTAssertEqual(evaluation.value["key1"], "defaultValue1")
-        XCTAssertEqual(evaluation.value["key2"], "defaultValue2")
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.value["key1"] as? String, "value1")
+        XCTAssertEqual(evaluation.value["key2"] as? Int, 42)
+        XCTAssertNil(evaluation.errorCode)
     }
 
     func testMissingKeys() throws {
@@ -89,20 +81,16 @@ class FlagEvaluationDictionaryTest: XCTestCase {
             resolveToken: ""
         )
 
-        let evaluation: Evaluation<[String: String]> = flagResolution.evaluate(
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
             flagName: "test_flag",
             defaultValue: ["expectedKey1": "value1", "expectedKey2": "value2"],
             context: [:]
         )
 
-        XCTAssertEqual(evaluation.reason, .error)
-        if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertTrue(message.contains("not found in flag"))
-        } else {
-            XCTFail("Expected .typeMismatch error code")
-        }
-        XCTAssertEqual(evaluation.value["expectedKey1"], "value1")
-        XCTAssertEqual(evaluation.value["expectedKey2"], "value2")
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.value["wrongKey1"] as? String, "value1")
+        XCTAssertEqual(evaluation.value["wrongKey2"] as? String, "value2")
+        XCTAssertNil(evaluation.errorCode)
     }
 
     func testExtraKeysAllowed() throws {
@@ -124,18 +112,18 @@ class FlagEvaluationDictionaryTest: XCTestCase {
             resolveToken: ""
         )
 
-        let evaluation: Evaluation<[String: String]> = flagResolution.evaluate(
+        let evaluation: Evaluation<[String: Any]> = flagResolution.evaluate(
             flagName: "test_flag",
             defaultValue: ["key1": "default1", "key2": "default2"],
             context: [:]
         )
 
         XCTAssertEqual(evaluation.reason, .match)
-        XCTAssertEqual(evaluation.value["key1"], "value1")
-        XCTAssertEqual(evaluation.value["key2"], "value2")
-        // Extra keys should not be included in the result
-        XCTAssertNil(evaluation.value["extraKey1"])
-        XCTAssertNil(evaluation.value["extraKey2"])
+        XCTAssertEqual(evaluation.value["key1"] as? String, "value1")
+        XCTAssertEqual(evaluation.value["key2"] as? String, "value2")
+        // Extra keys should be included in the result
+        XCTAssertEqual(evaluation.value["extraKey1"] as? String, "extra1")
+        XCTAssertEqual(evaluation.value["extraKey2"] as? Int, 42)
         XCTAssertNil(evaluation.errorCode)
     }
 
@@ -258,9 +246,9 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         XCTAssertEqual(evaluation.value, true)
         XCTAssertEqual(evaluation.reason, .error)
         if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertTrue(message.contains("Expected a Dictionary as default value, but got a different type"))
+            XCTAssertTrue(message.contains("Expected ConfidenceStruct or Dictionary as default value"))
         } else {
-            XCTFail("Expected .typeMismatch error code for missing keys")
+            XCTFail("Expected .typeMismatch code")
         }
     }
 
@@ -325,7 +313,13 @@ class FlagEvaluationDictionaryTest: XCTestCase {
         validateNestedSettings(evaluation)
         validateTags(evaluation)
 
-        XCTAssertNil(evaluation.value["extraNestedField"])
+        // Extra nested fields should be included in the result
+        XCTAssertNotNil(evaluation.value["extraNestedField"])
+        if let extraNestedField = evaluation.value["extraNestedField"] as? [String: Any] {
+            XCTAssertEqual(extraNestedField["ignored"] as? String, "value")
+        } else {
+            XCTFail("Expected extraNestedField to be a dictionary")
+        }
     }
 
     func testNestedMissingKeys() throws {
@@ -361,15 +355,9 @@ class FlagEvaluationDictionaryTest: XCTestCase {
             context: [:]
         )
 
-        XCTAssertEqual(evaluation.reason, .error)
-        if case let .typeMismatch(message) = evaluation.errorCode {
-            XCTAssertTrue(message.contains("not found in flag"))
-        } else {
-            XCTFail("Expected .typeMismatch error code for missing keys")
-        }
-
-        XCTAssertEqual(evaluation.value["isActive"] as? Bool, false)
-        XCTAssertEqual(evaluation.value["missingTopLevel"] as? String, "required")
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.value["isActive"] as? Bool, true)
+        XCTAssertNil(evaluation.errorCode)
     }
 
     func testNullFieldMerging() throws {
