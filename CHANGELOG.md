@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0](https://github.com/spotify/confidence-sdk-swift/compare/1.3.1...1.4.0) (2025-06-27)
+
+
+### ✨ New Features
+
+* Full support for list evals ([39e5259](https://github.com/spotify/confidence-sdk-swift/commit/39e525960d04fb60089406a0aafeeb21a0def6b6))
+* pass Array to flag evaluation ([#203](https://github.com/spotify/confidence-sdk-swift/issues/203)) ([39e5259](https://github.com/spotify/confidence-sdk-swift/commit/39e525960d04fb60089406a0aafeeb21a0def6b6))
+* pass Dictionary to flag evaluation ([#193](https://github.com/spotify/confidence-sdk-swift/issues/193)) ([5c3344b](https://github.com/spotify/confidence-sdk-swift/commit/5c3344b9377d25f954c0cb9587d19dfeb247f62c))
+
 ## [1.3.1](https://github.com/spotify/confidence-sdk-swift/compare/1.3.0...1.3.1) (2025-06-18)
 
 
