@@ -1131,6 +1131,114 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNotNil(evaluation.errorMessage)
         XCTAssertNil(evaluation.variant)
     }
+
+    // swiftlint:disable:next function_body_length
+    func testAllConfidenceStructTypes() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                let testDate = Date(timeIntervalSince1970: 1640995200)
+                let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+                let structValue: ConfidenceStruct = [
+                    "booleanValue": ConfidenceValue(boolean: true),
+                    "stringValue": ConfidenceValue(string: "resolved string"),
+                    "integerValue": ConfidenceValue(integer: 42),
+                    "doubleValue": ConfidenceValue(double: 3.14159),
+                    "dateValue": ConfidenceValue(timestamp: testDate),
+                    "dateComponentsValue": ConfidenceValue(date: testDateComponents),
+                    "booleanList": ConfidenceValue(booleanList: [true, false, true]),
+                    "stringList": ConfidenceValue(stringList: ["a", "b", "c"]),
+                    "integerList": ConfidenceValue(integerList: [1, 2, 3]),
+                    "doubleList": ConfidenceValue(doubleList: [1.1, 2.2, 3.3]),
+                    "dateList": ConfidenceValue(dateList: [testDateComponents, testDateComponents]),
+                    "timestampList": ConfidenceValue(timestampList: [testDate, testDate]),
+                    "nestedStruct": ConfidenceValue(structure: [
+                        "nestedString": ConfidenceValue(string: "nested value"),
+                        "nestedInteger": ConfidenceValue(integer: 100),
+                        "nestedBoolean": ConfidenceValue(boolean: false)
+                    ])
+                ]
+                return ResolvesResult(
+                    resolvedValues: [
+                        ResolvedValue(
+                            variant: "control",
+                            value: ConfidenceValue(structure: structValue),
+                            flag: "flag",
+                            resolveReason: .match,
+                            shouldApply: true
+                        )
+                    ],
+                    resolveToken: "token"
+                )
+            }
+        }
+
+        let testDate = Date(timeIntervalSince1970: 1640995200)
+        let testDateComponents = DateComponents(year: 2022, month: 1, day: 1)
+        let defaultStruct: ConfidenceStruct = [
+            "booleanValue": ConfidenceValue(boolean: false),
+            "stringValue": ConfidenceValue(string: "default string"),
+            "integerValue": ConfidenceValue(integer: 0),
+            "doubleValue": ConfidenceValue(double: 0.0),
+            "dateValue": ConfidenceValue(timestamp: testDate),
+            "dateComponentsValue": ConfidenceValue(date: testDateComponents),
+            "booleanList": ConfidenceValue(booleanList: []),
+            "stringList": ConfidenceValue(stringList: []),
+            "integerList": ConfidenceValue(integerList: []),
+            "doubleList": ConfidenceValue(doubleList: []),
+            "dateList": ConfidenceValue(dateList: []),
+            "timestampList": ConfidenceValue(timestampList: []),
+            "nestedStruct": ConfidenceValue(structure: [
+                "nestedString": ConfidenceValue(string: "default nested"),
+                "nestedInteger": ConfidenceValue(integer: 0),
+                "nestedBoolean": ConfidenceValue(boolean: true)
+            ])
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .build()
+
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "flag",
+            defaultValue: defaultStruct
+        )
+
+        let result = evaluation.value
+
+        XCTAssertEqual(result["booleanValue"]?.asBoolean(), true)
+        XCTAssertEqual(result["stringValue"]?.asString(), "resolved string")
+        XCTAssertEqual(result["integerValue"]?.asInteger(), 42)
+        if let doubleValue = result["doubleValue"]?.asDouble() {
+            XCTAssertEqual(doubleValue, 3.14159, accuracy: 0.00001)
+        } else {
+            XCTFail("Expected doubleValue to be a Double")
+        }
+        XCTAssertEqual(result["dateValue"]?.asDate(), testDate)
+        XCTAssertEqual(result["dateComponentsValue"]?.asDateComponents(), testDateComponents)
+        XCTAssertEqual(result["booleanList"]?.asList()?.map { $0.asBoolean() }, [true, false, true])
+        XCTAssertEqual(result["stringList"]?.asList()?.map { $0.asString() }, ["a", "b", "c"])
+        XCTAssertEqual(result["integerList"]?.asList()?.map { $0.asInteger() }, [1, 2, 3])
+        XCTAssertEqual(result["doubleList"]?.asList()?.map { $0.asDouble() }, [1.1, 2.2, 3.3])
+        XCTAssertEqual(
+            result["dateList"]?.asList()?.map { $0.asDateComponents() },
+            [testDateComponents, testDateComponents]
+        )
+        XCTAssertEqual(result["timestampList"]?.asList()?.map { $0.asDate() }, [testDate, testDate])
+
+        if let nestedStruct = result["nestedStruct"]?.asStructure() {
+            XCTAssertEqual(nestedStruct["nestedString"]?.asString(), "nested value")
+            XCTAssertEqual(nestedStruct["nestedInteger"]?.asInteger(), 100)
+            XCTAssertEqual(nestedStruct["nestedBoolean"]?.asBoolean(), false)
+        } else {
+            XCTFail("Expected nestedStruct to be a structure")
+        }
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertEqual(evaluation.variant, "control")
+        XCTAssertNil(evaluation.errorMessage)
+        XCTAssertNil(evaluation.errorCode)
+    }
 }
 
 final class DispatchQueueFake: DispatchQueueType {
