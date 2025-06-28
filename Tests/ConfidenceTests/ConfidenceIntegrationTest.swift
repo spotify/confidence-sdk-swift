@@ -102,6 +102,54 @@ class ConfidenceIntegrationTests: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
     }
 
+    func testConfidenceFeatureIntegrationConfidenceValue() async throws {
+        guard let clientToken = self.clientToken else {
+            throw TestError.missingClientToken
+        }
+
+        let ctx: ConfidenceStruct = [
+            "targeting_key": .init(string: "user_foo"),
+            "user": .init(structure: ["country": .init(string: "SE")])
+        ]
+
+        let confidence = Confidence.Builder(clientSecret: clientToken)
+            .withContext(initialContext: ctx)
+            .build()
+        try await confidence.fetchAndActivate()
+        let evaluation = confidence.getEvaluation(
+            key: "\(resolveFlag)",
+            defaultValue: [
+                "my-integer": ConfidenceValue.init(integer: 1),
+                "my-boolean": ConfidenceValue.init(boolean: false)
+            ])
+
+        let result = evaluation.value
+
+        XCTAssertEqual(result["my-integer"]?.asInteger(), 4)
+        XCTAssertEqual(result["my-boolean"]?.asBoolean(), true)
+        if let doubleValue = result["my-double"]?.asDouble() {
+            XCTAssertEqual(doubleValue, 3.14, accuracy: 0.001)
+        } else {
+            XCTFail("Expected my-double to be a Double")
+        }
+        XCTAssertTrue(result["my-string"]?.isNull() ?? false)
+        if let myStruct = result["my-struct"]?.asStructure() {
+            XCTAssertEqual(myStruct["my-inner-boolean"]?.asBoolean(), true)
+            if let innerStruct = myStruct["my-inner-struct"]?.asStructure() {
+                XCTAssertEqual(innerStruct["my-inner-inner-string"]?.asString(), "inner-inner-string-val")
+            } else {
+                XCTFail("Expected my-inner-struct to be a structure")
+            }
+        } else {
+            XCTFail("Expected my-struct to be a structure")
+        }
+
+        XCTAssertEqual(evaluation.reason, .match)
+        XCTAssertNotNil(evaluation.variant)
+        XCTAssertNil(evaluation.errorCode)
+        XCTAssertNil(evaluation.errorMessage)
+    }
+
     func testTrackEventAllTypes() async throws {
         guard let clientToken = self.clientToken else {
             throw TestError.missingClientToken

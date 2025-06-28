@@ -258,7 +258,21 @@ extension FlagResolution {
             }
             result = value.asNative()
         case .structure:
-            result = try handleStructureValue(value: value, defaultValue: defaultValue)
+            if let defaultStruct = defaultValue as? ConfidenceStruct,
+                let resolvedStruct = value.asStructure() {
+                result = StructMerger.mergeStructWithDefault(
+                    resolved: resolvedStruct,
+                    defaultStruct: defaultStruct
+                ) as? T
+            } else if let defaultDict = defaultValue as? [String: Any],
+                let resolvedStruct = value.asStructure() {
+                result = StructMerger.mergeDictionaryWithDefault(
+                    resolved: resolvedStruct,
+                    defaultDict: defaultDict)
+            } else {
+                throw ConfidenceError.typeMismatch(
+                    message: "Expected ConfidenceStruct or Dictionary as default value")
+            }
         case .null:
             return nil
         }
@@ -267,112 +281,6 @@ extension FlagResolution {
             return typedResult
         } else {
             throw ConfidenceError.typeMismatch(message: "Value \(value) cannot be cast to \(T.self)")
-        }
-    }
-
-    private func handleStructureValue<T>(value: ConfidenceValue, defaultValue: T) throws -> [String: Any] {
-        guard let defaultDict = defaultValue as? [String: Any] else {
-            throw ConfidenceError
-                .typeMismatch(
-                    message: "Expected a Dictionary as default value, but got a different type"
-                )
-        }
-        guard let structure = value.asStructure() else {
-            throw ConfidenceError
-                .typeMismatch(
-                    message: "Unexpected error with internal ConfidenceStruct conversion"
-                )
-        }
-        try validateDictionaryStructureCompatibility(
-            structure: structure,
-            defaultDict: defaultDict
-        )
-        // Filter only the entries in the original default value
-        var filteredNative: [String: Any] = [:]
-        for requiredKey in defaultDict.keys {
-            if let confidenceValue = structure[requiredKey] {
-                // If the resolved value is null, use the default value instead
-                if confidenceValue.isNull() {
-                    filteredNative[requiredKey] = defaultDict[requiredKey]
-                } else {
-                    filteredNative[requiredKey] = confidenceValue.asNative()
-                }
-            }
-        }
-        return filteredNative
-    }
-
-    private func validateDictionaryStructureCompatibility(
-        structure: ConfidenceStruct,
-        defaultDict: [String: Any]
-    ) throws {
-        for defaultValueKey in defaultDict.keys {
-            guard let confidenceValue = structure[defaultValueKey] else {
-                throw ConfidenceError.typeMismatch(
-                    message: "Default value key '\(defaultValueKey)' not found in flag"
-                )
-            }
-
-            // If the resolved value is null, it's compatible with any type (we'll use default value)
-            if confidenceValue.isNull() {
-                continue
-            }
-
-            let defaultValueValue: Any? = defaultDict[defaultValueKey]
-            if !isValueCompatibleWithDefaultValue(
-                confidenceType: confidenceValue.type(),
-                defaultValue: defaultValueValue
-            ) {
-                let message = "Default value key '\(defaultValueKey)' has incompatible type. " +
-                    "Expected from flag is '\(getIntrinsicType(of: defaultValueValue))', " +
-                    "got '\(confidenceValue.type())'"
-                throw ConfidenceError.typeMismatch(message: message)
-            }
-            if confidenceValue.type() == .list,
-                let defaultList = defaultValueValue as? [Any],
-                let resolvedList = confidenceValue.asList() {
-                try checkListElementTypeCompatibility(
-                    defaultList: defaultList,
-                    resolvedList: resolvedList,
-                    errorContext: defaultValueKey
-                )
-            }
-        }
-    }
-
-    private func getIntrinsicType(of value: Any?) -> String {
-        if let unwrapped = value {
-            return "\(type(of: unwrapped))"
-        } else {
-            return "nil"
-        }
-    }
-
-    private func isValueCompatibleWithDefaultValue(
-        confidenceType: ConfidenceValueType,
-        defaultValue: Any?
-    ) -> Bool {
-        switch defaultValue {
-        case is String:
-            return confidenceType == .string
-        case is Int, is Int32, is Int64:
-            return confidenceType == .integer
-        case is Double, is Float:
-            return confidenceType == .double
-        case is Bool:
-            return confidenceType == .boolean
-        case is Date:
-            return confidenceType == .timestamp
-        case is DateComponents:
-            return confidenceType == .date
-        case is Array<Any>:
-            return confidenceType == .list
-        case is [String: Any]:
-            return confidenceType == .structure
-        case .none: // TODO This requires extra care
-            return confidenceType == .null
-        default:
-            return false
         }
     }
 
