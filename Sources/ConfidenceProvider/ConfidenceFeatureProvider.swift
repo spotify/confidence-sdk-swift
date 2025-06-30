@@ -68,7 +68,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         let oldKeys = Array(oldCtx.asMap().keys)
         let newKeys = Set(newContext.asMap().keys)
         return oldKeys.filter { !newKeys.contains($0) }
-    } ?? []
+        } ?? []
         await confidence.putContextAndWait(
             context: ConfidenceTypeMapper.from(ctx: newContext),
             removedKeys: removedKeys)
