@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.0.0](https://github.com/spotify/confidence-sdk-swift/compare/1.3.1...2.0.0) (2025-06-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* fix: Restore ConfidenceStruct evals, align Dictionary evals ([#205](https://github.com/spotify/confidence-sdk-swift/issues/205))
+
+### 🐛 Bug Fixes
+
+* make a copy of old context ([#207](https://github.com/spotify/confidence-sdk-swift/issues/207)) ([e9318ee](https://github.com/spotify/confidence-sdk-swift/commit/e9318ee807c9118e83322f731af8d65da0daa043))
+
+
+### ✨ New Features
+
+* fix: Restore ConfidenceStruct evals, align Dictionary evals ([#205](https://github.com/spotify/confidence-sdk-swift/issues/205)) ([d32b95a](https://github.com/spotify/confidence-sdk-swift/commit/d32b95ab789a60a51a851b6629a03f33841e98c2))
+* Full support for list evals ([39e5259](https://github.com/spotify/confidence-sdk-swift/commit/39e525960d04fb60089406a0aafeeb21a0def6b6))
+* pass Array to flag evaluation ([#203](https://github.com/spotify/confidence-sdk-swift/issues/203)) ([39e5259](https://github.com/spotify/confidence-sdk-swift/commit/39e525960d04fb60089406a0aafeeb21a0def6b6))
+* pass Dictionary to flag evaluation ([#193](https://github.com/spotify/confidence-sdk-swift/issues/193)) ([5c3344b](https://github.com/spotify/confidence-sdk-swift/commit/5c3344b9377d25f954c0cb9587d19dfeb247f62c))
+
+
+### 🔄 Refactoring
+
+* lint fix ([#208](https://github.com/spotify/confidence-sdk-swift/issues/208)) ([115cecf](https://github.com/spotify/confidence-sdk-swift/commit/115cecfd6254a173a9232ed1f753f51acccb8f97))
+
 ## [1.3.1](https://github.com/spotify/confidence-sdk-swift/compare/1.3.0...1.3.1) (2025-06-18)
 
 
