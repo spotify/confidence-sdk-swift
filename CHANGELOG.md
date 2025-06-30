@@ -1,11 +1,11 @@
 # Changelog
 
-## [2.0.0](https://github.com/spotify/confidence-sdk-swift/compare/1.3.1...2.0.0) (2025-06-30)
+## [1.4.0](https://github.com/spotify/confidence-sdk-swift/compare/1.3.1...1.4.0) (2025-06-30)
 
 
 ### ⚠ BREAKING CHANGES
 
-* fix: Restore ConfidenceStruct evals, align Dictionary evals ([#205](https://github.com/spotify/confidence-sdk-swift/issues/205))
+* fix: Restore ConfidenceStruct evals, align Dictionary evals ([#205](https://github.com/spotify/confidence-sdk-swift/issues/205)). Null values from remote variants are now evaluated using the client-side default value.
 
 ### 🐛 Bug Fixes
 
