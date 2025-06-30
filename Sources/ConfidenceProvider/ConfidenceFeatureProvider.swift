@@ -64,9 +64,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) async {
-        let removedKeys: [String] = oldContext.map {
-            Array($0.asMap().filter { key, _ in !newContext.asMap().keys.contains(key) }.keys)
-        } ?? []
+        let removedKeys: [String] = oldContext.map { oldCtx in
+        let oldKeys = Array(oldCtx.asMap().keys)
+        let newKeys = Set(newContext.asMap().keys)
+        return oldKeys.filter { !newKeys.contains($0) }
+    } ?? []
         await confidence.putContextAndWait(
             context: ConfidenceTypeMapper.from(ctx: newContext),
             removedKeys: removedKeys)
