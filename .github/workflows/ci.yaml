@@ -18,6 +18,9 @@ jobs:
     - name: install sourcekitten
       run: brew install sourcekitten
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: Run public API diff
       run: scripts/api_diff.sh ${{ matrix.module }}
 
@@ -25,6 +28,9 @@ jobs:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: Build and Test
       env:
         CLIENT_TOKEN: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
@@ -34,6 +40,9 @@ jobs:
     runs-on: macOS-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: Build Demo App
       run: ConfidenceDemoApp/scripts/build.sh
 
@@ -41,6 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name }}
     - name: GitHub Action for SwiftLint
       uses: norio-nomura/action-swiftlint@3.2.1
       with:
