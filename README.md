@@ -1,5 +1,7 @@
 # Swift Confidence SDK
 
+TEST
+
 This repo contains the official Swift SDK for accessing feature flags and for event tracking with [Confidence](https://confidence.spotify.com/).
 
 It also contains the Confidence OpenFeature Provider, to be used in conjunction with the [OpenFeature SDK](https://openfeature.dev/docs/reference/concepts/provider).
