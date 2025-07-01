@@ -66,12 +66,15 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     ) async {
         let newContextMap = newContext.asMap()
         let newKeys = Set(Array(newContextMap.keys))
+        let targetingKey = newContext.getTargetingKey()
+
         let removedKeys: [String] = oldContext.map { oldCtx in
             let oldKeys = Array(oldCtx.asMap().keys)
             return Array(Set(oldKeys).subtracting(newKeys))
         } ?? []
+
         await confidence.putContextAndWait(
-            context: ConfidenceTypeMapper.from(ctx: newContext),
+            context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
             removedKeys: removedKeys)
     }
 
