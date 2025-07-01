@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/spotify/confidence-sdk-swift/compare/1.4.0...1.4.1) (2025-07-01)
+
+
+### 🐛 Bug Fixes
+
+* Race condition and possible data inconsistencies ([#212](https://github.com/spotify/confidence-sdk-swift/issues/212)) ([44704f4](https://github.com/spotify/confidence-sdk-swift/commit/44704f454f9fbb5c766aba4777c242a3b3be50b1))
+
 ## [1.4.0](https://github.com/spotify/confidence-sdk-swift/compare/1.3.1...1.4.0) (2025-06-30)
 
 
