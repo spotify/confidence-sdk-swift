@@ -11,10 +11,16 @@ public enum ConfidenceTypeMapper {
         guard let openFeatureContext = ctx else {
             return [:]
         }
-        var ofCtxMap = openFeatureContext.asMap()
-        // Precendence given to the `attributes` rather then the bespoke `targeting_key`
-        if !openFeatureContext.getTargetingKey().isEmpty && !ofCtxMap.keys.contains("targeting_key") {
-            ofCtxMap["targeting_key"] = .string(openFeatureContext.getTargetingKey())
+        let contextMap = openFeatureContext.asMap()
+        let targetingKey = openFeatureContext.getTargetingKey()
+        return from(contextMap: contextMap, targetingKey: targetingKey)
+    }
+
+    static func from(contextMap: [String: Value], targetingKey: String?) -> ConfidenceStruct {
+        var ofCtxMap = contextMap
+        // Precedence given to the `attributes` rather than the bespoke `targeting_key`
+        if let targetingKey = targetingKey, !targetingKey.isEmpty && !ofCtxMap.keys.contains("targeting_key") {
+            ofCtxMap["targeting_key"] = .string(targetingKey)
         }
         return ofCtxMap.compactMapValues(convertValue)
     }
