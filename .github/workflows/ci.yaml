@@ -30,10 +30,16 @@ jobs:
 
   Integration-Tests:
     runs-on: macOS-latest
-    if: ${{ secrets.CONFIDENCE_CLIENT_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v3
+      - name: Check for secret
+        if: ${{ !secrets.CONFIDENCE_CLIENT_TOKEN }}
+        run: |
+          echo "Secret CONFIDENCE_CLIENT_TOKEN is not available. Skipping integration tests."
+          exit 0
+        continue-on-error: true
       - name: Build and Run Integration Tests
+        if: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
         env:
           CLIENT_TOKEN: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
         run: scripts/run_integration_tests.sh $CLIENT_TOKEN
