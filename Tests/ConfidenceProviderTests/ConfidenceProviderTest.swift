@@ -270,6 +270,52 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
     }
 
+    func testOnContextSetThreadSafety() async throws {
+        let storage = StorageMock()
+
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
+        let oldContext = MutableContext(attributes: ["targeting_key": OpenFeature.Value.string("user2")])
+        let newContext = MutableContext(attributes: ["targeting_key": OpenFeature.Value.string("user3")])
+
+        // Run two independent loops concurrently to try hit race conditions on the context ojbects
+        let loopTask = Task {
+            var i = 0
+            while !Task.isCancelled {
+                await provider.onContextSet(oldContext: oldContext, newContext: newContext)
+                i += 1
+            }
+        }
+        let modifierTask1 = Task {
+            while !Task.isCancelled {
+                oldContext.add(key: "key1", value: .string("value1"))
+                oldContext.add(key: "key2", value: .string("value2"))
+                oldContext.add(key: "key3", value: .string("value3"))
+                try? await Task.sleep(nanoseconds: 1_000)
+            }
+        }
+
+        // Let it run for a bit to create the race condition
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        loopTask.cancel()
+        modifierTask1.cancel()
+        await loopTask.value
+        await modifierTask1.value
+    }
+
     func testProviderResolveInnerStruct() async throws {
         let context = MutableContext(targetingKey: "user2")
         let storage = StorageMock()
