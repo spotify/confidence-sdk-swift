@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.2](https://github.com/spotify/confidence-sdk-swift/compare/1.4.1...1.4.2) (2025-07-04)
+
+
+### 🧹 Chore
+
+* Create release ([#221](https://github.com/spotify/confidence-sdk-swift/issues/221)) ([71fac12](https://github.com/spotify/confidence-sdk-swift/commit/71fac12e294f0559910656148f56817fbf375b60))
+* **release:** 1.4.2 ([71fac12](https://github.com/spotify/confidence-sdk-swift/commit/71fac12e294f0559910656148f56817fbf375b60))
+
 ## [1.4.1](https://github.com/spotify/confidence-sdk-swift/compare/1.4.0...1.4.1) (2025-07-01)
 
 
