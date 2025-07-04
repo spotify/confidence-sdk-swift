@@ -291,7 +291,7 @@ class ConfidenceProviderTest: XCTestCase {
         let oldContext = MutableContext(attributes: ["targeting_key": OpenFeature.Value.string("user2")])
         let newContext = MutableContext(attributes: ["targeting_key": OpenFeature.Value.string("user3")])
 
-        // Use a cancellable infinite loop
+        // Run two independent loops concurrently to try hit race conditions on the context ojbects
         let loopTask = Task {
             var i = 0
             while !Task.isCancelled {
@@ -299,19 +299,17 @@ class ConfidenceProviderTest: XCTestCase {
                 i += 1
             }
         }
-
-        // Create multiple tasks that modify oldContext aggressively
         let modifierTask1 = Task {
             while !Task.isCancelled {
                 oldContext.add(key: "key1", value: .string("value1"))
                 oldContext.add(key: "key2", value: .string("value2"))
                 oldContext.add(key: "key3", value: .string("value3"))
-                try? await Task.sleep(nanoseconds: 1_000) // 1 microsecond
+                try? await Task.sleep(nanoseconds: 1_000)
             }
         }
 
         // Let it run for a bit to create the race condition
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1s
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
         loopTask.cancel()
         modifierTask1.cancel()
         await loopTask.value
