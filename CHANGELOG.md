@@ -3,6 +3,11 @@
 ## [1.4.2](https://github.com/spotify/confidence-sdk-swift/compare/1.4.1...1.4.2) (2025-07-04)
 
 
+### 🐛 Bug Fixes
+
+* Bump OF SDK to 0.3.1 [#220](https://github.com/spotify/confidence-sdk-swift/pull/220)
+
+
 ### 🧹 Chore
 
 * Create release ([#221](https://github.com/spotify/confidence-sdk-swift/issues/221)) ([71fac12](https://github.com/spotify/confidence-sdk-swift/commit/71fac12e294f0559910656148f56817fbf375b60))
