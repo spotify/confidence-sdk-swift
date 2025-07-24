@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/spotify/confidence-sdk-swift/compare/1.4.2...1.4.3) (2025-07-24)
+
+
+### 🐛 Bug Fixes
+
+* ShouldApply backwards compatibility ([#223](https://github.com/spotify/confidence-sdk-swift/issues/223)) ([19eb5df](https://github.com/spotify/confidence-sdk-swift/commit/19eb5dfd4900da79748d74ed3b93598f8bc2b541))
+
 ## [1.4.2](https://github.com/spotify/confidence-sdk-swift/compare/1.4.1...1.4.2) (2025-07-04)
 
 
