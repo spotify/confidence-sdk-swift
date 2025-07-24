@@ -34,6 +34,74 @@ class DefaultStorageTest: XCTestCase {
         XCTAssertEqual(restoredValue, value)
     }
 
+    func testResolvedValueShouldApplyBackwardCompatibility() throws {
+        struct LegacyResolvedValue: Codable, Equatable {
+            var variant: String?
+            var value: ConfidenceValue?
+            var flag: String
+            var resolveReason: ResolveReason
+            // Note: shouldApply field is intentionally missing to simulate old data
+        }
+
+        struct LegacyFlagResolution: Codable, Equatable {
+            let context: ConfidenceStruct
+            let flags: [LegacyResolvedValue]
+            let resolveToken: String
+        }
+
+        let legacyResolvedValue = LegacyResolvedValue(
+            variant: "control",
+            value: .init(structure: ["size": .init(integer: 42)]),
+            flag: "test_flag",
+            resolveReason: .match
+        )
+
+        let legacyResolution = LegacyFlagResolution(
+            context: ["targeting_key": .init(string: "user1")],
+            flags: [legacyResolvedValue],
+            resolveToken: "legacy_token"
+        )
+
+        try storage.save(data: legacyResolution)
+        let restoredResolution: FlagResolution = try storage.load(defaultValue: FlagResolution.EMPTY)
+
+        XCTAssertEqual(restoredResolution.flags.count, 1)
+        let restoredFlag = restoredResolution.flags[0]
+        XCTAssertEqual(restoredFlag.flag, "test_flag")
+        XCTAssertEqual(restoredFlag.variant, "control")
+        XCTAssertEqual(restoredFlag.resolveReason, .match)
+        XCTAssertTrue(restoredFlag.shouldApply, "shouldApply should default to true for backward compatibility")
+        XCTAssertEqual(restoredFlag.value?.asStructure()?["size"]?.asInteger(), 42)
+    }
+
+    func testResolvedValueShouldApplyExplicitValue() throws {
+        let resolvedValue = ResolvedValue(
+            variant: "control",
+            value: .init(structure: ["size": .init(integer: 42)]),
+            flag: "test_flag",
+            resolveReason: .match,
+            shouldApply: false  // Explicitly set to false
+        )
+
+        let resolution = FlagResolution(
+            context: ["targeting_key": .init(string: "user1")],
+            flags: [resolvedValue],
+            resolveToken: "test_token"
+        )
+
+        try storage.save(data: resolution)
+
+        let restoredResolution: FlagResolution = try storage.load(defaultValue: FlagResolution.EMPTY)
+
+        XCTAssertEqual(restoredResolution.flags.count, 1)
+        let restoredFlag = restoredResolution.flags[0]
+        XCTAssertEqual(restoredFlag.flag, "test_flag")
+        XCTAssertEqual(restoredFlag.variant, "control")
+        XCTAssertEqual(restoredFlag.resolveReason, .match)
+        XCTAssertFalse(restoredFlag.shouldApply, "shouldApply should preserve explicit false value")
+        XCTAssertEqual(restoredFlag.value?.asStructure()?["size"]?.asInteger(), 42)
+    }
+
     func testLoadNonExistingFileReturnsDefault() throws {
         let url = try storage.getConfigUrl()
         if FileManager.default.fileExists(atPath: url.backport.path) {
