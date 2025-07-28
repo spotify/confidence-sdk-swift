@@ -23,7 +23,18 @@ public class Confidence: ConfidenceEventSender {
     // Synchronization and task management resources
     private var cancellables = Set<AnyCancellable>()
     private let cacheQueue = DispatchQueue(label: "com.confidence.queue.cache")
-    private var taskManager = TaskManager()
+    private let contextQueue = DispatchQueue(label: "com.confidence.queue.context")
+    // Tracks in-flight context operations for awaitReconciliation
+    private let pendingGroup = DispatchGroup()
+    /// Register a new pending operation (for awaitReconciliation)
+    private func startPendingOperation() {
+        pendingGroup.enter()
+    }
+
+    /// Complete a pending operation (for awaitReconciliation)
+    private func completePendingOperation() {
+        pendingGroup.leave()
+    }
 
     // Internal for testing
     internal let remoteFlagResolver: ConfidenceResolveClient
@@ -155,63 +166,87 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(key: String, value: ConfidenceValue) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: [key: value], removedKeys: [])
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(action: "PutContext", context: newContext)
-            } catch {
-                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+        self.startPendingOperation()
+        await withCheckedContinuation { continuation in
+            contextQueue.async {
+                let newContext = self.contextManager.updateContext(withValues: [key: value], removedKeys: [])
+                Task {
+                    defer { self.completePendingOperation() }
+                    do {
+                        try await self.fetchAndActivate()
+                        self.debugLogger?.logContext(action: "PutContext", context: newContext)
+                    } catch {
+                        self.debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+                    }
+                    continuation.resume()
+                }
             }
         }
-        await awaitReconciliation()
     }
 
     public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(action: "PutContext", context: newContext)
-            } catch {
-                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+        self.startPendingOperation()
+        await withCheckedContinuation { continuation in
+            contextQueue.async {
+                let newContext = self.contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+                Task {
+                    defer { self.completePendingOperation() }
+                    do {
+                        try await self.fetchAndActivate()
+                        self.debugLogger?.logContext(action: "PutContext", context: newContext)
+                    } catch {
+                        self.debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
+                    }
+                    continuation.resume()
+                }
             }
         }
-        await awaitReconciliation()
     }
 
     public func putContextAndWait(context: ConfidenceStruct) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: context, removedKeys: [])
-            do {
-                try await fetchAndActivate()
-                debugLogger?.logContext(
-                    action: "PutContext",
-                    context: newContext)
-            } catch {
-                debugLogger?.logMessage(
-                    message: "Error when putting context: \(error)",
-                    isWarning: true)
+        self.startPendingOperation()
+        await withCheckedContinuation { continuation in
+            contextQueue.async {
+                let newContext = self.contextManager.updateContext(withValues: context, removedKeys: [])
+                Task {
+                    defer { self.completePendingOperation() }
+                    do {
+                        try await self.fetchAndActivate()
+                        self.debugLogger?.logContext(
+                            action: "PutContext",
+                            context: newContext)
+                    } catch {
+                        self.debugLogger?.logMessage(
+                            message: "Error when putting context: \(error)",
+                            isWarning: true)
+                    }
+                    continuation.resume()
+                }
             }
         }
-        await awaitReconciliation()
     }
 
     public func removeContextAndWait(key: String) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(
-                    action: "RemoveContext",
-                    context: newContext)
-            } catch {
-                debugLogger?.logMessage(
-                    message: "Error when removing context key: \(error)",
-                    isWarning: true)
+        self.startPendingOperation()
+        await withCheckedContinuation { continuation in
+            contextQueue.async {
+                let newContext = self.contextManager.updateContext(withValues: [:], removedKeys: [key])
+                Task {
+                    defer { self.completePendingOperation() }
+                    do {
+                        try await self.fetchAndActivate()
+                        self.debugLogger?.logContext(
+                            action: "RemoveContext",
+                            context: newContext)
+                    } catch {
+                        self.debugLogger?.logMessage(
+                            message: "Error when removing context key: \(error)",
+                            isWarning: true)
+                    }
+                    continuation.resume()
+                }
             }
         }
-        await awaitReconciliation()
     }
 
     /**
@@ -225,50 +260,87 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContext(key: String, value: ConfidenceValue) {
-        taskManager.currentTask = Task {
-            await putContextAndWait(key: key, value: value)
+        // register pending operation for awaitReconciliation
+        self.startPendingOperation()
+        contextQueue.async {
+            Task {
+                defer { self.completePendingOperation() }
+                await self.putContextAndWait(key: key, value: value)
+            }
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
-        taskManager.currentTask = Task {
-            await putContextAndWait(context: context)
+        self.startPendingOperation()
+
+        contextQueue.async {
+            Task {
+                defer { self.completePendingOperation() }
+                await self.putContextAndWait(context: context)
+            }
         }
     }
 
     public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
-        taskManager.currentTask = Task {
-            await putContextAndWait(context: context, removedKeys: removedKeys)
+        // register pending operation for awaitReconciliation
+        self.startPendingOperation()
+        contextQueue.async {
+            Task {
+                defer { self.completePendingOperation() }
+                await self.putContextAndWait(context: context, removedKeys: removedKeys)
+            }
         }
     }
 
     public func removeContext(key: String) {
-        taskManager.currentTask = Task {
-            await removeContextAndWait(key: key)
+        // register pending operation for awaitReconciliation
+        self.startPendingOperation()
+        contextQueue.async {
+            Task {
+                defer { self.completePendingOperation() }
+                await self.removeContextAndWait(key: key)
+            }
         }
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(
-                    action: "RemoveContext",
-                    context: newContext)
-            } catch {
-                debugLogger?.logMessage(
-                    message: "Error when putting context: \(error)",
-                    isWarning: true)
+        // register pending operation for awaitReconciliation
+        self.startPendingOperation()
+        contextQueue.async {
+            let newContext = self.contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+            Task {
+                defer { self.completePendingOperation() }
+                do {
+                    try await self.fetchAndActivate()
+                    self.debugLogger?.logContext(
+                        action: "RemoveContext",
+                        context: newContext)
+                } catch {
+                    self.debugLogger?.logMessage(
+                        message: "Error when putting context: \(error)",
+                        isWarning: true)
+                }
             }
         }
     }
 
     /**
-    Ensures all the already-started context changes prior to this function have been reconciliated
+    Ensures all the already-started context changes prior to this function have been reconciled
     */
     public func awaitReconciliation() async {
-        await taskManager.awaitReconciliation()
+        // 1️⃣ wait until all previously enqueued contextQueue tasks have been scheduled
+        await withCheckedContinuation { continuation in
+            contextQueue.async(flags: .barrier) {
+                continuation.resume()
+            }
+        }
+        // 2️⃣ then wait for all pending operations to complete
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global().async {
+                self.pendingGroup.wait()
+                continuation.resume()
+            }
+        }
     }
 
     public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {
