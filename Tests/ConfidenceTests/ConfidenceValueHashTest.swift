@@ -2,7 +2,7 @@ import XCTest
 
 @testable import Confidence
 
-final class MutableContextTests: XCTestCase {
+final class ContextHashEqualityTests: XCTestCase {
     func testHashRespectsTargetingKey() throws {
         let ctx1: ConfidenceStruct =
         ["targetingKey": ConfidenceValue(string: "user1"), "structure": ConfidenceValue(structure: [:])]
@@ -35,10 +35,10 @@ final class MutableContextTests: XCTestCase {
         ]
         let ctx2: ConfidenceStruct =
         [
-            "targetingKey": ConfidenceValue(string: "user2"),
+            "targetingKey": ConfidenceValue(string: "user1"),
             "structure": ConfidenceValue(structure: ["integer": ConfidenceValue(integer: 3)])
         ]
 
-        XCTAssertNotEqual(ctx1.hash(), ctx2.hash())
+        XCTAssertEqual(ctx1.hash(), ctx2.hash())
     }
 }

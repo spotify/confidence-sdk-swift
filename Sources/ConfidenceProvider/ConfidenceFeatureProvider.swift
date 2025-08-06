@@ -40,7 +40,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws {
-        let context = ConfidenceTypeMapper.from(ctx: initialContext ?? MutableContext(attributes: [:]))
+        let context = ConfidenceTypeMapper.from(ctx: initialContext ?? ImmutableContext(attributes: [:]))
         confidence.putContextLocal(context: context)
         if initializationStrategy == .activateAndFetchAsync {
             try confidence.activate()

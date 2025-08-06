@@ -29,7 +29,7 @@ import OpenFeature
 
 let confidence = Confidence.Builder(clientSecret: "mysecret", loggerLevel: .NONE).build()
 let provider = ConfidenceFeatureProvider(confidence: confidence)
-let ctx = MutableContext(targetingKey: "myTargetingKey", structure: MutableStructure())
+let ctx = ImmutableContext(targetingKey: "myTargetingKey", structure: ImmutableStructure())
 OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
 ```
 
@@ -72,7 +72,7 @@ There are other events that are emitted by the provider, see [Provider Events](h
 
 It is possible to update the evaluation context within an application's session via the following API:
 ```swift
-let ctx = MutableContext(targetingKey: "myNewTargetingKey", structure: MutableStructure())
+let ctx = ImmutableContext(targetingKey: "myNewTargetingKey", structure: ImmutableStructure())
 OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 ```
 

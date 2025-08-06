@@ -166,7 +166,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderThrowsOpenFeatureErrors() async throws {
-        let context = MutableContext(targetingKey: "t")
+        let context = ImmutableContext(targetingKey: "t")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -204,7 +204,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderTypeMismatch() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -235,7 +235,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveStruct() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -270,54 +270,8 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
     }
 
-    func testOnContextSetThreadSafety() async throws {
-        let storage = StorageMock()
-
-        let resolvedValue = createResolvedValue(
-            structure: ["size": .init(integer: 3)]
-        )
-        let client = createFakeClient(resolvedValues: [resolvedValue])
-
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .withContext(initialContext: ["targeting_key": .init(string: "user2")])
-            .withFlagResolverClient(flagResolver: client)
-            .withStorage(storage: storage)
-            .build()
-
-        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
-        cancellable.cancel()
-
-        let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: .fetchAndActivate)
-        let oldContext = MutableContext(attributes: ["targeting_key": OpenFeature.Value.string("user2")])
-        let newContext = MutableContext(attributes: ["targeting_key": OpenFeature.Value.string("user3")])
-
-        // Run two independent loops concurrently to try hit race conditions on the context ojbects
-        let loopTask = Task {
-            var i = 0
-            while !Task.isCancelled {
-                await provider.onContextSet(oldContext: oldContext, newContext: newContext)
-                i += 1
-            }
-        }
-        let modifierTask1 = Task {
-            while !Task.isCancelled {
-                oldContext.add(key: "key1", value: .string("value1"))
-                oldContext.add(key: "key2", value: .string("value2"))
-                oldContext.add(key: "key3", value: .string("value3"))
-                try? await Task.sleep(nanoseconds: 1_000)
-            }
-        }
-
-        // Let it run for a bit to create the race condition
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        loopTask.cancel()
-        modifierTask1.cancel()
-        await loopTask.value
-        await modifierTask1.value
-    }
-
     func testProviderResolveInnerStruct() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -358,7 +312,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveStructSchemaMismatch() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -391,7 +345,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveStructSchemaExtraValues() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -431,7 +385,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveStructHeterogenous() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -471,7 +425,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveStructNullFields() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -511,7 +465,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveStructExtraDefaultValue() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -559,7 +513,7 @@ class ConfidenceProviderTest: XCTestCase {
 
     // swiftlint:disable:next function_body_length
     func testProviderResolveStructAllValueTypes() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
@@ -686,7 +640,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveList() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -725,7 +679,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveListTypeMismatch() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -766,7 +720,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveListDirect() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -801,7 +755,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveDirectListTypeMismatch() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
 
         let resolvedValue = createResolvedValue(
@@ -834,7 +788,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testProviderResolveAllListTypes() async throws {
-        let context = MutableContext(targetingKey: "user2")
+        let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()
         let testDate = Date(timeIntervalSince1970: 1640995200) // 2022-01-01 00:00:00 UTC
 
