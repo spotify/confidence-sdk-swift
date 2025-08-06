@@ -7,9 +7,9 @@ import XCTest
 
 class ValueConverterTest: XCTestCase {
     func testContextConversion() throws {
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "userid",
-            structure: MutableStructure(attributes: (["key": .string("value")])))
+            structure: ImmutableStructure(attributes: (["key": .string("value")])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "key": ConfidenceValue(string: "value"),
@@ -19,9 +19,9 @@ class ValueConverterTest: XCTestCase {
     }
 
     func testContextConversionTargetingKey() throws {
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "",
-            structure: MutableStructure(attributes: (["targeting_key": .string("userid")])))
+            structure: ImmutableStructure(attributes: (["targeting_key": .string("userid")])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "targeting_key": ConfidenceValue(string: "userid")
@@ -30,9 +30,9 @@ class ValueConverterTest: XCTestCase {
     }
 
     func testContextConversionTargetingKeyPrecendence() throws {
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "userid-1",
-            structure: MutableStructure(attributes: (["targeting_key": .string("userid-2")])))
+            structure: ImmutableStructure(attributes: (["targeting_key": .string("userid-2")])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "targeting_key": ConfidenceValue(string: "userid-2")
@@ -41,9 +41,9 @@ class ValueConverterTest: XCTestCase {
     }
 
     func testContextConversionTargetingKeyPrecendence3() throws {
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "userid-1",
-            structure: MutableStructure(attributes: (["targeting_key": .string("")])))
+            structure: ImmutableStructure(attributes: (["targeting_key": .string("")])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "targeting_key": ConfidenceValue(string: "")
@@ -52,9 +52,9 @@ class ValueConverterTest: XCTestCase {
     }
 
     func testContextConversionTargetingKeyPrecendence2() throws {
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "userid-1",
-            structure: MutableStructure(attributes: ([:])))
+            structure: ImmutableStructure(attributes: ([:])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "targeting_key": ConfidenceValue(string: "userid-1")
@@ -69,9 +69,9 @@ class ValueConverterTest: XCTestCase {
         let date1 = try XCTUnwrap(formatter.date(from: "2022-01-01 12:00:00"))
         let date2 = try XCTUnwrap(formatter.date(from: "2022-01-02 12:00:00"))
 
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "userid",
-            structure: MutableStructure(attributes: ([
+            structure: ImmutableStructure(attributes: ([
                 "stringList": .list([.string("test1"), .string("test2")]),
                 "booleanList": .list([.boolean(true), .boolean(false)]),
                 "integerList": .list([.integer(11), .integer(33)]),
@@ -100,9 +100,9 @@ class ValueConverterTest: XCTestCase {
     }
 
     func testContextConversionWithHeterogenousLists() throws {
-        let openFeatureCtx = MutableContext(
+        let openFeatureCtx = ImmutableContext(
             targetingKey: "userid",
-            structure: MutableStructure(attributes: (["key": .list([.string("test1"), .integer(1)])])))
+            structure: ImmutableStructure(attributes: (["key": .list([.string("test1"), .integer(1)])])))
         let confidenceStruct = ConfidenceTypeMapper.from(ctx: openFeatureCtx)
         let expected = [
             "key": ConfidenceValue(nullList: [()]),

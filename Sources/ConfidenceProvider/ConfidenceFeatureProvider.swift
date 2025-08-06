@@ -19,7 +19,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let confidence: Confidence
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
-    private var currentResolveTask: Task<Void, Never>?
 
     /**
     Initialize the Provider via a `Confidence` object.
@@ -40,7 +39,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws {
-        let context = ConfidenceTypeMapper.from(ctx: initialContext ?? MutableContext(attributes: [:]))
+        let context = ConfidenceTypeMapper.from(ctx: initialContext ?? ImmutableContext(attributes: [:]))
         confidence.putContextLocal(context: context)
         if initializationStrategy == .activateAndFetchAsync {
             try confidence.activate()
@@ -57,7 +56,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             cancellable.cancel()
         }
         cancellables.removeAll()
-        currentResolveTask?.cancel()
     }
 
     public func onContextSet(
