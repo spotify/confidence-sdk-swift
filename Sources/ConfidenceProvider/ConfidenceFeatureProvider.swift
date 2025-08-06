@@ -19,7 +19,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let confidence: Confidence
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
-    private var currentResolveTask: Task<Void, Never>?
 
     /**
     Initialize the Provider via a `Confidence` object.
@@ -57,7 +56,6 @@ public class ConfidenceFeatureProvider: FeatureProvider {
             cancellable.cancel()
         }
         cancellables.removeAll()
-        currentResolveTask?.cancel()
     }
 
     public func onContextSet(
