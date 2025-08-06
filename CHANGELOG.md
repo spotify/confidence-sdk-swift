@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4](https://github.com/spotify/confidence-sdk-swift/compare/1.4.3...1.4.4) (2025-08-06)
+
+
+### 🔄 Refactoring
+
+* Adopt OpenFeature SDK 0.4.0 ([#227](https://github.com/spotify/confidence-sdk-swift/issues/227)) ([8c6d493](https://github.com/spotify/confidence-sdk-swift/commit/8c6d493c7a0954e7589b69ea35a90c32ef8091e9))
+
 ## [1.4.3](https://github.com/spotify/confidence-sdk-swift/compare/1.4.2...1.4.3) (2025-07-24)
 
 
