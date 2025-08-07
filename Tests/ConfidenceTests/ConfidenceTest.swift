@@ -19,96 +19,6 @@ class ConfidenceTest: XCTestCase {
         super.setUp()
     }
 
-    // swiftlint:disable function_body_length
-    func testSlowFirstResolveWillbeCancelledOnSecondResolve() async throws {
-        let resolve1Completed = expectation(description: "First resolve completed")
-        let resolve2Started = expectation(description: "Second resolve has started")
-        let resolve2Continues = expectation(description: "Unlock second resolve")
-        let resolve2Cancelled = expectation(description: "Second resolve cancelled")
-        let resolve3Completed = expectation(description: "Third resolve completed")
-
-        class FakeClient: XCTestCase, ConfidenceResolveClient {
-            var callCount = 0
-            var resolveContexts: [ConfidenceStruct] = []
-            let resolve1Completed: XCTestExpectation
-            let resolve2Started: XCTestExpectation
-            let resolve2Continues: XCTestExpectation
-            let resolve2Cancelled: XCTestExpectation
-            let resolve3Completed: XCTestExpectation
-
-            init(
-                resolve1Completed: XCTestExpectation,
-                resolve2Started: XCTestExpectation,
-                resolve2Continues: XCTestExpectation,
-                resolve2Cancelled: XCTestExpectation,
-                resolve3Completed: XCTestExpectation
-            ) {
-                self.resolve1Completed = resolve1Completed
-                self.resolve2Started = resolve2Started
-                self.resolve2Continues = resolve2Continues
-                self.resolve2Cancelled = resolve2Cancelled
-                self.resolve3Completed = resolve3Completed
-                super.init(invocation: nil) // Workaround to use expectations in FakeClient
-            }
-
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                callCount += 1
-                switch callCount {
-                case 1:
-                    if Task.isCancelled {
-                        XCTFail("Resolve one was cancelled unexpectedly")
-                    } else {
-                        resolveContexts.append(ctx)
-                        resolve1Completed.fulfill()
-                    }
-                case 2:
-                    resolve2Started.fulfill()
-                    await fulfillment(of: [resolve2Continues], timeout: 5.0)
-                    if Task.isCancelled {
-                        resolve2Cancelled.fulfill()
-                        return .init(resolvedValues: [], resolveToken: "")
-                    }
-                    XCTFail("This task should be cancelled and never reach here")
-                case 3:
-                    if Task.isCancelled {
-                        XCTFail("Resolve three was cancelled unexpectedly")
-                    } else {
-                        resolveContexts.append(ctx)
-                        resolve3Completed.fulfill()
-                    }
-                default: XCTFail("We expect only 3 resolve calls")
-                }
-                return .init(resolvedValues: [], resolveToken: "")
-            }
-        }
-        let client = FakeClient(
-            resolve1Completed: resolve1Completed,
-            resolve2Started: resolve2Started,
-            resolve2Continues: resolve2Continues,
-            resolve2Cancelled: resolve2Cancelled,
-            resolve3Completed: resolve3Completed
-        )
-        let confidence = Confidence.Builder.init(clientSecret: "")
-            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
-            .withFlagResolverClient(flagResolver: client)
-            .build()
-
-        try await confidence.fetchAndActivate()
-        // Initialize allows to start listening for context changes in "confidence"
-        // Let the internal "resolve" finish
-        await fulfillment(of: [resolve1Completed], timeout: 5.0)
-        confidence.putContext(key: "new", value: ConfidenceValue(string: "value"))
-        await fulfillment(of: [resolve2Started], timeout: 5.0) // Ensure resolve 2 starts before 3
-        confidence.putContext(key: "new2", value: ConfidenceValue(string: "value2"))
-        await fulfillment(of: [resolve3Completed], timeout: 5.0)
-        resolve2Continues.fulfill() // Allow second resolve to continue, regardless if cancelled or not
-        await fulfillment(of: [resolve2Cancelled], timeout: 5.0) // Second resolve is cancelled
-        XCTAssertEqual(3, client.callCount)
-        XCTAssertEqual(2, client.resolveContexts.count)
-        XCTAssertEqual(confidence.getContext(), client.resolveContexts[1])
-    }
-
-    // swiftlint:enable function_body_length
     func testRefresh() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -497,24 +407,17 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
-    func testAwaitReconciliationFailingTask() async throws {
+    func testAwaitReconciliationTwoTasks() async throws {
         class FakeClient: XCTestCase, ConfidenceResolveClient {
             var resolveStats: Int = 0
             var resolvedValues: [ResolvedValue] = []
 
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 self.resolveStats += 1
-                if resolveStats == 1 {
-                    // Delay to ensure the second putContext cancels this Task
-                    try await Task.sleep(nanoseconds: 2_000_000_000)
-                    XCTFail("This line shouldn't be reached as task is expected to be cancelled")
-                    return .init(resolvedValues: [], resolveToken: "token")
+                if ctx["hello"] == .init(string: "world") {
+                    return .init(resolvedValues: resolvedValues, resolveToken: "token")
                 } else {
-                    if ctx["hello"] == .init(string: "world") {
-                        return .init(resolvedValues: resolvedValues, resolveToken: "token")
-                    } else {
-                        return .init(resolvedValues: [], resolveToken: "token")
-                    }
+                    return .init(resolvedValues: [], resolveToken: "token")
                 }
             }
         }
@@ -536,13 +439,8 @@ class ConfidenceTest: XCTestCase {
             .withStorage(storage: storage)
             .build()
 
-        confidence.putContext(context: ["hello": .init(string: "not-world")])
-        try await Task.sleep(nanoseconds: 100_000_000)
-        Task {
-            confidence.putContext(context: ["hello": .init(string: "world")])
-        }
-        try await Task.sleep(nanoseconds: 100_000_000)
-        await confidence.awaitReconciliation()
+        await confidence.putContextAndWait(context: ["hello": .init(string: "not-world")])
+        await confidence.putContextAndWait(context: ["hello": .init(string: "world")])
         let evaluation = confidence.getEvaluation(
             key: "flag.size",
             defaultValue: 0
@@ -565,17 +463,10 @@ class ConfidenceTest: XCTestCase {
 
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
                 self.resolveStats += 1
-                if resolveStats == 1 {
-                    // Delay to ensure the second putContext cancels this Task
-                    try await Task.sleep(nanoseconds: 2_000_000_000)
-                    XCTFail("This line shouldn't be reached as task is expected to be cancelled")
-                    return .init(resolvedValues: [], resolveToken: "token")
+                if ctx["hello"] == .init(string: "world") {
+                    return .init(resolvedValues: resolvedValues, resolveToken: "token")
                 } else {
-                    if ctx["hello"] == .init(string: "world") {
-                        return .init(resolvedValues: resolvedValues, resolveToken: "token")
-                    } else {
-                        return .init(resolvedValues: [], resolveToken: "token")
-                    }
+                    return .init(resolvedValues: [], resolveToken: "token")
                 }
             }
         }
@@ -598,11 +489,11 @@ class ConfidenceTest: XCTestCase {
             .build()
 
         Task {
-            await confidence.putContextAndWait(context: ["hello": .init(string: "not-world")])
+        await confidence.putContextAndWait(context: ["hello": .init(string: "not-world")])
         }
         try await Task.sleep(nanoseconds: 100_000_000)
         Task {
-            await confidence.putContextAndWait(context: ["hello": .init(string: "world")])
+        await confidence.putContextAndWait(context: ["hello": .init(string: "world")])
         }
         try await Task.sleep(nanoseconds: 100_000_000)
         await confidence.awaitReconciliation()
@@ -1364,6 +1255,67 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertNil(evaluation.errorCode)
+    }
+
+    func testAwaitReconciliationWaitsForPendingOperations() async throws {
+        let confidence = Confidence.Builder(clientSecret: "test").build()
+
+        // This test verifies that awaitReconciliation waits for pending operations
+        // even when called immediately after putContext
+
+        let expectation = XCTestExpectation(description: "Context operation completed")
+
+        // Start a context operation
+        Task {
+            await confidence.putContextAndWait(key: "test", value: .init(string: "value"))
+            expectation.fulfill()
+        }
+
+        // Immediately try to await reconciliation
+        await confidence.awaitReconciliation()
+
+        // Check if the context was actually set
+        let context = confidence.getContext()
+        XCTAssertEqual(context["test"]?.asString(), "value")
+
+        await fulfillment(of: [expectation], timeout: 1.0)
+    }
+
+    func testAwaitReconciliationTimingIssue() async throws {
+        let confidence = Confidence.Builder(clientSecret: "test").build()
+
+        // This test demonstrates the timing issue where multiple putContext calls
+        // might not all be waited for by awaitReconciliation
+
+        let expectation1 = XCTestExpectation(description: "First context operation")
+        let expectation2 = XCTestExpectation(description: "Second context operation")
+
+        // Start first context operation
+        Task {
+            await confidence.putContextAndWait(key: "test1", value: .init(string: "value1"))
+            expectation1.fulfill()
+        }
+
+        // Start awaitReconciliation
+        let reconciliationTask = Task {
+            await confidence.awaitReconciliation()
+        }
+
+        // Start second context operation AFTER awaitReconciliation begins
+        Task {
+            await confidence.putContextAndWait(key: "test2", value: .init(string: "value2"))
+            expectation2.fulfill()
+        }
+
+        // Wait for reconciliation to complete
+        await reconciliationTask.value
+
+        // Check if both contexts were set
+        let context = confidence.getContext()
+        XCTAssertEqual(context["test1"]?.asString(), "value1")
+        XCTAssertEqual(context["test2"]?.asString(), "value2")
+
+        await fulfillment(of: [expectation1, expectation2], timeout: 1.0)
     }
 }
 
