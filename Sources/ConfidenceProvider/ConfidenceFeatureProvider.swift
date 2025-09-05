@@ -22,7 +22,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     /**
     Initialize the Provider via a `Confidence` object.
-    The `initializationStrategy` defines when the Provider is ready to read flags, before or after a refresh of the flag evaluation fata.
+    The `initializationStrategy` defines when the Provider is ready to read flags, before or after
+    a refresh of the flag evaluation.
     */
     public convenience init(
         confidence: Confidence,
