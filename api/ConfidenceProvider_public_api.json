@@ -4,7 +4,7 @@
     "apiFunctions": [
       {
         "name": "init(confidence:initializationStrategy:)",
-        "declaration": "public convenience init(confidence: Confidence, initializationStrategy: InitializationStrategy = .fetchAndActivate)"
+        "declaration": "public convenience init(\n    confidence: Confidence,\n    initializationStrategy: InitializationStrategy = .fetchAndActivate\n)"
       },
       {
         "name": "initialize(initialContext:)",
