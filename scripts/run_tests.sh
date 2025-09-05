@@ -9,6 +9,6 @@ root_dir="$script_dir/../"
     xcodebuild \
         -quiet \
         -scheme Confidence-Package \
-        -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' \
+        -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
         -skip-testing:ConfidenceTests/ConfidenceIntegrationTests \
         test)

@@ -13,7 +13,7 @@ fi
 MODULE=$1 
 
 # Generate the json file with:
-sourcekitten doc --module-name ${MODULE} -- -scheme Confidence-Package -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.2' > $script_dir/${MODULE}_raw_api.json
+sourcekitten doc --module-name ${MODULE} -- -scheme Confidence-Package -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' > $script_dir/${MODULE}_raw_api.json
 
 # Extract the public API from the raw api json file
 python3 $script_dir/extract_public_funcs.py $script_dir/${MODULE}_raw_api.json $root_dir/api/${MODULE}_public_api.json
