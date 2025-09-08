@@ -86,7 +86,8 @@ public class ConfidenceDeviceInfoContextDecorator {
     }
 
     /**
-    Returns a context where values are decorated (appended) according to how the ConfidenceDeviceInfoContextDecorator was setup.
+    Returns a context where values are decorated (appended) according to how the
+    ConfidenceDeviceInfoContextDecorator was setup.
     The context values in the parameter context have precedence over the fields appended by this class.
     */
     public func decorated(context contextToDecorate: [String: ConfidenceValue]) -> [String: ConfidenceValue] {

@@ -29,7 +29,13 @@ struct ResolvedValue: Codable, Equatable {
         shouldApply = try container.decodeIfPresent(Bool.self, forKey: .shouldApply) ?? true
     }
 
-    init(variant: String? = nil, value: ConfidenceValue? = nil, flag: String, resolveReason: ResolveReason, shouldApply: Bool = true) {
+    init(
+        variant: String? = nil,
+        value: ConfidenceValue? = nil,
+        flag: String,
+        resolveReason: ResolveReason,
+        shouldApply: Bool = true
+        ) {
         self.variant = variant
         self.value = value
         self.flag = flag

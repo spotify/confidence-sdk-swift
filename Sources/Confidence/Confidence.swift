@@ -74,7 +74,8 @@ public class Confidence: ConfidenceEventSender {
     Fetch latest flag evaluations and store them on disk. Regardless of the fetch outcome (success or failure), this
     function activates the cache after the fetch.
     Activating the cache means that the flag data on disk is loaded into memory, so consumers can access flag values.
-    Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data on disk.
+    Fetching is best-effort, so no error is propagated. Errors can still be thrown if something goes wrong access data
+    on disk.
     */
     public func fetchAndActivate() async throws {
         await asyncFetch()
@@ -117,7 +118,8 @@ public class Confidence: ConfidenceEventSender {
     /**
     Get evaluation data for a specific flag. Evaluation data includes the variant's name and reason/error information.
     - Parameter key:expects dot-notation to retrieve a specific entry in the flag's value, e.g. "flagname.myentry"
-    - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
+    - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the
+    default value.
     */
     public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T> {
         cacheQueue.sync {  [weak self] in
@@ -143,7 +145,8 @@ public class Confidence: ConfidenceEventSender {
     /**
     Get the value for a specific flag.
     - Parameter key:expects dot-notation to retrieve a specific entry in the flag's value, e.g. "flagname.myentry"
-    - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the default value.
+    - Parameter defaultValue: returned in case of errors or in case of the variant's rule indicating to use the
+    default value.
     */
     public func getValue<T>(key: String, defaultValue: T) -> T {
         return getEvaluation(key: key, defaultValue: defaultValue).value
