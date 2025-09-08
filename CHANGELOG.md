@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.5](https://github.com/spotify/confidence-sdk-swift/compare/1.4.4...1.4.5) (2025-09-08)
+
+
+### 📚 Documentation
+
+* restructure to focus on Openfeature ([#229](https://github.com/spotify/confidence-sdk-swift/issues/229)) ([53645f3](https://github.com/spotify/confidence-sdk-swift/commit/53645f3aa1243d5c2c9bca71e0268f81f7a722fe))
+
 ## [1.4.4](https://github.com/spotify/confidence-sdk-swift/compare/1.4.3...1.4.4) (2025-08-06)
 
 
