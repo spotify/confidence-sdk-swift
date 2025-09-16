@@ -35,6 +35,7 @@ class DefaultStorage: Storage {
         do {
             return try JSONDecoder().decode(T.self, from: data)
         } catch {
+            try! clear()
             throw ConfidenceError.corruptedCache(message: "Unable to decode: \(error)")
         }
     }
