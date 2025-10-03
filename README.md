@@ -29,7 +29,7 @@ In the dependencies section of Package.swift add:
 and in the target dependencies section add:
 ```swift
 .product(name: "Confidence", package: "confidence-sdk-swift"),
-.product(name: "ConfidenceProvider", package: "confidence-sdk-swift"),
+.product(name: "ConfidenceOpenFeature", package: "confidence-sdk-swift"),
 ```
 
 ## Create and set the Provider
