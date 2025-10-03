@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.5](https://github.com/spotify/confidence-sdk-swift/compare/1.4.4...1.4.5) (2025-10-03)
+
+
+### 🧹 Chore
+
+* update CODEOWNERS ([#233](https://github.com/spotify/confidence-sdk-swift/issues/233)) ([3bcf41e](https://github.com/spotify/confidence-sdk-swift/commit/3bcf41ecd4afc44dd42c0727ba86cdcdd94f4295))
+
+
+### 📚 Documentation
+
+* restructure to focus on Openfeature ([#229](https://github.com/spotify/confidence-sdk-swift/issues/229)) ([53645f3](https://github.com/spotify/confidence-sdk-swift/commit/53645f3aa1243d5c2c9bca71e0268f81f7a722fe))
+* update the target dependency name ([#232](https://github.com/spotify/confidence-sdk-swift/issues/232)) ([0cd672f](https://github.com/spotify/confidence-sdk-swift/commit/0cd672fb7e476fd6cb01ded26e3db67154d9e2c4))
+
 ## [1.4.4](https://github.com/spotify/confidence-sdk-swift/compare/1.4.3...1.4.4) (2025-08-06)
 
 

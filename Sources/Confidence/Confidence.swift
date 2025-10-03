@@ -471,7 +471,7 @@ extension Confidence {
                 timeoutIntervalForRequest: timeout)
             let metadata = ConfidenceMetadata(
                 name: sdkId,
-                version: "1.4.4") // x-release-please-version
+                version: "1.4.5") // x-release-please-version
             let uploader = RemoteConfidenceClient(
                 options: options,
                 metadata: metadata,
