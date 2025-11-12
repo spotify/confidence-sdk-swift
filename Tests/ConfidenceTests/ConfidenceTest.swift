@@ -915,7 +915,16 @@ class ConfidenceTest: XCTestCase {
     }
 
     func testConcurrentPutContextAndWait() async {
-        let confidence = Confidence.Builder(clientSecret: "test").build()
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: [], resolveToken: "")
+            }
+        }
+        let client = FakeClient()
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
         await withTaskGroup(of: Void.self) { group in
             for i in 0..<1000 {
                 group.addTask {
