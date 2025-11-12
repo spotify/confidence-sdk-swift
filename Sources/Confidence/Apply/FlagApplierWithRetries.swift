@@ -154,8 +154,7 @@ final class FlagApplierWithRetries: FlagApplier {
     }
 
     private func logApplyError(error: Error) {
-        Logger(subsystem: "com.confidence.provider", category: "apply").error(
-            "Error while executing \"apply\": \(error)")
+        debugLogger?.logMessage(message: "Error while executing \"apply\": \(error)", isWarning: true)
     }
 }
 
