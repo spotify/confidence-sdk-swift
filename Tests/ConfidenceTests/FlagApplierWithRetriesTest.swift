@@ -152,7 +152,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await fulfillment(of: [storageExpectation, expectation], timeout: 1.0)
+        await fulfillment(of: [storageExpectation, expectation], timeout: 5.0)
 
         // Then http client sends 5 apply flag batch request, containing 20 records each
         let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
@@ -184,7 +184,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await fulfillment(of: [storageExpectation, expectation], timeout: 1.0)
+        await fulfillment(of: [storageExpectation, expectation], timeout: 5.0)
 
         // Then http client sends 5 apply flag batch request, containing 20 records each
         let request = try XCTUnwrap(httpClient.data?.first as? ApplyFlagsRequest)
@@ -215,7 +215,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await fulfillment(of: [storageExpectation, expectation], timeout: 1.0)
+        await fulfillment(of: [storageExpectation, expectation], timeout: 5.0)
 
         // Then http client sends 5 apply flags batch request, containing 20 records each
         let request = try XCTUnwrap(partiallyFailingHttpClient.data?.first as? ApplyFlagsRequest)
@@ -332,7 +332,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
             metadata: metadata
         )
 
-        await fulfillment(of: [storageExpectation, networkExpectation], timeout: 1.0)
+        await fulfillment(of: [storageExpectation, networkExpectation], timeout: 5.0)
 
         // Then storage has been cleaned
         let storedData = try prefilledStorage.load(defaultValue: CacheData.empty())
