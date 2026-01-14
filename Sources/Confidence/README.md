@@ -56,32 +56,83 @@ Creating multiple instances in the same runtime could lead to unexpected behavio
 
 ### Initialization strategy
 
-After creating the confidence instance, you can choose between different strategies to initialize the SDK:
-- `await confidence.fetchAndActivate()`: async function that fetches the flags from the Confidence backend according to the current context,
-stores the result in storage, and make the same data ready for the Application to be consumed.
+After creating the Confidence instance, you can choose between different strategies to initialize the SDK:
 
-- `confidence.activate()`: this loads fetched flags data
-from storage and makes that available for the Application to consume right away.
+- `await confidence.fetchAndActivate()`: async function that fetches the flags from the Confidence backend according to the current context, stores the result in storage, and makes the same data ready for the Application to be consumed.
 
-If you wish to avoid waiting on backend calls when the Application starts, the suggested approach is to call
-`confidence.activate()` and then call `confidence.asyncFetch()` to update the flag values in storage to be used on a future `activate()`. 
+- `confidence.activate()`: this loads previously fetched flags data from storage and makes that available for the Application to consume right away.
+
+If you wish to avoid waiting on backend calls when the Application starts, the suggested approach is to call `confidence.activate()` and then call `confidence.asyncFetch()` to update the flag values in storage to be used on a future `activate()`. 
 
 **Important:** `confidence.activate()` ignores the current context: even if the current context has changed since the last fetch, flag values from the last fetch will be exposed to the Application.
 
-### Managing the context
-The context is set when instantiating the Confidence instance, but it can be updated at runtime:
+#### Setting context at initialization
 
+If you need to set context before the first flag evaluation (e.g., user ID after login), you have two options:
+
+1. **Fresh fetch (recommended when network latency is acceptable):**
 ```swift
-await confidence.putContext(context: ["key": ConfidenceValue(string: "value")])
-await confidence.putContext(key: "key", value: ConfidenceValue(string: "value"))
-await confidence.removeContext(key: "key")
+let confidence = Confidence.Builder(clientSecret: "mysecret")
+    .withContext(initialContext: ["user_id": ConfidenceValue(string: "user_1")])
+    .build()
+await confidence.fetchAndActivate()
 ```
 
-These functions are async functions, because the flag values are fetched from the backend for the new context, put in storage and then exposed to the Application.
+2. **Fast start with cached data (recommended for instant UI):**
+```swift
+let confidence = Confidence.Builder(clientSecret: "mysecret").build()
+confidence.putContextLocal(context: ["user_id": ConfidenceValue(string: "user_1")])
+try confidence.activate()
+// Optionally fetch in background for next session:
+Task {
+    await confidence.asyncFetch()
+}
+```
+
+This approach works best when the context you set matches the context used to fetch the cached flags (e.g., same user returning to the app). If the context differs from what was used during the last fetch, flag evaluations will return cached values with reason `STALE`, indicating the values may not be accurate for the current context. The background `asyncFetch()` will resolve flags for the new context, making them available on the next `activate()`.
+
+### Managing the context at runtime
+
+The context is set when instantiating the Confidence instance, but it can be updated at runtime. **The recommended approach for changing context during a session is to use `putContextAndWait`:**
+
+```swift
+await confidence.putContextAndWait(context: ["key": ConfidenceValue(string: "value")])
+await confidence.putContextAndWait(key: "key", value: ConfidenceValue(string: "value"))
+await confidence.removeContextAndWait(key: "key")
+```
+
+Each of the above functions is async and performs the following operations when called:
+1. Update the local context
+2. Fetch new flag values from the backend for the updated context
+3. Activate the new values before returning
+
+This ensures that after `await` completes, subsequent flag evaluations use values resolved for the correct context.
+
+#### Alternative: fire-and-forget context changes
+
+If you don't need to wait for the fetch to complete, you can use the non-waiting variants:
+
+```swift
+confidence.putContext(context: ["key": ConfidenceValue(string: "value")])
+confidence.putContext(key: "key", value: ConfidenceValue(string: "value"))
+confidence.removeContext(key: "key")
+```
+
+**Important:** With fire-and-forget context changes, flag evaluations performed while the fetch is in progress will return cached values with reason `STALE`, indicating the values were resolved for a different context.
+
+**Best practice:** Avoid calling `putContext()` followed by `fetchAndActivate()`. Since `putContext()` already triggers a fetch internally, this pattern creates redundant network calls. Instead, use `putContextAndWait()` which handles both the context update and fetch in a single operation, or use `putContextLocal()` + `fetchAndActivate()` if you need to separate context setting from fetching.
+
+#### Local-only context changes
+
+For context changes that should NOT trigger a fetch (e.g., at initialization):
+
+```swift
+confidence.putContextLocal(context: ["key": ConfidenceValue(string: "value")])
+```
+
+This only updates the local context without fetching new flag values. Use this at initialization combined with `activate()`, not during an active session.
 
 _Note: Changing the context could cause a change in the flag values._
-
-_Note: When a context change is performed and the SDK is fetching the new values for it, the old values are still available for the Application to consume but marked with evaluation reason `STALE`._
 
 The SDK comes with a built in helper class to decorate the Context with some static data from the device. 
 The class is called `ConfidenceDeviceInfoContextDecorator` and used as follows:
