@@ -84,7 +84,7 @@ class ConfidenceProviderTest: XCTestCase {
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
 
         let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if event == .ready {
+            if event == .ready() {
                 readyExpectation.fulfill()
             } else {
                 print(event.debugDescription)

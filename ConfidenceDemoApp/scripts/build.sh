@@ -9,4 +9,4 @@ root_dir="$script_dir/../"
     xcodebuild \
         -quiet \
         -scheme ConfidenceDemoApp \
-        -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.4' )
+        -destination 'generic/platform=iOS Simulator' )
