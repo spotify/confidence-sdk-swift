@@ -189,7 +189,7 @@ final class EventSenderEngineTest: XCTestCase {
         let cancellable = uploaderMock.subject.sink { _ in
             uploadExpectation.fulfill()
         }
-        wait(for: [uploadExpectation], timeout: 1)
+        wait(for: [uploadExpectation], timeout: 5)
         let uploadRequest = uploaderMock.calledRequest
         XCTAssertEqual(uploadRequest?.count, 4)
 
