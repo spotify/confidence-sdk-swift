@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.6](https://github.com/spotify/confidence-sdk-swift/compare/1.4.5...1.4.6) (2026-01-28)
+
+
+### 📚 Documentation
+
+* add getting involved section to contribution guidelines ([#239](https://github.com/spotify/confidence-sdk-swift/issues/239)) ([3a04784](https://github.com/spotify/confidence-sdk-swift/commit/3a04784aa10eefc50c0615f02407f6f5b931300f))
+* More detailed guidelines for vanilla sdk ([74a5b7b](https://github.com/spotify/confidence-sdk-swift/commit/74a5b7b81a0723c79d73f077ae2c21a8e7097fef))
+* More detailed guidelines for vanilla SDK ([#236](https://github.com/spotify/confidence-sdk-swift/issues/236)) ([74a5b7b](https://github.com/spotify/confidence-sdk-swift/commit/74a5b7b81a0723c79d73f077ae2c21a8e7097fef))
+
 ## [1.4.5](https://github.com/spotify/confidence-sdk-swift/compare/1.4.4...1.4.5) (2025-11-12)
 
 

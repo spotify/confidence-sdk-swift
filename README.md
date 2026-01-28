@@ -22,7 +22,7 @@ We suggest that you use Confidence together with the [OpenFeature SDK](https://g
 <!---x-release-please-start-version-->
 In the dependencies section of Package.swift add:
 ```swift
-.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "1.4.5")
+.package(url: "git@github.com:spotify/confidence-sdk-swift.git", from: "1.4.6")
 ```
 <!---x-release-please-end-->
 
