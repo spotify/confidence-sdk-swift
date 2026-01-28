@@ -31,7 +31,7 @@ final class FlagApplierWithRetries: FlagApplier {
         self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(cacheData: storedData ?? .empty())
 
         if triggerBatch {
-            Task(priority: .utility) {
+            Task {
                 await self.triggerBatch()
             }
         }
