@@ -258,7 +258,12 @@ extension FlagResolution {
             }
             result = value.asNative()
         case .structure:
-            if let defaultStruct = defaultValue as? ConfidenceStruct,
+            // Explicitly check T is ConfidenceStruct, not just any [String: Any].
+            // An empty [String: Any] can be cast to [String: ConfidenceValue] in Swift,
+            // which would incorrectly route through mergeStructWithDefault and return
+            // ConfidenceValue objects instead of native types.
+            if T.self == ConfidenceStruct.self,
+                let defaultStruct = defaultValue as? ConfidenceStruct,
                 let resolvedStruct = value.asStructure() {
                 result = StructMerger.mergeStructWithDefault(
                     resolved: resolvedStruct,
