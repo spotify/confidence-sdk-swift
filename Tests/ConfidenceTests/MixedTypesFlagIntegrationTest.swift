@@ -80,6 +80,53 @@ class MixedTypesFlagIntegrationTest: XCTestCase {
         XCTAssertEqual(flagStruct["visible"], ConfidenceValue(null: ()))
     }
 
+    func testEmptyDictionaryDefaultDoesNotCauseParseError() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(
+                    resolvedValues: [
+                        ResolvedValue(
+                            variant: "flags/my-feature/variants/treatment",
+                            value: .init(structure: [
+                                "color": .init(string: "green"),
+                                "size": .init(integer: 3),
+                                "enabled": .init(null: ()),
+                                "visible": .init(null: ())
+                            ]),
+                            flag: "my-feature",
+                            resolveReason: .match,
+                            shouldApply: true
+                        )
+                    ],
+                    resolveToken: "token-1"
+                )
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "test-user")])
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withFlagApplier(flagApplier: flagApplier)
+            .build()
+
+        try await confidence.fetchAndActivate()
+
+        // Empty [String: Any] default should not cause parseError
+        let emptyDefault: [String: Any] = [:]
+        let fullFlag = confidence.getEvaluation(
+            key: "my-feature",
+            defaultValue: emptyDefault
+        )
+        XCTAssertEqual(.match, fullFlag.reason)
+        XCTAssertNil(fullFlag.errorCode)
+        XCTAssertNil(fullFlag.errorMessage)
+        XCTAssertEqual("flags/my-feature/variants/treatment", fullFlag.variant)
+
+        let value = fullFlag.value
+        XCTAssertEqual(value["color"] as? String, "green")
+        XCTAssertEqual(value["size"] as? Int, 3)
+    }
+
     func testNoAssignmentReturnsDefaults() async throws {
         class FakeClient: ConfidenceResolveClient {
             func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
