@@ -16,6 +16,18 @@ public enum ErrorCode: Equatable {
     case parseError(message: String)
     case typeMismatch(message: String = "Mismatch between default value and flag value type")
     case generalError(message: String)
+
+    var serialized: String {
+        switch self {
+        case .providerNotReady: return "PROVIDER_NOT_READY"
+        case .invalidContext: return "INVALID_CONTEXT"
+        case .flagNotFound: return "FLAG_NOT_FOUND"
+        case .evaluationError: return "EVALUATION_ERROR"
+        case .parseError: return "PARSE_ERROR"
+        case .typeMismatch: return "TYPE_MISMATCH"
+        case .generalError: return "GENERAL_ERROR"
+        }
+    }
 }
 
 struct FlagResolution: Encodable, Decodable, Equatable {
@@ -33,18 +45,26 @@ extension FlagResolution {
         defaultValue: T,
         context: ConfidenceStruct,
         flagApplier: FlagApplier? = nil,
+        telemetryProducer: TelemetryProducer? = nil,
         debugLogger: DebugLogger? = nil
     ) -> Evaluation<T> {
         do {
             let parsedKey = try FlagPath.getPath(for: flagName)
             let resolvedFlag = self.flags.first { resolvedFlag in resolvedFlag.flag == parsedKey.flag }
             guard let resolvedFlag = resolvedFlag else {
+                let errorCode: ErrorCode = .flagNotFound
+                let errorMessage = "Flag '\(parsedKey.flag)' not found in local cache"
+                Task {
+                    await telemetryProducer?.report(
+                        flagName: parsedKey.flag, errorCode: errorCode, errorMessage: errorMessage
+                    )
+                }
                 return Evaluation(
                     value: defaultValue,
                     variant: nil,
                     reason: .error,
-                    errorCode: .flagNotFound,
-                    errorMessage: "Flag '\(parsedKey.flag)' not found in local cache"
+                    errorCode: errorCode,
+                    errorMessage: errorMessage
                 )
             }
 
@@ -52,12 +72,16 @@ extension FlagResolution {
                 debugLogger.logResolveDebugURL(flagName: parsedKey.flag, context: context)
             }
 
-            if let evaluation = checkBackendErrors(resolvedFlag: resolvedFlag, defaultValue: defaultValue) {
+            if let evaluation = checkBackendErrors(
+                resolvedFlag: resolvedFlag,
+                defaultValue: defaultValue,
+                flagName: parsedKey.flag,
+                telemetryProducer: telemetryProducer
+            ) {
                 return evaluation
             }
 
             guard let value = resolvedFlag.value else {
-                // No backend error, but nil value returned. This can happend with "noSegmentMatch" or "archived", for example
                 Task {
                     if resolvedFlag.shouldApply {
                         await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
@@ -94,7 +118,6 @@ extension FlagResolution {
                         errorMessage: nil
                     )
                 } else {
-                    // `null` type from backend instructs to use client-side default value
                     if parsedValue == .init(null: ()) {
                         Task {
                             if resolvedFlag.shouldApply {
@@ -109,11 +132,17 @@ extension FlagResolution {
                             errorMessage: nil
                         )
                     } else {
+                        let errorCode: ErrorCode = .typeMismatch()
+                        Task {
+                            await telemetryProducer?.report(
+                                flagName: parsedKey.flag, errorCode: errorCode, errorMessage: nil
+                            )
+                        }
                         return Evaluation(
                             value: defaultValue,
                             variant: nil,
                             reason: .error,
-                            errorCode: .typeMismatch(),
+                            errorCode: errorCode,
                             errorMessage: nil
                         )
                     }
@@ -133,44 +162,77 @@ extension FlagResolution {
                 )
             }
         } catch let error as ConfidenceError {
+            let errorCode = error.errorCode
+            let errorMessage = error.description
+            Task {
+                await telemetryProducer?.report(
+                    flagName: flagName, errorCode: errorCode, errorMessage: errorMessage
+                )
+            }
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
                 reason: .error,
-                errorCode: error.errorCode,
-                errorMessage: error.description
+                errorCode: errorCode,
+                errorMessage: errorMessage
             )
         } catch {
+            let errorCode: ErrorCode = .evaluationError
+            let errorMessage = error.localizedDescription
+            Task {
+                await telemetryProducer?.report(
+                    flagName: flagName, errorCode: errorCode, errorMessage: errorMessage
+                )
+            }
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
                 reason: .error,
-                errorCode: .evaluationError,
-                errorMessage: error.localizedDescription
+                errorCode: errorCode,
+                errorMessage: errorMessage
             )
         }
     }
     // swiftlint:enable function_body_length
     // swiftlint:enable cyclomatic_complexity
 
-    private func checkBackendErrors<T>(resolvedFlag: ResolvedValue, defaultValue: T) -> Evaluation<T>? {
+    private func checkBackendErrors<T>(
+        resolvedFlag: ResolvedValue,
+        defaultValue: T,
+        flagName: String,
+        telemetryProducer: TelemetryProducer?
+    ) -> Evaluation<T>? {
         if resolvedFlag.resolveReason == .targetingKeyError {
+            let errorCode: ErrorCode = .invalidContext
+            let errorMessage = "Invalid targeting key"
+            Task {
+                await telemetryProducer?.report(
+                    flagName: flagName, errorCode: errorCode, errorMessage: errorMessage
+                )
+            }
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
                 reason: .targetingKeyError,
-                errorCode: .invalidContext,
-                errorMessage: "Invalid targeting key"
+                errorCode: errorCode,
+                errorMessage: errorMessage
             )
         } else if resolvedFlag.resolveReason == .error ||
         resolvedFlag.resolveReason == .unknown ||
         resolvedFlag.resolveReason == .unspecified {
+            let errorCode: ErrorCode = .evaluationError
+            let errorMessage = "Unknown error from backend"
+            Task {
+                await telemetryProducer?.report(
+                    flagName: flagName, errorCode: errorCode, errorMessage: errorMessage
+                )
+            }
             return Evaluation(
                 value: defaultValue,
                 variant: nil,
                 reason: .error,
-                errorCode: .evaluationError,
-                errorMessage: "Unknown error from backend"
+                errorCode: errorCode,
+                errorMessage: errorMessage
             )
         } else {
             return nil

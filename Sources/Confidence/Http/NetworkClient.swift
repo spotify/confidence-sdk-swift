@@ -107,6 +107,10 @@ extension NetworkClient {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("application/json", forHTTPHeaderField: "Accept")
 
+        for (key, value) in headers {
+            request.addValue(value, forHTTPHeaderField: key)
+        }
+
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
 

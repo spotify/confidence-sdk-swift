@@ -130,27 +130,6 @@ public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
     case unknown
 }
 
-struct AppliedFlagRequestItem: Codable {
-    let flag: String
-    let applyTime: String
-
-    init(flag: String, applyTime: Date) {
-        self.flag = "flags/\(flag)"
-        self.applyTime = Date.backport.toISOString(date: applyTime)
-    }
-}
-
-struct ApplyFlagsRequest: Codable {
-    var flags: [AppliedFlagRequestItem]
-    var sendTime: String
-    var clientSecret: String
-    var resolveToken: String
-    var sdk: Sdk
-}
-
-struct ApplyFlagsResponse: Codable {
-}
-
 private func displayName(resolvedFlag: ResolvedFlag) throws -> String {
     let flagNameComponents = resolvedFlag.flag.components(separatedBy: "/")
     if flagNameComponents.count <= 1 || flagNameComponents[0] != "flags" {

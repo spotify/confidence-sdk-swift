@@ -1,34 +1,44 @@
 import Foundation
 import os
 
-typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>
-typealias ApplyFlagResult = Result<ApplyFlagHTTPResponse, Error>
+typealias FlagLogsHTTPResponse = HttpClientResponse<WriteFlagLogsResponse>
+typealias FlagLogsResult = Result<FlagLogsHTTPResponse, Error>
 
-final class FlagApplierWithRetries: FlagApplier {
-    private let storage: Storage
+final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
+    private let applyStorage: Storage
+    private let telemetryStorage: Storage
     private let httpClient: HttpClient
     private let options: ConfidenceClientOptions
     private let cacheDataInteractor: CacheDataActor
+    private let telemetryInteractor: TelemetryBatchActor
     private let metadata: ConfidenceMetadata
     private let debugLogger: DebugLogger?
 
     init(
         httpClient: HttpClient,
-        storage: Storage,
+        applyStorage: Storage,
+        telemetryStorage: Storage,
         options: ConfidenceClientOptions,
         metadata: ConfidenceMetadata,
         cacheDataInteractor: CacheDataActor? = nil,
+        telemetryInteractor: TelemetryBatchActor? = nil,
         triggerBatch: Bool = true,
         debugLogger: DebugLogger? = nil
     ) {
-        self.storage = storage
+        self.applyStorage = applyStorage
+        self.telemetryStorage = telemetryStorage
         self.httpClient = httpClient
         self.options = options
         self.metadata = metadata
         self.debugLogger = debugLogger
 
-        let storedData = try? storage.load(defaultValue: CacheData.empty())
-        self.cacheDataInteractor = cacheDataInteractor ?? CacheDataInteractor(cacheData: storedData ?? .empty())
+        let storedApplyData = try? applyStorage.load(defaultValue: CacheData.empty())
+        self.cacheDataInteractor = cacheDataInteractor
+            ?? CacheDataInteractor(cacheData: storedApplyData ?? .empty())
+
+        let storedTelemetry = try? telemetryStorage.load(defaultValue: TelemetryBatch.empty())
+        self.telemetryInteractor = telemetryInteractor
+            ?? TelemetryBatchInteractor(batch: storedTelemetry ?? .empty())
 
         if triggerBatch {
             Task {
@@ -36,6 +46,8 @@ final class FlagApplierWithRetries: FlagApplier {
             }
         }
     }
+
+    // MARK: FlagApplier
 
     public func apply(flagName: String, resolveToken: String) async {
         let applyTime = Date.backport.now
@@ -45,20 +57,41 @@ final class FlagApplierWithRetries: FlagApplier {
             applyTime: applyTime
         )
         guard added == true else {
-            // If record is found in the cache, early return (de-duplication).
-            // Triggerring batch apply in case if there are any unsent events stored
             await triggerBatch()
             return
         }
 
         debugLogger?.logFlags(action: "Apply", flag: flagName)
-        self.writeToFile(data: data)
+        writeApplyToFile(data: data)
         await triggerBatch()
     }
 
-    // MARK: private
+    // MARK: TelemetryProducer
+
+    func report(flagName: String, errorCode: ErrorCode, errorMessage: String?) async {
+        let entry = TelemetryEntry(
+            flagName: flagName,
+            errorCode: errorCode.serialized,
+            errorMessage: errorMessage,
+            time: Date.backport.now
+        )
+        let batch = await telemetryInteractor.add(entry: entry)
+        writeTelemetryToFile(batch: batch)
+        debugLogger?.logMessage(
+            message: "Telemetry reported: \(errorCode.serialized) for flag '\(flagName)'",
+            isWarning: false
+        )
+        await triggerBatch()
+    }
+
+    // MARK: Private
 
     private func triggerBatch() async {
+        await sendApplyBatches()
+        await sendTelemetryBatch()
+    }
+
+    private func sendApplyBatches() async {
         let cacheData = await cacheDataInteractor.cache
         await cacheData.resolveEvents.asyncForEach { resolveEvent in
             let appliesToSend = resolveEvent.events.filter { $0.status == .created }
@@ -69,22 +102,60 @@ final class FlagApplierWithRetries: FlagApplier {
             }
 
             await appliesToSend.asyncForEach { chunk in
-                await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sending)
-                let success = await executeApply(
+                await self.writeApplyStatus(
+                    resolveToken: resolveEvent.resolveToken, events: chunk, status: .sending
+                )
+                let success = await self.executeFlagLogs(
                     resolveToken: resolveEvent.resolveToken,
                     items: chunk
                 )
                 guard success else {
-                    await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .created)
+                    await self.writeApplyStatus(
+                        resolveToken: resolveEvent.resolveToken, events: chunk, status: .created
+                    )
                     return
                 }
-                // Set 'sent' property of apply events to true
-                await self.writeStatus(resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent)
+                await self.writeApplyStatus(
+                    resolveToken: resolveEvent.resolveToken, events: chunk, status: .sent
+                )
             }
         }
     }
 
-    private func writeStatus(resolveToken: String, events: [FlagApply], status: ApplyEventStatus) async {
+    private func sendTelemetryBatch() async {
+        let currentBatch = await telemetryInteractor.batch
+        let pending = currentBatch.entries.enumerated().filter { $0.element.status == .created }
+
+        guard !pending.isEmpty else { return }
+
+        let chunks = pending.chunk(size: 20)
+        for chunk in chunks {
+            let indices = chunk.map { $0.offset }
+            let entries = chunk.map { $0.element }
+
+            for index in indices {
+                _ = await telemetryInteractor.setStatus(at: index, status: .sending)
+            }
+
+            let success = await executeTelemetryOnly(entries: entries)
+            if success {
+                for index in indices {
+                    _ = await telemetryInteractor.setStatus(at: index, status: .sent)
+                }
+            } else {
+                for index in indices {
+                    _ = await telemetryInteractor.setStatus(at: index, status: .created)
+                }
+            }
+        }
+
+        let updatedBatch = await telemetryInteractor.removeCompleted()
+        writeTelemetryToFile(batch: updatedBatch)
+    }
+
+    private func writeApplyStatus(
+        resolveToken: String, events: [FlagApply], status: ApplyEventStatus
+    ) async {
         let lastIndex = events.count - 1
         await events.enumerated().asyncForEach { index, event in
             var data = await self.cacheDataInteractor.setEventStatus(
@@ -98,31 +169,42 @@ final class FlagApplierWithRetries: FlagApplier {
                     $0.isSent == false
                 }
                 data.resolveEvents = unsentFlagApplies
-                try? self.storage.save(data: data)
+                try? self.applyStorage.save(data: data)
             }
         }
     }
 
-    private func writeToFile(data: CacheData) {
-        try? storage.save(data: data)
+    private func writeApplyToFile(data: CacheData) {
+        try? applyStorage.save(data: data)
     }
 
-    private func executeApply(
+    private func writeTelemetryToFile(batch: TelemetryBatch) {
+        try? telemetryStorage.save(data: batch)
+    }
+
+    private func makeSdkInfo() -> SdkInfo {
+        SdkInfo(id: metadata.name, version: metadata.version)
+    }
+
+    private func executeFlagLogs(
         resolveToken: String,
         items: [FlagApply]
     ) async -> Bool {
-        let applyFlagRequestItems = items.map { applyEvent in
-            AppliedFlagRequestItem(
-                flag: applyEvent.name,
-                applyTime: applyEvent.applyTime
+        let appliedFlags = items.map { event in
+            AppliedFlag(
+                flag: "flags/\(event.name)",
+                applyTime: Date.backport.toISOString(date: event.applyTime)
             )
         }
-        let request = ApplyFlagsRequest(
-            flags: applyFlagRequestItems,
-            sendTime: Date.backport.nowISOString,
-            clientSecret: options.credentials.getSecret(),
-            resolveToken: resolveToken,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
+        let sdkInfo = makeSdkInfo()
+        let flagAssigned = FlagAssignedEvent(
+            resolveId: resolveToken,
+            clientInfo: ClientInfo(sdk: sdkInfo),
+            flags: appliedFlags
+        )
+        let request = WriteFlagLogsRequest(
+            flagAssigned: [flagAssigned],
+            telemetryData: TelemetryData(sdk: sdkInfo)
         )
 
         let result = await performRequest(request: request)
@@ -130,16 +212,33 @@ final class FlagApplierWithRetries: FlagApplier {
         case .success:
             return true
         case .failure(let error):
-            self.logApplyError(error: error)
+            logError(error: error)
+            return false
+        }
+    }
+
+    private func executeTelemetryOnly(entries: [TelemetryEntry]) async -> Bool {
+        let sdkInfo = makeSdkInfo()
+        let request = WriteFlagLogsRequest(
+            flagAssigned: nil,
+            telemetryData: TelemetryData(sdk: sdkInfo)
+        )
+
+        let result = await performRequest(request: request)
+        switch result {
+        case .success:
+            return true
+        case .failure(let error):
+            logError(error: error)
             return false
         }
     }
 
     private func performRequest(
-        request: ApplyFlagsRequest
-    ) async -> ApplyFlagResult {
+        request: WriteFlagLogsRequest
+    ) async -> FlagLogsResult {
         do {
-            return try await httpClient.post(path: ":apply", data: request)
+            return try await httpClient.post(path: ":write", data: request)
         } catch {
             return .failure(handleError(error: error))
         }
@@ -153,8 +252,10 @@ final class FlagApplierWithRetries: FlagApplier {
         }
     }
 
-    private func logApplyError(error: Error) {
-        debugLogger?.logMessage(message: "Error while executing \"apply\": \(error)", isWarning: true)
+    private func logError(error: Error) {
+        debugLogger?.logMessage(
+            message: "Error while sending flag logs: \(error)", isWarning: true
+        )
     }
 }
 

@@ -19,6 +19,7 @@ public class Confidence: ConfidenceEventSender {
     private let eventSenderEngine: EventSenderEngine
     private let storage: Storage
     private let flagApplier: FlagApplier
+    private let telemetryProducer: TelemetryProducer?
 
     // Synchronization and task management resources
     private var cancellables = Set<AnyCancellable>()
@@ -35,6 +36,7 @@ public class Confidence: ConfidenceEventSender {
         region: ConfidenceRegion,
         eventSenderEngine: EventSenderEngine,
         flagApplier: FlagApplier,
+        telemetryProducer: TelemetryProducer? = nil,
         remoteFlagResolver: ConfidenceResolveClient,
         storage: Storage,
         context: ConfidenceStruct = [:],
@@ -49,6 +51,7 @@ public class Confidence: ConfidenceEventSender {
         self.contextManager = ContextManager(initialContext: context)
         self.parentContextProvider = parent
         self.flagApplier = flagApplier
+        self.telemetryProducer = telemetryProducer
         self.remoteFlagResolver = remoteFlagResolver
         self.debugLogger = debugLogger
         if let visitorId {
@@ -137,6 +140,7 @@ public class Confidence: ConfidenceEventSender {
                 defaultValue: defaultValue,
                 context: getContext(),
                 flagApplier: flagApplier,
+                telemetryProducer: telemetryProducer,
                 debugLogger: debugLogger
             )
         }
@@ -280,6 +284,7 @@ public class Confidence: ConfidenceEventSender {
             region: region,
             eventSenderEngine: eventSenderEngine,
             flagApplier: flagApplier,
+            telemetryProducer: telemetryProducer,
             remoteFlagResolver: remoteFlagResolver,
             storage: storage,
             context: context,
@@ -477,17 +482,24 @@ extension Confidence {
                 metadata: metadata,
                 debugLogger: debugLogger
             )
-            let httpClient = NetworkClient(
-                baseUrl: BaseUrlMapper.from(region: options.region),
+            let flagLogsHttpClient = NetworkClient(
+                baseUrl: BaseUrlMapper.flagLogsUrl(region: options.region),
+                defaultHeaders: [
+                    "Authorization": "ClientSecret \(clientSecret)"
+                ],
                 timeoutIntervalForRequests: options.timeoutIntervalForRequest
             )
-            let flagApplier = flagApplier ?? FlagApplierWithRetries(
-                httpClient: httpClient,
-                storage: DefaultStorage(filePath: "confidence.flags.apply"),
+            let applierInstance = flagApplier as? FlagApplierWithRetries
+            let builtApplier = applierInstance ?? FlagApplierWithRetries(
+                httpClient: flagLogsHttpClient,
+                applyStorage: DefaultStorage(filePath: "confidence.flags.apply"),
+                telemetryStorage: DefaultStorage(filePath: "confidence.telemetry"),
                 options: options,
                 metadata: metadata,
                 debugLogger: debugLogger
             )
+            let flagApplier: FlagApplier = flagApplier ?? builtApplier
+            let telemetryProducer: TelemetryProducer = applierInstance ?? builtApplier
             let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(
                 options: options,
                 applyOnResolve: false,
@@ -504,6 +516,7 @@ extension Confidence {
                 region: region,
                 eventSenderEngine: eventSenderEngine,
                 flagApplier: flagApplier,
+                telemetryProducer: telemetryProducer,
                 remoteFlagResolver: flagResolver,
                 storage: storage ?? DefaultStorage(filePath: "confidence.flags.resolve"),
                 context: initialContext,
