@@ -1,86 +1,65 @@
 import Foundation
 
-struct TelemetryEntry: Codable {
-    let flagName: String
-    let errorCode: String
-    let errorMessage: String?
-    let time: Date
-    var status: ApplyEventStatus
+struct TelemetryCounterState: Codable {
+    var resolveRates: [String: UInt32]
+    var clientErrors: [String: UInt32]
 
-    init(
-        flagName: String,
-        errorCode: String,
-        errorMessage: String?,
-        time: Date,
-        status: ApplyEventStatus = .created
-    ) {
-        self.flagName = flagName
-        self.errorCode = errorCode
-        self.errorMessage = errorMessage
-        self.time = time
-        self.status = status
+    static func empty() -> TelemetryCounterState {
+        TelemetryCounterState(resolveRates: [:], clientErrors: [:])
     }
-}
-
-struct TelemetryBatch: Codable {
-    var entries: [TelemetryEntry]
 
     var isEmpty: Bool {
-        entries.isEmpty
+        resolveRates.isEmpty && clientErrors.isEmpty
     }
 
-    static func empty() -> TelemetryBatch {
-        TelemetryBatch(entries: [])
+    func toResolveRateRecords() -> [ResolveRateRecord] {
+        resolveRates.map { ResolveRateRecord(count: $0.value, reason: $0.key) }
+            .sorted { $0.reason < $1.reason }
     }
 
-    static func convertInTransit(batch: TelemetryBatch) -> TelemetryBatch {
-        var mutated = batch
-        for index in 0..<mutated.entries.count where mutated.entries[index].status == .sending {
-            mutated.entries[index].status = .created
+    func toClientErrorRateRecords() -> [ClientErrorRateRecord] {
+        clientErrors.map { ClientErrorRateRecord(count: $0.value, errorCode: $0.key) }
+            .sorted { $0.errorCode < $1.errorCode }
+    }
+}
+
+protocol TelemetryCounterActor: Actor {
+    var currentState: TelemetryCounterState { get }
+    func recordResolve(reason: String)
+    func recordClientError(errorCode: String)
+    func drain() -> TelemetryCounterState
+    func restore(state: TelemetryCounterState)
+}
+
+final actor TelemetryCounterInteractor: TelemetryCounterActor {
+    private var state: TelemetryCounterState
+
+    var currentState: TelemetryCounterState { state }
+
+    init(state: TelemetryCounterState) {
+        self.state = state
+    }
+
+    func recordResolve(reason: String) {
+        state.resolveRates[reason, default: 0] += 1
+    }
+
+    func recordClientError(errorCode: String) {
+        state.clientErrors[errorCode, default: 0] += 1
+    }
+
+    func drain() -> TelemetryCounterState {
+        let snapshot = state
+        state = .empty()
+        return snapshot
+    }
+
+    func restore(state: TelemetryCounterState) {
+        for (key, count) in state.resolveRates {
+            self.state.resolveRates[key, default: 0] += count
         }
-        return mutated
-    }
-
-    mutating func add(entry: TelemetryEntry) {
-        entries.append(entry)
-    }
-
-    mutating func setStatus(at index: Int, status: ApplyEventStatus) {
-        guard index < entries.count else { return }
-        entries[index].status = status
-    }
-
-    mutating func removeCompleted() {
-        entries.removeAll { $0.status == .sent }
-    }
-}
-
-protocol TelemetryBatchActor: Actor {
-    var batch: TelemetryBatch { get }
-    func add(entry: TelemetryEntry) -> TelemetryBatch
-    func setStatus(at index: Int, status: ApplyEventStatus) -> TelemetryBatch
-    func removeCompleted() -> TelemetryBatch
-}
-
-final actor TelemetryBatchInteractor: TelemetryBatchActor {
-    var batch: TelemetryBatch
-
-    init(batch: TelemetryBatch) {
-        self.batch = TelemetryBatch.convertInTransit(batch: batch)
-    }
-
-    func add(entry: TelemetryEntry) -> TelemetryBatch {
-        batch.add(entry: entry)
-        return batch
-    }
-
-    func setStatus(at index: Int, status: ApplyEventStatus) -> TelemetryBatch {
-        batch.setStatus(at: index, status: status)
-        return batch
-    }
-
-    func removeCompleted() -> TelemetryBatch {
-        batch.removeCompleted()
-        return batch
+        for (key, count) in state.clientErrors {
+            self.state.clientErrors[key, default: 0] += count
+        }
     }
 }

@@ -521,15 +521,17 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertEqual(request.telemetryData?.sdk?.id, metadata.name)
     }
 
-    // MARK: Telemetry
+    // MARK: Telemetry counters
 
-    func testTelemetry_reportStoresAndSends() async throws {
+    func testTelemetry_reportIncrementsErrorCounterAndSends() async throws {
+        let counters = TelemetryCounterInteractor(state: .empty())
         let applier = FlagApplierWithRetries(
             httpClient: httpClient,
             applyStorage: applyStorage,
             telemetryStorage: telemetryStorage,
             options: options,
             metadata: metadata,
+            telemetryCounters: counters,
             triggerBatch: false
         )
 
@@ -539,18 +541,84 @@ class FlagApplierWithRetriesTest: XCTestCase {
             errorMessage: "Flag 'missing-flag' not found"
         )
 
-        // The report triggers a batch that sends telemetry-only request
         XCTAssertGreaterThanOrEqual(httpClient.postCallCounter, 1)
+
+        let request = try XCTUnwrap(httpClient.data?.last as? WriteFlagLogsRequest)
+        XCTAssertNil(request.flagAssigned)
+        XCTAssertNotNil(request.telemetryData?.clientErrorRate)
+
+        let errorRates = try XCTUnwrap(request.telemetryData?.clientErrorRate)
+        XCTAssertEqual(errorRates.count, 1)
+        XCTAssertEqual(errorRates.first?.errorCode, "FLAG_NOT_FOUND")
+        XCTAssertEqual(errorRates.first?.count, 1)
     }
 
-    func testTelemetry_reportOffline_persistsToDisk() async throws {
+    func testTelemetry_trackResolveIncrementsCounter() async throws {
+        let counters = TelemetryCounterInteractor(state: .empty())
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient,
+            applyStorage: applyStorage,
+            telemetryStorage: telemetryStorage,
+            options: options,
+            metadata: metadata,
+            telemetryCounters: counters,
+            triggerBatch: false
+        )
+
+        await applier.trackResolve(reason: .match)
+        await applier.trackResolve(reason: .match)
+        await applier.trackResolve(reason: .noSegmentMatch)
+
+        let state = await counters.currentState
+        XCTAssertEqual(state.resolveRates["RESOLVE_REASON_MATCH"], 2)
+        XCTAssertEqual(state.resolveRates["RESOLVE_REASON_NO_SEGMENT_MATCH"], 1)
+
+        // trackResolve does not trigger a batch
+        XCTAssertEqual(httpClient.postCallCounter, 0)
+    }
+
+    func testTelemetry_countersIncludedInTelemetryRequest() async throws {
+        let counters = TelemetryCounterInteractor(state: .empty())
+        let applier = FlagApplierWithRetries(
+            httpClient: httpClient,
+            applyStorage: applyStorage,
+            telemetryStorage: telemetryStorage,
+            options: options,
+            metadata: metadata,
+            telemetryCounters: counters,
+            triggerBatch: false
+        )
+
+        await applier.trackResolve(reason: .match)
+        await applier.trackResolve(reason: .match)
+        await applier.trackResolve(reason: .stale)
+
+        // Trigger a batch via report (which also adds a client error)
+        await applier.report(flagName: "test", errorCode: .evaluationError, errorMessage: nil)
+
+        let request = try XCTUnwrap(httpClient.data?.last as? WriteFlagLogsRequest)
+        let resolveRates = try XCTUnwrap(request.telemetryData?.resolveRate)
+        let errorRates = try XCTUnwrap(request.telemetryData?.clientErrorRate)
+
+        XCTAssertTrue(resolveRates.contains(ResolveRateRecord(count: 2, reason: "RESOLVE_REASON_MATCH")))
+        XCTAssertTrue(resolveRates.contains(ResolveRateRecord(count: 1, reason: "RESOLVE_REASON_STALE")))
+        XCTAssertTrue(errorRates.contains(ClientErrorRateRecord(count: 1, errorCode: "EVALUATION_ERROR")))
+
+        // After successful send, counters should be drained
+        let state = await counters.currentState
+        XCTAssertTrue(state.isEmpty)
+    }
+
+    func testTelemetry_reportOffline_persistsCounters() async throws {
         let offlineClient = HttpClientMock(testMode: .offline)
+        let counters = TelemetryCounterInteractor(state: .empty())
         let applier = FlagApplierWithRetries(
             httpClient: offlineClient,
             applyStorage: applyStorage,
             telemetryStorage: telemetryStorage,
             options: options,
             metadata: metadata,
+            telemetryCounters: counters,
             triggerBatch: false
         )
 
@@ -560,31 +628,31 @@ class FlagApplierWithRetriesTest: XCTestCase {
             errorMessage: nil
         )
 
-        let batch = try telemetryStorage.load(defaultValue: TelemetryBatch.empty())
-        XCTAssertEqual(batch.entries.count, 1)
-        XCTAssertEqual(batch.entries.first?.flagName, "my-flag")
-        XCTAssertEqual(batch.entries.first?.errorCode, "TYPE_MISMATCH")
+        // On failure, counters are restored
+        let state = await counters.currentState
+        XCTAssertEqual(state.clientErrors["TYPE_MISMATCH"], 1)
     }
 
-    func testTelemetry_multipleReports_noDeduplcation() async throws {
+    func testTelemetry_multipleErrors_aggregated() async throws {
+        let counters = TelemetryCounterInteractor(state: .empty())
         let offlineClient = HttpClientMock(testMode: .offline)
-        let telemetryInteractor = TelemetryBatchInteractor(batch: .empty())
         let applier = FlagApplierWithRetries(
             httpClient: offlineClient,
             applyStorage: applyStorage,
             telemetryStorage: telemetryStorage,
             options: options,
             metadata: metadata,
-            telemetryInteractor: telemetryInteractor,
+            telemetryCounters: counters,
             triggerBatch: false
         )
 
         await applier.report(flagName: "flag1", errorCode: .flagNotFound, errorMessage: nil)
-        await applier.report(flagName: "flag1", errorCode: .flagNotFound, errorMessage: nil)
-        await applier.report(flagName: "flag1", errorCode: .flagNotFound, errorMessage: nil)
+        await applier.report(flagName: "flag2", errorCode: .flagNotFound, errorMessage: nil)
+        await applier.report(flagName: "flag3", errorCode: .typeMismatch(), errorMessage: nil)
 
-        let batch = await telemetryInteractor.batch
-        XCTAssertEqual(batch.entries.count, 3)
+        let state = await counters.currentState
+        XCTAssertEqual(state.clientErrors["FLAG_NOT_FOUND"], 2)
+        XCTAssertEqual(state.clientErrors["TYPE_MISMATCH"], 1)
     }
 
     private func hundredApplyCalls(applier: FlagApplier, sameToken: Bool = false) async {

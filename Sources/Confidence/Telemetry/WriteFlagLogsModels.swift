@@ -27,6 +27,18 @@ struct SdkInfo: Codable {
 
 struct TelemetryData: Codable {
     var sdk: SdkInfo?
+    var resolveRate: [ResolveRateRecord]?
+    var clientErrorRate: [ClientErrorRateRecord]?
+}
+
+struct ResolveRateRecord: Codable, Equatable {
+    var count: UInt32
+    var reason: String
+}
+
+struct ClientErrorRateRecord: Codable, Equatable {
+    var count: UInt32
+    var errorCode: String
 }
 
 struct WriteFlagLogsResponse: Codable {}

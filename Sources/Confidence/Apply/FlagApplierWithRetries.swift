@@ -10,7 +10,7 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
     private let httpClient: HttpClient
     private let options: ConfidenceClientOptions
     private let cacheDataInteractor: CacheDataActor
-    private let telemetryInteractor: TelemetryBatchActor
+    private let telemetryCounters: TelemetryCounterActor
     private let metadata: ConfidenceMetadata
     private let debugLogger: DebugLogger?
 
@@ -21,7 +21,7 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
         options: ConfidenceClientOptions,
         metadata: ConfidenceMetadata,
         cacheDataInteractor: CacheDataActor? = nil,
-        telemetryInteractor: TelemetryBatchActor? = nil,
+        telemetryCounters: TelemetryCounterActor? = nil,
         triggerBatch: Bool = true,
         debugLogger: DebugLogger? = nil
     ) {
@@ -36,9 +36,9 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
         self.cacheDataInteractor = cacheDataInteractor
             ?? CacheDataInteractor(cacheData: storedApplyData ?? .empty())
 
-        let storedTelemetry = try? telemetryStorage.load(defaultValue: TelemetryBatch.empty())
-        self.telemetryInteractor = telemetryInteractor
-            ?? TelemetryBatchInteractor(batch: storedTelemetry ?? .empty())
+        let storedCounters = try? telemetryStorage.load(defaultValue: TelemetryCounterState.empty())
+        self.telemetryCounters = telemetryCounters
+            ?? TelemetryCounterInteractor(state: storedCounters ?? .empty())
 
         if triggerBatch {
             Task {
@@ -69,14 +69,8 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
     // MARK: TelemetryProducer
 
     func report(flagName: String, errorCode: ErrorCode, errorMessage: String?) async {
-        let entry = TelemetryEntry(
-            flagName: flagName,
-            errorCode: errorCode.serialized,
-            errorMessage: errorMessage,
-            time: Date.backport.now
-        )
-        let batch = await telemetryInteractor.add(entry: entry)
-        writeTelemetryToFile(batch: batch)
+        await telemetryCounters.recordClientError(errorCode: errorCode.serialized)
+        persistCounters()
         debugLogger?.logMessage(
             message: "Telemetry reported: \(errorCode.serialized) for flag '\(flagName)'",
             isWarning: false
@@ -84,11 +78,16 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
         await triggerBatch()
     }
 
+    func trackResolve(reason: ResolveReason) async {
+        await telemetryCounters.recordResolve(reason: reason.rawValue)
+        persistCounters()
+    }
+
     // MARK: Private
 
     private func triggerBatch() async {
         await sendApplyBatches()
-        await sendTelemetryBatch()
+        await sendTelemetryCounters()
     }
 
     private func sendApplyBatches() async {
@@ -122,35 +121,17 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
         }
     }
 
-    private func sendTelemetryBatch() async {
-        let currentBatch = await telemetryInteractor.batch
-        let pending = currentBatch.entries.enumerated().filter { $0.element.status == .created }
+    private func sendTelemetryCounters() async {
+        let snapshot = await telemetryCounters.drain()
+        guard !snapshot.isEmpty else { return }
 
-        guard !pending.isEmpty else { return }
-
-        let chunks = pending.chunk(size: 20)
-        for chunk in chunks {
-            let indices = chunk.map { $0.offset }
-            let entries = chunk.map { $0.element }
-
-            for index in indices {
-                _ = await telemetryInteractor.setStatus(at: index, status: .sending)
-            }
-
-            let success = await executeTelemetryOnly(entries: entries)
-            if success {
-                for index in indices {
-                    _ = await telemetryInteractor.setStatus(at: index, status: .sent)
-                }
-            } else {
-                for index in indices {
-                    _ = await telemetryInteractor.setStatus(at: index, status: .created)
-                }
-            }
+        let success = await executeTelemetryRequest(counters: snapshot)
+        if success {
+            persistCounters()
+        } else {
+            await telemetryCounters.restore(state: snapshot)
+            persistCounters()
         }
-
-        let updatedBatch = await telemetryInteractor.removeCompleted()
-        writeTelemetryToFile(batch: updatedBatch)
     }
 
     private func writeApplyStatus(
@@ -178,8 +159,11 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
         try? applyStorage.save(data: data)
     }
 
-    private func writeTelemetryToFile(batch: TelemetryBatch) {
-        try? telemetryStorage.save(data: batch)
+    private func persistCounters() {
+        Task {
+            let state = await telemetryCounters.currentState
+            try? telemetryStorage.save(data: state)
+        }
     }
 
     private func makeSdkInfo() -> SdkInfo {
@@ -217,11 +201,17 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
         }
     }
 
-    private func executeTelemetryOnly(entries: [TelemetryEntry]) async -> Bool {
+    private func executeTelemetryRequest(counters: TelemetryCounterState) async -> Bool {
         let sdkInfo = makeSdkInfo()
+        let resolveRate = counters.toResolveRateRecords()
+        let clientErrorRate = counters.toClientErrorRateRecords()
         let request = WriteFlagLogsRequest(
             flagAssigned: nil,
-            telemetryData: TelemetryData(sdk: sdkInfo)
+            telemetryData: TelemetryData(
+                sdk: sdkInfo,
+                resolveRate: resolveRate.isEmpty ? nil : resolveRate,
+                clientErrorRate: clientErrorRate.isEmpty ? nil : clientErrorRate
+            )
         )
 
         let result = await performRequest(request: request)

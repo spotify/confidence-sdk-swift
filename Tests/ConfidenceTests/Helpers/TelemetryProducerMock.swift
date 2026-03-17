@@ -3,10 +3,19 @@ import XCTest
 
 @testable import Confidence
 
+struct ReportedError {
+    let flagName: String
+    let errorCode: ErrorCode
+    let errorMessage: String?
+}
+
 class TelemetryProducerMock: TelemetryProducer {
     var reportCallCount = 0
-    var reportedErrors: [(flagName: String, errorCode: ErrorCode, errorMessage: String?)] = []
+    var reportedErrors: [ReportedError] = []
     var reportExpectation = XCTestExpectation(description: "Telemetry Reported")
+
+    var trackResolveCallCount = 0
+    var trackedReasons: [ResolveReason] = []
 
     init(expectedReports: Int = 1) {
         reportExpectation.expectedFulfillmentCount = expectedReports
@@ -14,7 +23,12 @@ class TelemetryProducerMock: TelemetryProducer {
 
     func report(flagName: String, errorCode: ErrorCode, errorMessage: String?) async {
         reportCallCount += 1
-        reportedErrors.append((flagName: flagName, errorCode: errorCode, errorMessage: errorMessage))
+        reportedErrors.append(ReportedError(flagName: flagName, errorCode: errorCode, errorMessage: errorMessage))
         reportExpectation.fulfill()
+    }
+
+    func trackResolve(reason: ResolveReason) async {
+        trackResolveCallCount += 1
+        trackedReasons.append(reason)
     }
 }

@@ -135,7 +135,7 @@ public class Confidence: ConfidenceEventSender {
                     errorMessage: "Confidence instance deallocated before end of evaluation"
                 )
             }
-            return self.cache.evaluate(
+            let evaluation = self.cache.evaluate(
                 flagName: key,
                 defaultValue: defaultValue,
                 context: getContext(),
@@ -143,6 +143,12 @@ public class Confidence: ConfidenceEventSender {
                 telemetryProducer: telemetryProducer,
                 debugLogger: debugLogger
             )
+            if let telemetryProducer = self.telemetryProducer {
+                Task {
+                    await telemetryProducer.trackResolve(reason: evaluation.reason)
+                }
+            }
+            return evaluation
         }
     }
 
