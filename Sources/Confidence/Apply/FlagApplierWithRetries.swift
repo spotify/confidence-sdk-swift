@@ -125,7 +125,7 @@ final class FlagApplierWithRetries: FlagApplier {
             sdk: telemetry.sdk
         )
 
-        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue(for: "apply")]
+        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue()]
         let result = await performRequest(request: request, headers: headers)
         switch result {
         case .success:

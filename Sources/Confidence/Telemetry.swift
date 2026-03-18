@@ -92,25 +92,13 @@ class Telemetry: @unchecked Sendable {
     }
 
     /// Returns the base64-encoded Monitoring protobuf, including any accumulated traces (which are then cleared).
-    func encodedHeaderValue(for requestType: String) -> String {
+    func encodedHeaderValue() -> String {
         let (evalTraces, resolveTraces) = snapshotAndClearTraces()
         let monitoringBytes = encodeMonitoring(
             evaluationTraces: evalTraces,
             resolveTraces: resolveTraces
         )
-        let base64 = Data(monitoringBytes).base64EncodedString()
-
-        var traceDescriptions: [String] = resolveTraces.map {
-            "RESOLVE_LATENCY(\($0.durationMs)ms,\($0.status))"
-        }
-        traceDescriptions += evalTraces.map { "FLAG_EVALUATION(\($0))" }
-        debugLogger?.logMessage(
-            message: "[Telemetry] \(Self.headerName) on \(requestType) — " +
-                "version=\(libraryVersion), " +
-                "traces=[\(traceDescriptions.joined(separator: ", "))], " +
-                "base64=\(base64)",
-            isWarning: false)
-        return base64
+        return Data(monitoringBytes).base64EncodedString()
     }
 
     private func snapshotAndClearTraces() -> ([EvaluationReason], [ResolveTrace]) {
@@ -135,11 +123,11 @@ class Telemetry: @unchecked Sendable {
             }
         }
         switch reason {
-        case .match, .noSegmentMatch, .noTreatmentMatch, .archived:
+        case .match, .noSegmentMatch, .noTreatmentMatch:
             return .success
         case .stale:
             return .stale
-        case .error, .targetingKeyError:
+        case .archived, .error, .targetingKeyError:
             return .error
         default:
             return .unknown

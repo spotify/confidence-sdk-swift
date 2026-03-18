@@ -34,7 +34,7 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             sdk: telemetry.sdk
         )
 
-        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue(for: "resolve")]
+        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue()]
         let start = CFAbsoluteTimeGetCurrent()
         do {
             let result: HttpClientResult<ResolveFlagsResponse> =
