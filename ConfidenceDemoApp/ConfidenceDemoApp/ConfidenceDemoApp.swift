@@ -1,4 +1,6 @@
 import Confidence
+import ConfidenceProvider
+import OpenFeature
 import SwiftUI
 
 @main
@@ -15,7 +17,7 @@ struct ConfidenceDemoApp: App {
     init() {
         @AppStorage("appVersion") var appVersion = 0
         @AppStorage("loggedUser") var loggedUser: String?
-        appVersion += 1 // Simulate update of the app on every new run
+        appVersion += 1
         var context = ["app_version": ConfidenceValue.init(integer: appVersion)]
         if let user = loggedUser {
             context["user_id"] = ConfidenceValue.init(string: user)
@@ -26,26 +28,28 @@ struct ConfidenceDemoApp: App {
             withAppInfo: true,
             withOsInfo: true,
             withLocale: true
-        ).decorated(context: context);
+        ).decorated(context: context)
 
         confidence = Confidence
             .Builder(clientSecret: secret, loggerLevel: .TRACE)
             .withContext(initialContext: context)
             .build()
-        
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+        OpenFeatureAPI.shared.setProvider(provider: provider)
+
         do {
-            // NOTE: here we are activating all the flag values from storage, regardless of how `context` looks now
             try confidence.activate()
         } catch {
             flaggingState.state = .error(ExperimentationFlags.CustomError(message: error.localizedDescription))
         }
-        // flaggingState.color is set here at startup and remains immutable until a user logs out
-        let eval = confidence.getEvaluation(
-            key: "swift-demoapp.color",
-            defaultValue: "Gray")
-        flaggingState.color = ContentView.getColor(
-            color: eval.value)
-        flaggingState.reason = eval.reason
+
+        let client = OpenFeatureAPI.shared.getClient()
+        let eval = client.getStringDetails(key: "swift-demoapp.color", defaultValue: "Gray")
+        print("[Telemetry] OpenFeature evaluation: key=swift-demoapp.color value=\(eval.value) reason=\(eval.reason ?? "nil")")
+
+        flaggingState.color = ContentView.getColor(color: eval.value)
+        flaggingState.reason = ResolveReason(rawValue: eval.reason ?? "") ?? .unknown
 
         self.appVersion = appVersion
         self.loggedUser = loggedUser
@@ -68,11 +72,10 @@ struct ConfidenceDemoApp: App {
         Task {
             do {
                 flaggingState.state = .loading
-                try await Task.sleep(nanoseconds: 2 * 1_000_000_000) // simulating slow network
-                // The flags in storage are refreshed for the current `context`, and activated
-                // After this line, fresh (and potentially new) flags values can be accessed
+                try await Task.sleep(nanoseconds: 2 * 1_000_000_000)
                 try await confidence.fetchAndActivate()
                 flaggingState.state = .ready
+                print("[Telemetry] Flags fetched and activated")
             } catch {
                 flaggingState.state = .error(ExperimentationFlags.CustomError(message: error.localizedDescription))
             }
@@ -81,7 +84,7 @@ struct ConfidenceDemoApp: App {
 }
 
 class ExperimentationFlags: ObservableObject {
-    var color: Color = .red // This is set on applicaaton start, and reset on user logout
+    var color: Color = .red
     var reason: ResolveReason = .unknown
     @Published var state: State = .notReady
 

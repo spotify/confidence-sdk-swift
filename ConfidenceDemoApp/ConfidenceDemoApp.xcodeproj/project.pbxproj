@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		734EBDDC2D565CAC006D3435 /* Confidence in Frameworks */ = {isa = PBXBuildFile; productRef = 734EBDDB2D565CAC006D3435 /* Confidence */; };
+		734EBDDE2D565CB0006D3435 /* ConfidenceOpenFeature in Frameworks */ = {isa = PBXBuildFile; productRef = 734EBDDD2D565CB0006D3435 /* ConfidenceOpenFeature */; };
 		735EADF52CF9B64E007BC42C /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735EADF42CF9B64E007BC42C /* LoginView.swift */; };
 		C770C99A2A739FBC00C2AC8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C770C9962A739FBC00C2AC8C /* Preview Assets.xcassets */; };
 		C770C99B2A739FBC00C2AC8C /* ConfidenceDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C770C9972A739FBC00C2AC8C /* ConfidenceDemoApp.swift */; };
@@ -57,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				734EBDDC2D565CAC006D3435 /* Confidence in Frameworks */,
+				734EBDDE2D565CB0006D3435 /* ConfidenceOpenFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -170,6 +172,7 @@
 			name = ConfidenceDemoApp;
 			packageProductDependencies = (
 				734EBDDB2D565CAC006D3435 /* Confidence */,
+				734EBDDD2D565CB0006D3435 /* ConfidenceOpenFeature */,
 			);
 			productName = ConfidenceDemoApp;
 			productReference = C770C9682A739FA000C2AC8C /* ConfidenceDemoApp.app */;
@@ -649,6 +652,10 @@
 		734EBDDB2D565CAC006D3435 /* Confidence */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Confidence;
+		};
+		734EBDDD2D565CB0006D3435 /* ConfidenceOpenFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ConfidenceOpenFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -109,6 +109,9 @@ public class Confidence: ConfidenceEventSender {
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
         try storage.save(data: resolution)
+        for flag in resolvedFlags.resolvedValues {
+            await telemetryProducer?.trackResolve(reason: flag.resolveReason)
+        }
     }
 
     /**
@@ -135,7 +138,7 @@ public class Confidence: ConfidenceEventSender {
                     errorMessage: "Confidence instance deallocated before end of evaluation"
                 )
             }
-            let evaluation = self.cache.evaluate(
+            return self.cache.evaluate(
                 flagName: key,
                 defaultValue: defaultValue,
                 context: getContext(),
@@ -143,12 +146,6 @@ public class Confidence: ConfidenceEventSender {
                 telemetryProducer: telemetryProducer,
                 debugLogger: debugLogger
             )
-            if let telemetryProducer = self.telemetryProducer {
-                Task {
-                    await telemetryProducer.trackResolve(reason: evaluation.reason)
-                }
-            }
-            return evaluation
         }
     }
 

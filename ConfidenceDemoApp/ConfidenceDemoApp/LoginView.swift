@@ -1,5 +1,7 @@
 import SwiftUI
 import Confidence
+import ConfidenceProvider
+import OpenFeature
 
 struct LoginView: View {
     @EnvironmentObject
@@ -32,25 +34,25 @@ struct LoginView: View {
                                 ExperimentationFlags.CustomError(message: error.localizedDescription))
                         }
 
-                        let eval = confidence.getEvaluation(key: "swift-demoapp.color", defaultValue: "Gray")
+                        let client = OpenFeatureAPI.shared.getClient()
+                        let eval = client.getStringDetails(key: "swift-demoapp.color", defaultValue: "Gray")
+                        print("[Telemetry] Login flag eval: key=swift-demoapp.color value=\(eval.value) reason=\(eval.reason ?? "nil")")
                         flaggingState.color = ContentView.getColor(
                             color: eval.value
                         )
-                        flaggingState.reason = eval.reason
+                        flaggingState.reason = ResolveReason(rawValue: eval.reason ?? "") ?? .unknown
 
-                        // Simulating a module that handles feature flagging state during login
                         Task {
                             flaggingState.state = .loading
-                            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000) // simulating network delay
-                            // putContext adds the user_id field to the evaluation context and fetches values for it
+                            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
                             await confidence.putContextAndWait(context: ["user_id": .init(string: "user1")])
                             flaggingState.state = .ready
+                            print("[Telemetry] Context updated with user_id, flags refreshed")
                         }
 
-                        // Simulating a module that handles the actual login mechanism for a user
                         Task {
                             loggingIn = true
-                            try? await Task.sleep(nanoseconds: 1 * 1_000_000_000) // simulating network delay
+                            try? await Task.sleep(nanoseconds: 1 * 1_000_000_000)
                             loggedUser = "user1"
                             loggingIn = false
                             loginCompleted = true

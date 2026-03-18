@@ -103,6 +103,13 @@ extension FlagResolution {
                 var resolveReason: ResolveReason = .match
                 if self.context != context {
                     resolveReason = .stale
+                    Task {
+                        await telemetryProducer?.report(
+                            flagName: parsedKey.flag,
+                            errorCode: .evaluationError,
+                            errorMessage: "Stale evaluation: context changed since last resolve"
+                        )
+                    }
                 }
                 if let typedValue = typedValue {
                     Task {

@@ -1,5 +1,7 @@
 import SwiftUI
 import Confidence
+import ConfidenceProvider
+import OpenFeature
 import Combine
 
 struct ContentView: View {
@@ -13,9 +15,11 @@ struct ContentView: View {
     private var loggedOut = false
 
     private let confidence: Confidence
+    private let ofClient: OpenFeature.Client
 
     init(confidence: Confidence, color: Color? = nil) {
         self.confidence = confidence
+        self.ofClient = OpenFeatureAPI.shared.getClient()
     }
 
     var body: some View {
@@ -68,26 +72,24 @@ struct ContentView: View {
                     Text("Loading the text color...")
                         .font(.body)
                 } else {
-                    let eval = confidence.getEvaluation(key: "swift-demoapp.color", defaultValue: "Gray")
+                    let eval = ofClient.getStringDetails(key: "swift-demoapp.color", defaultValue: "Gray")
                     Text("This text only appears after a successful flag fetching")
                         .font(.body)
                         .foregroundStyle(ContentView.getColor(color: eval.value))
                     Spacer()
-                    Text("[\(eval.reason)]")
+                    Text("[\(eval.reason ?? "unknown")]")
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
             .padding()
             HStack {
-                let eval = confidence.getEvaluation(
-                    key: "swift-demoapp.color",
-                    defaultValue: "Gray")
+                let eval = ofClient.getStringDetails(key: "swift-demoapp.color", defaultValue: "Gray")
                 Text("[2]")
                 Text("This text color dynamically changes on each flags fetch")
                     .font(.body)
                     .foregroundStyle(ContentView.getColor(
                         color: eval.value))
                 Spacer()
-                Text("[\(eval.reason)]")
+                Text("[\(eval.reason ?? "unknown")]")
             }.frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
 
@@ -121,11 +123,13 @@ struct AboutPage: View {
     @State
     private var textColor = Color.red
     @State
-    private var reason = ResolveReason.unknown
+    private var reason: String = "unknown"
     private let confidence: Confidence
+    private let ofClient: OpenFeature.Client
 
     init(confidence: Confidence) {
         self.confidence = confidence
+        self.ofClient = OpenFeatureAPI.shared.getClient()
     }
 
     var body: some View {
@@ -135,10 +139,10 @@ struct AboutPage: View {
                 .foregroundStyle(textColor)
                 .padding()
                 .onAppear {
-                    let eval = confidence.getEvaluation(key: "swift-demoapp.color", defaultValue: "Gray")
+                    let eval = ofClient.getStringDetails(key: "swift-demoapp.color", defaultValue: "Gray")
                     textColor = ContentView.getColor(
                         color: eval.value)
-                    reason = eval.reason
+                    reason = eval.reason ?? "unknown"
                 }
             Spacer()
             Text("[\(reason)]")

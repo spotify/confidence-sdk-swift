@@ -81,6 +81,10 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
     func trackResolve(reason: ResolveReason) async {
         await telemetryCounters.recordResolve(reason: reason.rawValue)
         persistCounters()
+        debugLogger?.logMessage(
+            message: "Telemetry trackResolve: \(reason.rawValue)",
+            isWarning: false
+        )
     }
 
     // MARK: Private
@@ -227,11 +231,24 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
     private func performRequest(
         request: WriteFlagLogsRequest
     ) async -> FlagLogsResult {
+        logOutgoingRequest(request)
         do {
             return try await httpClient.post(path: ":write", data: request)
         } catch {
             return .failure(handleError(error: error))
         }
+    }
+
+    private func logOutgoingRequest(_ request: WriteFlagLogsRequest) {
+        guard debugLogger != nil else { return }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? encoder.encode(request),
+              let json = String(data: data, encoding: .utf8) else { return }
+        debugLogger?.logMessage(
+            message: "POST /v1/clientFlagLogs:write\n\(json)",
+            isWarning: false
+        )
     }
 
     private func handleError(error: Error) -> Error {
