@@ -17,58 +17,15 @@ class Telemetry: @unchecked Sendable {
         self.debugLogger = debugLogger
     }
 
-    enum Platform: Int, CustomStringConvertible {
-        case unspecified = 0
-        case java = 1
-        case kotlin = 2
+    enum Platform: Int {
         case swift = 3
-        case jsWeb = 4
-        case jsServer = 5
-        case python = 6
-        case go = 7
-        case ruby = 8
-        case rust = 9
-        case flutterIos = 10
-        case flutterAndroid = 11
-
-        var description: String {
-            switch self {
-            case .unspecified: return "UNSPECIFIED"
-            case .java: return "JAVA"
-            case .kotlin: return "KOTLIN"
-            case .swift: return "SWIFT"
-            case .jsWeb: return "JS_WEB"
-            case .jsServer: return "JS_SERVER"
-            case .python: return "PYTHON"
-            case .go: return "GO"
-            case .ruby: return "RUBY"
-            case .rust: return "RUST"
-            case .flutterIos: return "FLUTTER_IOS"
-            case .flutterAndroid: return "FLUTTER_ANDROID"
-            }
-        }
     }
 
-    enum Library: Int, CustomStringConvertible {
-        case unknown = 0
+    enum Library: Int {
         case confidence = 1
-        case openFeature = 2
-        case react = 3
-
-        var description: String {
-            switch self {
-            case .unknown: return "UNKNOWN"
-            case .confidence: return "CONFIDENCE"
-            case .openFeature: return "OPEN_FEATURE"
-            case .react: return "REACT"
-            }
-        }
     }
 
     enum TraceId: Int {
-        case unknown = 0
-        case resolveLatency = 1
-        case staleFlag = 2
         case flagEvaluation = 3
     }
 
@@ -113,7 +70,7 @@ class Telemetry: @unchecked Sendable {
         let tracesDescription = traces.map { "FLAG_EVALUATION(\($0))" }.joined(separator: ", ")
         debugLogger?.logMessage(
             message: "[Telemetry] \(Self.headerName) on \(requestType) — " +
-                "platform=\(platform), library=\(library), version=\(libraryVersion), " +
+                "version=\(libraryVersion), " +
                 "traces=[\(tracesDescription)], base64=\(base64)",
             isWarning: false)
         return base64
