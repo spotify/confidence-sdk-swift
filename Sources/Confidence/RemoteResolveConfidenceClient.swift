@@ -3,7 +3,7 @@ import Foundation
 class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private var options: ConfidenceClientOptions
-    private let metadata: ConfidenceMetadata
+    private let telemetry: Telemetry
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
@@ -12,11 +12,11 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         options: ConfidenceClientOptions,
         session: URLSession? = nil,
         applyOnResolve: Bool = false,
-        metadata: ConfidenceMetadata
+        telemetry: Telemetry
     ) {
         self.options = options
         self.applyOnResolve = applyOnResolve
-        self.metadata = metadata
+        self.telemetry = telemetry
         self.httpClient = NetworkClient(
             session: session,
             baseUrl: BaseUrlMapper.from(region: options.region),
@@ -31,12 +31,14 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             evaluationContext: TypeMapper.convert(structure: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
+            sdk: telemetry.sdk
         )
 
         do {
             let result: HttpClientResult<ResolveFlagsResponse> =
-            try await self.httpClient.post(path: ":resolve", data: request)
+            try await self.httpClient.post(
+                path: ":resolve", data: request, headers: [Telemetry.headerName: telemetry.encodedHeaderValue(for: "resolve")]
+            )
             switch result {
             case .success(let successData):
                 guard successData.response.status == .ok else {

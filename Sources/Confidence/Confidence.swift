@@ -19,6 +19,7 @@ public class Confidence: ConfidenceEventSender {
     private let eventSenderEngine: EventSenderEngine
     private let storage: Storage
     private let flagApplier: FlagApplier
+    private let telemetry: Telemetry
 
     // Synchronization and task management resources
     private var cancellables = Set<AnyCancellable>()
@@ -37,6 +38,7 @@ public class Confidence: ConfidenceEventSender {
         flagApplier: FlagApplier,
         remoteFlagResolver: ConfidenceResolveClient,
         storage: Storage,
+        telemetry: Telemetry,
         context: ConfidenceStruct = [:],
         parent: ConfidenceEventSender? = nil,
         visitorId: String? = nil,
@@ -46,6 +48,7 @@ public class Confidence: ConfidenceEventSender {
         self.clientSecret = clientSecret
         self.region = region
         self.storage = storage
+        self.telemetry = telemetry
         self.contextManager = ContextManager(initialContext: context)
         self.parentContextProvider = parent
         self.flagApplier = flagApplier
@@ -122,7 +125,7 @@ public class Confidence: ConfidenceEventSender {
     default value.
     */
     public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T> {
-        cacheQueue.sync {  [weak self] in
+        let evaluation: Evaluation<T> = cacheQueue.sync {  [weak self] in
             guard let self = self else {
                 return Evaluation(
                     value: defaultValue,
@@ -140,6 +143,8 @@ public class Confidence: ConfidenceEventSender {
                 debugLogger: debugLogger
             )
         }
+        telemetry.trackEvaluation(reason: evaluation.reason, errorCode: evaluation.errorCode)
+        return evaluation
     }
 
     /**
@@ -282,6 +287,7 @@ public class Confidence: ConfidenceEventSender {
             flagApplier: flagApplier,
             remoteFlagResolver: remoteFlagResolver,
             storage: storage,
+            telemetry: telemetry,
             context: context,
             parent: self,
             debugLogger: debugLogger
@@ -469,12 +475,14 @@ extension Confidence {
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region,
                 timeoutIntervalForRequest: timeout)
-            let metadata = ConfidenceMetadata(
-                name: sdkId,
-                version: "1.4.5") // x-release-please-version
+            let telemetry = Telemetry(
+                sdkId: sdkId,
+                library: .confidence,
+                libraryVersion: "1.4.5", // x-release-please-version
+                debugLogger: debugLogger)
             let uploader = RemoteConfidenceClient(
                 options: options,
-                metadata: metadata,
+                telemetry: telemetry,
                 debugLogger: debugLogger
             )
             let httpClient = NetworkClient(
@@ -485,13 +493,13 @@ extension Confidence {
                 httpClient: httpClient,
                 storage: DefaultStorage(filePath: "confidence.flags.apply"),
                 options: options,
-                metadata: metadata,
+                telemetry: telemetry,
                 debugLogger: debugLogger
             )
             let flagResolver = flagResolver ?? RemoteConfidenceResolveClient(
                 options: options,
                 applyOnResolve: false,
-                metadata: metadata
+                telemetry: telemetry
             )
             let eventSenderEngine = EventSenderEngineImpl(
                 clientSecret: clientSecret,
@@ -506,6 +514,7 @@ extension Confidence {
                 flagApplier: flagApplier,
                 remoteFlagResolver: flagResolver,
                 storage: storage ?? DefaultStorage(filePath: "confidence.flags.resolve"),
+                telemetry: telemetry,
                 context: initialContext,
                 parent: nil,
                 visitorId: visitorId,

@@ -115,7 +115,7 @@ final class EventSenderEngineTest: XCTestCase {
                 timeoutIntervalForRequest: 10
             ),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: Telemetry(sdkId: "", library: .confidence, libraryVersion: ""))
 
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",
@@ -143,7 +143,7 @@ final class EventSenderEngineTest: XCTestCase {
                 timeoutIntervalForRequest: 10
             ),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: Telemetry(sdkId: "", library: .confidence, libraryVersion: ""))
 
         let eventSenderEngine = EventSenderEngineImpl(
             clientSecret: "CLIENT_SECRET",

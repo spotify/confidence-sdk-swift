@@ -3,7 +3,7 @@ import os
 
 public class RemoteConfidenceClient: ConfidenceClient {
     private var options: ConfidenceClientOptions
-    private let metadata: ConfidenceMetadata
+    private let telemetry: Telemetry
     private var httpClient: HttpClient
     private var baseUrl: String
     private let debugLogger: DebugLogger?
@@ -11,7 +11,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
     init(
         options: ConfidenceClientOptions,
         session: URLSession? = nil,
-        metadata: ConfidenceMetadata,
+        telemetry: Telemetry,
         debugLogger: DebugLogger? = nil
     ) {
         self.options = options
@@ -28,7 +28,7 @@ public class RemoteConfidenceClient: ConfidenceClient {
             baseUrl: baseUrl,
             timeoutIntervalForRequests: options.timeoutIntervalForRequest
         )
-        self.metadata = metadata
+        self.telemetry = telemetry
         self.debugLogger = debugLogger
     }
 
@@ -42,11 +42,13 @@ public class RemoteConfidenceClient: ConfidenceClient {
             },
             clientSecret: options.credentials.getSecret(),
             sendTime: timeString,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
+            sdk: telemetry.sdk
         )
         do {
             let result: HttpClientResult<PublishEventResponse> =
-            try await self.httpClient.post(path: ":publish", data: request)
+            try await self.httpClient.post(
+                path: ":publish", data: request
+            )
             switch result {
             case .success(let successData):
                 let status = successData.response.statusCode
