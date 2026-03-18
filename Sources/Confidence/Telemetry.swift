@@ -9,6 +9,7 @@ class Telemetry: @unchecked Sendable {
 
     private let lock = NSLock()
     private var pendingEvaluations: [EvaluationReason] = []
+    private var pendingResolveTraces: [ResolveTrace] = []
 
     init(sdkId: String, library: Library, libraryVersion: String, debugLogger: DebugLogger? = nil) {
         self.sdkId = sdkId
@@ -26,7 +27,29 @@ class Telemetry: @unchecked Sendable {
     }
 
     enum TraceId: Int {
+        case resolveLatency = 1
         case flagEvaluation = 3
+    }
+
+    enum RequestStatus: Int, CustomStringConvertible {
+        case unspecified = 0
+        case success = 1
+        case error = 2
+        case timeout = 3
+
+        var description: String {
+            switch self {
+            case .unspecified: return "UNSPECIFIED"
+            case .success: return "SUCCESS"
+            case .error: return "ERROR"
+            case .timeout: return "TIMEOUT"
+            }
+        }
+    }
+
+    struct ResolveTrace {
+        let durationMs: UInt64
+        let status: RequestStatus
     }
 
     enum EvaluationReason: Int, CustomStringConvertible {
@@ -62,25 +85,41 @@ class Telemetry: @unchecked Sendable {
         }
     }
 
+    func trackResolveLatency(durationMs: UInt64, status: RequestStatus) {
+        lock.withLock {
+            pendingResolveTraces.append(ResolveTrace(durationMs: durationMs, status: status))
+        }
+    }
+
     /// Returns the base64-encoded Monitoring protobuf, including any accumulated traces (which are then cleared).
     func encodedHeaderValue(for requestType: String) -> String {
-        let traces = snapshotAndClearTraces()
-        let monitoringBytes = encodeMonitoring(evaluationTraces: traces)
+        let (evalTraces, resolveTraces) = snapshotAndClearTraces()
+        let monitoringBytes = encodeMonitoring(
+            evaluationTraces: evalTraces,
+            resolveTraces: resolveTraces
+        )
         let base64 = Data(monitoringBytes).base64EncodedString()
-        let tracesDescription = traces.map { "FLAG_EVALUATION(\($0))" }.joined(separator: ", ")
+
+        var traceDescriptions: [String] = resolveTraces.map {
+            "RESOLVE_LATENCY(\($0.durationMs)ms,\($0.status))"
+        }
+        traceDescriptions += evalTraces.map { "FLAG_EVALUATION(\($0))" }
         debugLogger?.logMessage(
             message: "[Telemetry] \(Self.headerName) on \(requestType) — " +
                 "version=\(libraryVersion), " +
-                "traces=[\(tracesDescription)], base64=\(base64)",
+                "traces=[\(traceDescriptions.joined(separator: ", "))], " +
+                "base64=\(base64)",
             isWarning: false)
         return base64
     }
 
-    private func snapshotAndClearTraces() -> [EvaluationReason] {
+    private func snapshotAndClearTraces() -> ([EvaluationReason], [ResolveTrace]) {
         lock.withLock {
-            let snapshot = pendingEvaluations
+            let evals = pendingEvaluations
+            let resolves = pendingResolveTraces
             pendingEvaluations.removeAll()
-            return snapshot
+            pendingResolveTraces.removeAll()
+            return (evals, resolves)
         }
     }
 
@@ -111,10 +150,16 @@ class Telemetry: @unchecked Sendable {
 // MARK: Protobuf wire-format encoding for the Monitoring message.
 // Matches confidence/telemetry.proto without requiring a SwiftProtobuf dependency.
 extension Telemetry {
-    private func encodeMonitoring(evaluationTraces: [EvaluationReason]) -> [UInt8] {
+    private func encodeMonitoring(
+        evaluationTraces: [EvaluationReason],
+        resolveTraces: [ResolveTrace]
+    ) -> [UInt8] {
         var bytes: [UInt8] = []
 
-        let libraryTracesPayload = encodeLibraryTraces(evaluationTraces: evaluationTraces)
+        let libraryTracesPayload = encodeLibraryTraces(
+            evaluationTraces: evaluationTraces,
+            resolveTraces: resolveTraces
+        )
         bytes.append(contentsOf: fieldKey(fieldNumber: 1, wireType: .lengthDelimited))
         bytes.append(contentsOf: encodeVarint(UInt64(libraryTracesPayload.count)))
         bytes.append(contentsOf: libraryTracesPayload)
@@ -127,7 +172,10 @@ extension Telemetry {
         return bytes
     }
 
-    private func encodeLibraryTraces(evaluationTraces: [EvaluationReason]) -> [UInt8] {
+    private func encodeLibraryTraces(
+        evaluationTraces: [EvaluationReason],
+        resolveTraces: [ResolveTrace]
+    ) -> [UInt8] {
         var bytes: [UInt8] = []
 
         if library.rawValue != 0 {
@@ -140,11 +188,54 @@ extension Telemetry {
         bytes.append(contentsOf: encodeVarint(UInt64(versionBytes.count)))
         bytes.append(contentsOf: versionBytes)
 
+        // Resolve latency traces (field 3: repeated Trace)
+        for trace in resolveTraces {
+            let traceBytes = encodeResolveTrace(trace)
+            bytes.append(contentsOf: fieldKey(fieldNumber: 3, wireType: .lengthDelimited))
+            bytes.append(contentsOf: encodeVarint(UInt64(traceBytes.count)))
+            bytes.append(contentsOf: traceBytes)
+        }
+
+        // Evaluation traces (field 3: repeated Trace)
         for evalReason in evaluationTraces {
             let traceBytes = encodeEvaluationTrace(reason: evalReason)
             bytes.append(contentsOf: fieldKey(fieldNumber: 3, wireType: .lengthDelimited))
             bytes.append(contentsOf: encodeVarint(UInt64(traceBytes.count)))
             bytes.append(contentsOf: traceBytes)
+        }
+
+        return bytes
+    }
+
+    // Trace { id = TRACE_ID_RESOLVE_LATENCY, request_trace = RequestTrace { ms, status } }
+    private func encodeResolveTrace(_ trace: ResolveTrace) -> [UInt8] {
+        var bytes: [UInt8] = []
+
+        // field 1: TraceId id = TRACE_ID_RESOLVE_LATENCY
+        bytes.append(contentsOf: fieldKey(fieldNumber: 1, wireType: .varint))
+        bytes.append(contentsOf: encodeVarint(UInt64(TraceId.resolveLatency.rawValue)))
+
+        // field 3: RequestTrace request_trace (oneof traceData)
+        let requestTracePayload = encodeRequestTrace(trace)
+        bytes.append(contentsOf: fieldKey(fieldNumber: 3, wireType: .lengthDelimited))
+        bytes.append(contentsOf: encodeVarint(UInt64(requestTracePayload.count)))
+        bytes.append(contentsOf: requestTracePayload)
+
+        return bytes
+    }
+
+    // RequestTrace { millisecond_duration, status }
+    private func encodeRequestTrace(_ trace: ResolveTrace) -> [UInt8] {
+        var bytes: [UInt8] = []
+
+        if trace.durationMs != 0 {
+            bytes.append(contentsOf: fieldKey(fieldNumber: 1, wireType: .varint))
+            bytes.append(contentsOf: encodeVarint(trace.durationMs))
+        }
+
+        if trace.status.rawValue != 0 {
+            bytes.append(contentsOf: fieldKey(fieldNumber: 2, wireType: .varint))
+            bytes.append(contentsOf: encodeVarint(UInt64(trace.status.rawValue)))
         }
 
         return bytes

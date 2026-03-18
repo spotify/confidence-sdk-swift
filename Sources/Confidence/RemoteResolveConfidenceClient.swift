@@ -34,8 +34,9 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             sdk: telemetry.sdk
         )
 
+        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue(for: "resolve")]
+        let start = CFAbsoluteTimeGetCurrent()
         do {
-            let headers = [Telemetry.headerName: telemetry.encodedHeaderValue(for: "resolve")]
             let result: HttpClientResult<ResolveFlagsResponse> =
             try await self.httpClient.post(
                 path: ":resolve", data: request, headers: headers
@@ -48,13 +49,24 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                 guard let response = successData.decodedData else {
                     throw ConfidenceError.parseError(message: "Unable to parse request response")
                 }
+                let elapsed = Self.elapsedMs(since: start)
+                telemetry.trackResolveLatency(durationMs: elapsed, status: .success)
                 let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
                     try convert(resolvedFlag: resolvedFlag)
                 }
-                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+                return ResolvesResult(
+                    resolvedValues: resolvedValues,
+                    resolveToken: response.resolveToken
+                )
             case .failure(let errorData):
                 throw handleError(error: errorData)
             }
+        } catch {
+            let elapsed = Self.elapsedMs(since: start)
+            let status: Telemetry.RequestStatus =
+                (error as? URLError)?.code == .timedOut ? .timeout : .error
+            telemetry.trackResolveLatency(durationMs: elapsed, status: status)
+            throw error
         }
     }
 
@@ -89,6 +101,10 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             resolveReason: resolvedFlag.reason,
             shouldApply: true
         )
+    }
+
+    private static func elapsedMs(since start: CFAbsoluteTime) -> UInt64 {
+        UInt64(max(0, (CFAbsoluteTimeGetCurrent() - start) * 1000))
     }
 
     private func handleError(error: Error) -> Error {
