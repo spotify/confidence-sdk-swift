@@ -1,6 +1,6 @@
 import Foundation
 
-class Telemetry {
+class Telemetry: @unchecked Sendable {
     let sdkId: String
     let library: Library
     let libraryVersion: String
@@ -78,6 +78,7 @@ class Telemetry {
         case stale = 2
         case flagNotFound = 3
         case typeMismatch = 4
+        case error = 5
 
         var description: String {
             switch self {
@@ -86,6 +87,7 @@ class Telemetry {
             case .stale: return "STALE"
             case .flagNotFound: return "FLAG_NOT_FOUND"
             case .typeMismatch: return "TYPE_MISMATCH"
+            case .error: return "ERROR"
             }
         }
     }
@@ -98,9 +100,9 @@ class Telemetry {
 
     func trackEvaluation(reason: ResolveReason, errorCode: ErrorCode?) {
         let evalReason = Self.mapEvaluationReason(reason: reason, errorCode: errorCode)
-        lock.lock()
-        pendingEvaluations.append(evalReason)
-        lock.unlock()
+        lock.withLock {
+            pendingEvaluations.append(evalReason)
+        }
     }
 
     /// Returns the base64-encoded Monitoring protobuf, including any accumulated traces (which are then cleared).
@@ -118,11 +120,11 @@ class Telemetry {
     }
 
     private func snapshotAndClearTraces() -> [EvaluationReason] {
-        lock.lock()
-        let snapshot = pendingEvaluations
-        pendingEvaluations.removeAll()
-        lock.unlock()
-        return snapshot
+        lock.withLock {
+            let snapshot = pendingEvaluations
+            pendingEvaluations.removeAll()
+            return snapshot
+        }
     }
 
     static func mapEvaluationReason(reason: ResolveReason, errorCode: ErrorCode?) -> EvaluationReason {
@@ -133,7 +135,7 @@ class Telemetry {
             case .typeMismatch:
                 return .typeMismatch
             default:
-                return .unknown
+                return .error
             }
         }
         switch reason {
@@ -141,6 +143,8 @@ class Telemetry {
             return .success
         case .stale:
             return .stale
+        case .error, .targetingKeyError:
+            return .error
         default:
             return .unknown
         }
