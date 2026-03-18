@@ -1,12 +1,24 @@
-// swiftlint:disable file_length
 import Foundation
+import SwiftProtobuf
 import XCTest
 
 @testable import Confidence
 
+// Type aliases for readability
+private typealias ProtoMonitoring = Confidence_Telemetry_V1_Monitoring
+private typealias ProtoLibraryTraces = Confidence_Telemetry_V1_LibraryTraces
+private typealias ProtoTrace = Confidence_Telemetry_V1_LibraryTraces.Trace
+private typealias ProtoRequestTrace = Confidence_Telemetry_V1_LibraryTraces.Trace.RequestTrace
+private typealias ProtoEvaluationTrace = Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace
+
 class TelemetryTests: XCTestCase {
     private func makeTelemetry(version: String = "1.0.0") -> Telemetry {
         Telemetry(sdkId: "SDK_ID_SWIFT_CONFIDENCE", library: .confidence, libraryVersion: version)
+    }
+
+    private func decodeMonitoring(_ base64: String) throws -> ProtoMonitoring {
+        let data = try XCTUnwrap(Data(base64Encoded: base64))
+        return try ProtoMonitoring(serializedBytes: data)
     }
 
     // MARK: - mapEvaluationReason
@@ -93,157 +105,151 @@ class TelemetryTests: XCTestCase {
 
     // MARK: - Snapshot and clear
 
-    func testEncodedHeaderClearsTraces() {
+    func testEncodedHeaderClearsTraces() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
         telemetry.trackResolveLatency(durationMs: 100, status: .success)
 
-        let first = decodeMonitoring(telemetry.encodedHeaderValue())
-        let firstTraces = first.libraryTraces.first
-        XCTAssertNotNil(firstTraces)
-        XCTAssertFalse(firstTraces?.traces.isEmpty ?? true)
+        let first = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertFalse(first.libraryTraces[0].traces.isEmpty)
 
-        let second = decodeMonitoring(telemetry.encodedHeaderValue())
-        let secondTraces = second.libraryTraces.first
-        XCTAssertNotNil(secondTraces)
-        XCTAssertTrue(secondTraces?.traces.isEmpty ?? false)
+        let second = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertTrue(second.libraryTraces[0].traces.isEmpty)
     }
 
     // MARK: - Protobuf encoding: baseline (no traces)
 
-    func testEncodingBaseline() {
+    func testEncodingBaseline() throws {
         let telemetry = makeTelemetry(version: "1.4.5")
-        let monitoring = decodeMonitoring(telemetry.encodedHeaderValue())
+        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
 
-        XCTAssertEqual(monitoring.platform, 3)  // SWIFT
+        XCTAssertEqual(monitoring.platform, .swift)
         XCTAssertEqual(monitoring.libraryTraces.count, 1)
 
         let lib = monitoring.libraryTraces[0]
-        XCTAssertEqual(lib.library, 1)  // CONFIDENCE
-        XCTAssertEqual(lib.version, "1.4.5")
+        XCTAssertEqual(lib.library, .confidence)
+        XCTAssertEqual(lib.libraryVersion, "1.4.5")
         XCTAssertTrue(lib.traces.isEmpty)
     }
 
     // MARK: - Protobuf encoding: evaluation traces
 
-    func testEncodingEvaluationTrace_success() {
+    func testEncodingEvaluationTrace_success() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
 
-        let monitoring = decodeMonitoring(telemetry.encodedHeaderValue())
+        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
         let traces = monitoring.libraryTraces[0].traces
         XCTAssertEqual(traces.count, 1)
 
         let trace = traces[0]
-        XCTAssertEqual(trace.traceId, 3)  // FLAG_EVALUATION
-        XCTAssertNotNil(trace.evaluationTrace)
-        XCTAssertEqual(trace.evaluationTrace?.evaluationReason, 1)  // SUCCESS
+        XCTAssertEqual(trace.id, .flagEvaluation)
+        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .success)
     }
 
-    func testEncodingEvaluationTrace_stale() {
+    func testEncodingEvaluationTrace_stale() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
 
-        let trace = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace?.evaluationReason, 2)  // STALE
+        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        XCTAssertEqual(trace.id, .flagEvaluation)
+        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .stale)
     }
 
-    func testEncodingEvaluationTrace_typeMismatch() {
+    func testEncodingEvaluationTrace_typeMismatch() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: .typeMismatch())
 
-        let trace = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace?.evaluationReason, 4)  // TYPE_MISMATCH
+        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .typeMismatch)
     }
 
-    func testEncodingEvaluationTrace_flagNotFound() {
+    func testEncodingEvaluationTrace_flagNotFound() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: .flagNotFound)
 
-        let trace = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace?.evaluationReason, 3)  // FLAG_NOT_FOUND
+        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .flagNotFound)
     }
 
-    func testEncodingEvaluationTrace_error() {
+    func testEncodingEvaluationTrace_error() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .error, errorCode: nil)
 
-        let trace = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace?.evaluationReason, 5)  // ERROR
+        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .error)
     }
 
-    func testEncodingMultipleEvaluationTraces() {
+    func testEncodingMultipleEvaluationTraces() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
         telemetry.trackEvaluation(reason: .match, errorCode: .typeMismatch())
 
-        let traces = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 3)
-        XCTAssertEqual(traces[0].evaluationTrace?.evaluationReason, 1)  // SUCCESS
-        XCTAssertEqual(traces[1].evaluationTrace?.evaluationReason, 2)  // STALE
-        XCTAssertEqual(traces[2].evaluationTrace?.evaluationReason, 4)  // TYPE_MISMATCH
+        XCTAssertEqual(traces[0].evaluationTrace.evaluationReason, .success)
+        XCTAssertEqual(traces[1].evaluationTrace.evaluationReason, .stale)
+        XCTAssertEqual(traces[2].evaluationTrace.evaluationReason, .typeMismatch)
     }
 
     // MARK: - Protobuf encoding: resolve traces
 
-    func testEncodingResolveTrace_success() {
+    func testEncodingResolveTrace_success() throws {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 42, status: .success)
 
-        let traces = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 1)
 
         let trace = traces[0]
-        XCTAssertEqual(trace.traceId, 1)  // RESOLVE_LATENCY
-        XCTAssertNotNil(trace.requestTrace)
-        XCTAssertEqual(trace.requestTrace?.millisecondDuration, 42)
-        XCTAssertEqual(trace.requestTrace?.status, 1)  // SUCCESS
+        XCTAssertEqual(trace.id, .resolveLatency)
+        XCTAssertEqual(trace.requestTrace.millisecondDuration, 42)
+        XCTAssertEqual(trace.requestTrace.status, .success)
     }
 
-    func testEncodingResolveTrace_error() {
+    func testEncodingResolveTrace_error() throws {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 500, status: .error)
 
-        let trace = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.requestTrace?.millisecondDuration, 500)
-        XCTAssertEqual(trace.requestTrace?.status, 2)  // ERROR
+        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        XCTAssertEqual(trace.requestTrace.millisecondDuration, 500)
+        XCTAssertEqual(trace.requestTrace.status, .error)
     }
 
-    func testEncodingResolveTrace_timeout() {
+    func testEncodingResolveTrace_timeout() throws {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 30000, status: .timeout)
 
-        let trace = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.requestTrace?.millisecondDuration, 30000)
-        XCTAssertEqual(trace.requestTrace?.status, 3)  // TIMEOUT
+        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        XCTAssertEqual(trace.requestTrace.millisecondDuration, 30000)
+        XCTAssertEqual(trace.requestTrace.status, .timeout)
     }
 
     // MARK: - Protobuf encoding: mixed traces
 
-    func testEncodingMixedTraces() {
+    func testEncodingMixedTraces() throws {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 150, status: .success)
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
 
-        let traces = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 3)
 
-        // Resolve traces come first in encoding order
-        XCTAssertEqual(traces[0].traceId, 1)  // RESOLVE_LATENCY
-        XCTAssertNotNil(traces[0].requestTrace)
+        XCTAssertEqual(traces[0].id, .resolveLatency)
+        XCTAssertEqual(traces[0].requestTrace.status, .success)
 
-        XCTAssertEqual(traces[1].traceId, 3)  // FLAG_EVALUATION
-        XCTAssertNotNil(traces[1].evaluationTrace)
+        XCTAssertEqual(traces[1].id, .flagEvaluation)
+        XCTAssertEqual(traces[1].evaluationTrace.evaluationReason, .success)
 
-        XCTAssertEqual(traces[2].traceId, 3)  // FLAG_EVALUATION
-        XCTAssertNotNil(traces[2].evaluationTrace)
+        XCTAssertEqual(traces[2].id, .flagEvaluation)
+        XCTAssertEqual(traces[2].evaluationTrace.evaluationReason, .stale)
     }
 
     // MARK: - Thread safety
 
-    func testConcurrentTracking() {
+    func testConcurrentTracking() throws {
         let telemetry = makeTelemetry()
         let group = DispatchGroup()
         let iterations = 100
@@ -264,177 +270,7 @@ class TelemetryTests: XCTestCase {
         }
 
         group.wait()
-        let traces = decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, iterations * 2)
     }
 }
-
-// MARK: - Lightweight protobuf decoder for test verification
-
-extension TelemetryTests {
-    struct DecodedMonitoring {
-        var libraryTraces: [DecodedLibraryTraces] = []
-        var platform: Int = 0
-    }
-
-    struct DecodedLibraryTraces {
-        var library: Int = 0
-        var version: String = ""
-        var traces: [DecodedTrace] = []
-    }
-
-    struct DecodedTrace {
-        var traceId: Int = 0
-        var requestTrace: DecodedRequestTrace?
-        var evaluationTrace: DecodedEvaluationTrace?
-    }
-
-    struct DecodedRequestTrace {
-        var millisecondDuration: UInt64 = 0
-        var status: Int = 0
-    }
-
-    struct DecodedEvaluationTrace {
-        var evaluationReason: Int = 0
-    }
-
-    func decodeMonitoring(_ base64: String) -> DecodedMonitoring {
-        guard let data = Data(base64Encoded: base64) else {
-            XCTFail("Invalid base64")
-            return DecodedMonitoring()
-        }
-        let bytes = [UInt8](data)
-        var offset = 0
-        var monitoring = DecodedMonitoring()
-
-        while offset < bytes.count {
-            let (fieldNumber, wireType) = readFieldKey(bytes, &offset)
-            switch (fieldNumber, wireType) {
-            case (1, 2):
-                let payload = readLengthDelimited(bytes, &offset)
-                monitoring.libraryTraces.append(decodeLibraryTraces(payload))
-            case (2, 0):
-                monitoring.platform = Int(readVarint(bytes, &offset))
-            default:
-                skipField(bytes, &offset, wireType: wireType)
-            }
-        }
-        return monitoring
-    }
-
-    private func decodeLibraryTraces(_ bytes: [UInt8]) -> DecodedLibraryTraces {
-        var offset = 0
-        var lib = DecodedLibraryTraces()
-
-        while offset < bytes.count {
-            let (fieldNumber, wireType) = readFieldKey(bytes, &offset)
-            switch (fieldNumber, wireType) {
-            case (1, 0):
-                lib.library = Int(readVarint(bytes, &offset))
-            case (2, 2):
-                let payload = readLengthDelimited(bytes, &offset)
-                lib.version = String(bytes: payload, encoding: .utf8) ?? ""
-            case (3, 2):
-                let payload = readLengthDelimited(bytes, &offset)
-                lib.traces.append(decodeTrace(payload))
-            default:
-                skipField(bytes, &offset, wireType: wireType)
-            }
-        }
-        return lib
-    }
-
-    private func decodeTrace(_ bytes: [UInt8]) -> DecodedTrace {
-        var offset = 0
-        var trace = DecodedTrace()
-
-        while offset < bytes.count {
-            let (fieldNumber, wireType) = readFieldKey(bytes, &offset)
-            switch (fieldNumber, wireType) {
-            case (1, 0):
-                trace.traceId = Int(readVarint(bytes, &offset))
-            case (3, 2):
-                let payload = readLengthDelimited(bytes, &offset)
-                trace.requestTrace = decodeRequestTrace(payload)
-            case (5, 2):
-                let payload = readLengthDelimited(bytes, &offset)
-                trace.evaluationTrace = decodeEvaluationTrace(payload)
-            default:
-                skipField(bytes, &offset, wireType: wireType)
-            }
-        }
-        return trace
-    }
-
-    private func decodeRequestTrace(_ bytes: [UInt8]) -> DecodedRequestTrace {
-        var offset = 0
-        var trace = DecodedRequestTrace()
-
-        while offset < bytes.count {
-            let (fieldNumber, wireType) = readFieldKey(bytes, &offset)
-            switch (fieldNumber, wireType) {
-            case (1, 0):
-                trace.millisecondDuration = readVarint(bytes, &offset)
-            case (2, 0):
-                trace.status = Int(readVarint(bytes, &offset))
-            default:
-                skipField(bytes, &offset, wireType: wireType)
-            }
-        }
-        return trace
-    }
-
-    private func decodeEvaluationTrace(_ bytes: [UInt8]) -> DecodedEvaluationTrace {
-        var offset = 0
-        var trace = DecodedEvaluationTrace()
-
-        while offset < bytes.count {
-            let (fieldNumber, wireType) = readFieldKey(bytes, &offset)
-            switch (fieldNumber, wireType) {
-            case (1, 0):
-                trace.evaluationReason = Int(readVarint(bytes, &offset))
-            default:
-                skipField(bytes, &offset, wireType: wireType)
-            }
-        }
-        return trace
-    }
-
-    // MARK: Wire format primitives
-
-    private func readVarint(_ bytes: [UInt8], _ offset: inout Int) -> UInt64 {
-        var result: UInt64 = 0
-        var shift: UInt64 = 0
-        while offset < bytes.count {
-            let byte = bytes[offset]
-            offset += 1
-            result |= UInt64(byte & 0x7F) << shift
-            if byte & 0x80 == 0 { break }
-            shift += 7
-        }
-        return result
-    }
-
-    private func readFieldKey(_ bytes: [UInt8], _ offset: inout Int) -> (fieldNumber: Int, wireType: Int) {
-        let tag = readVarint(bytes, &offset)
-        return (Int(tag >> 3), Int(tag & 0x07))
-    }
-
-    private func readLengthDelimited(_ bytes: [UInt8], _ offset: inout Int) -> [UInt8] {
-        let length = Int(readVarint(bytes, &offset))
-        let payload = Array(bytes[offset..<(offset + length)])
-        offset += length
-        return payload
-    }
-
-    private func skipField(_ bytes: [UInt8], _ offset: inout Int, wireType: Int) {
-        switch wireType {
-        case 0: _ = readVarint(bytes, &offset)
-        case 2: _ = readLengthDelimited(bytes, &offset)
-        case 1: offset += 8
-        case 5: offset += 4
-        default: break
-        }
-    }
-}
-// swiftlint:enable file_length

@@ -19,6 +19,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/open-feature/swift-sdk.git", .exact("0.5.0")),
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.20.2"),
     ],
     targets: [
         .target(
@@ -44,6 +45,7 @@ let package = Package(
             name: "ConfidenceTests",
             dependencies: [
                 "Confidence",
+                .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ]
         ),
     ]
