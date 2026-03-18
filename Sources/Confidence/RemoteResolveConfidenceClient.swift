@@ -35,9 +35,10 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         )
 
         do {
+            let headers = [Telemetry.headerName: telemetry.encodedHeaderValue(for: "resolve")]
             let result: HttpClientResult<ResolveFlagsResponse> =
             try await self.httpClient.post(
-                path: ":resolve", data: request, headers: [Telemetry.headerName: telemetry.encodedHeaderValue(for: "resolve")]
+                path: ":resolve", data: request, headers: headers
             )
             switch result {
             case .success(let successData):
