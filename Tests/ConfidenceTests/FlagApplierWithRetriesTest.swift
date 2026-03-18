@@ -523,7 +523,7 @@ class FlagApplierWithRetriesTest: XCTestCase {
 
     // MARK: Telemetry counters
 
-    func testTelemetry_reportIncrementsErrorCounterAndSends() async throws {
+    func testTelemetry_reportAccumulatesThenFlushSends() async throws {
         let counters = TelemetryCounterInteractor(state: .empty())
         let applier = FlagApplierWithRetries(
             httpClient: httpClient,
@@ -540,6 +540,12 @@ class FlagApplierWithRetriesTest: XCTestCase {
             errorCode: .flagNotFound,
             errorMessage: "Flag 'missing-flag' not found"
         )
+
+        // report() does not send
+        XCTAssertEqual(httpClient.postCallCounter, 0)
+
+        // flush() sends accumulated counters
+        await applier.flush()
 
         XCTAssertGreaterThanOrEqual(httpClient.postCallCounter, 1)
 
@@ -592,9 +598,10 @@ class FlagApplierWithRetriesTest: XCTestCase {
         await applier.trackResolve(reason: .match)
         await applier.trackResolve(reason: .match)
         await applier.trackResolve(reason: .stale)
-
-        // Trigger a batch via report (which also adds a client error)
         await applier.report(flagName: "test", errorCode: .evaluationError, errorMessage: nil)
+
+        // flush() sends accumulated telemetry counters
+        await applier.flush()
 
         let request = try XCTUnwrap(httpClient.data?.last as? WriteFlagLogsRequest)
         let resolveRates = try XCTUnwrap(request.telemetryData?.resolveRate)
@@ -609,11 +616,10 @@ class FlagApplierWithRetriesTest: XCTestCase {
         XCTAssertTrue(state.isEmpty)
     }
 
-    func testTelemetry_reportOffline_persistsCounters() async throws {
-        let offlineClient = HttpClientMock(testMode: .offline)
+    func testTelemetry_reportAccumulatesWithoutSending() async throws {
         let counters = TelemetryCounterInteractor(state: .empty())
         let applier = FlagApplierWithRetries(
-            httpClient: offlineClient,
+            httpClient: httpClient,
             applyStorage: applyStorage,
             telemetryStorage: telemetryStorage,
             options: options,
@@ -628,7 +634,29 @@ class FlagApplierWithRetriesTest: XCTestCase {
             errorMessage: nil
         )
 
-        // On failure, counters are restored
+        // report() accumulates counters but does not trigger a network request
+        let state = await counters.currentState
+        XCTAssertEqual(state.clientErrors["TYPE_MISMATCH"], 1)
+        XCTAssertEqual(httpClient.postCallCounter, 0)
+    }
+
+    func testTelemetry_flushOffline_restoresCounters() async throws {
+        let offlineClient = HttpClientMock(testMode: .offline)
+        let counters = TelemetryCounterInteractor(state: .empty())
+        let applier = FlagApplierWithRetries(
+            httpClient: offlineClient,
+            applyStorage: applyStorage,
+            telemetryStorage: telemetryStorage,
+            options: options,
+            metadata: metadata,
+            telemetryCounters: counters,
+            triggerBatch: false
+        )
+
+        await applier.report(flagName: "my-flag", errorCode: .typeMismatch(), errorMessage: nil)
+        await applier.flush()
+
+        // On flush failure, counters are restored
         let state = await counters.currentState
         XCTAssertEqual(state.clientErrors["TYPE_MISMATCH"], 1)
     }

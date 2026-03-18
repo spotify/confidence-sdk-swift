@@ -109,9 +109,7 @@ public class Confidence: ConfidenceEventSender {
             resolveToken: resolvedFlags.resolveToken ?? ""
         )
         try storage.save(data: resolution)
-        for flag in resolvedFlags.resolvedValues {
-            await telemetryProducer?.trackResolve(reason: flag.resolveReason)
-        }
+        await telemetryProducer?.flush()
     }
 
     /**

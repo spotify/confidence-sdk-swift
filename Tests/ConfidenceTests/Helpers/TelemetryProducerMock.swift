@@ -16,6 +16,7 @@ class TelemetryProducerMock: TelemetryProducer {
 
     var trackResolveCallCount = 0
     var trackedReasons: [ResolveReason] = []
+    var flushCallCount = 0
 
     init(expectedReports: Int = 1) {
         reportExpectation.expectedFulfillmentCount = expectedReports
@@ -30,5 +31,9 @@ class TelemetryProducerMock: TelemetryProducer {
     func trackResolve(reason: ResolveReason) async {
         trackResolveCallCount += 1
         trackedReasons.append(reason)
+    }
+
+    func flush() async {
+        flushCallCount += 1
     }
 }

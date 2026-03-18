@@ -85,6 +85,7 @@ extension FlagResolution {
                 Task {
                     if resolvedFlag.shouldApply {
                         await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                        await telemetryProducer?.trackResolve(reason: resolvedFlag.resolveReason)
                     }
                 }
                 return Evaluation(
@@ -103,18 +104,12 @@ extension FlagResolution {
                 var resolveReason: ResolveReason = .match
                 if self.context != context {
                     resolveReason = .stale
-                    Task {
-                        await telemetryProducer?.report(
-                            flagName: parsedKey.flag,
-                            errorCode: .evaluationError,
-                            errorMessage: "Stale evaluation: context changed since last resolve"
-                        )
-                    }
                 }
                 if let typedValue = typedValue {
                     Task {
                         if resolvedFlag.shouldApply {
                             await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                            await telemetryProducer?.trackResolve(reason: resolveReason)
                         }
                     }
                     return Evaluation(
@@ -129,6 +124,7 @@ extension FlagResolution {
                         Task {
                             if resolvedFlag.shouldApply {
                                 await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                                await telemetryProducer?.trackResolve(reason: resolveReason)
                             }
                         }
                         return Evaluation(
@@ -158,6 +154,7 @@ extension FlagResolution {
                 Task {
                     if resolvedFlag.shouldApply {
                         await flagApplier?.apply(flagName: parsedKey.flag, resolveToken: self.resolveToken)
+                        await telemetryProducer?.trackResolve(reason: resolvedFlag.resolveReason)
                     }
                 }
                 return Evaluation(

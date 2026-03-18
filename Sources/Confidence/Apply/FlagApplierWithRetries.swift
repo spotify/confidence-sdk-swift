@@ -75,7 +75,6 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
             message: "Telemetry reported: \(errorCode.serialized) for flag '\(flagName)'",
             isWarning: false
         )
-        await triggerBatch()
     }
 
     func trackResolve(reason: ResolveReason) async {
@@ -85,6 +84,10 @@ final class FlagApplierWithRetries: FlagApplier, TelemetryProducer {
             message: "Telemetry trackResolve: \(reason.rawValue)",
             isWarning: false
         )
+    }
+
+    func flush() async {
+        await sendTelemetryCounters()
     }
 
     // MARK: Private
