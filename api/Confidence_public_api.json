@@ -3,6 +3,10 @@
     "className": "Confidence",
     "apiFunctions": [
       {
+        "name": "setTelemetryLibraryOpenFeature()",
+        "declaration": "public func setTelemetryLibraryOpenFeature()"
+      },
+      {
         "name": "activate()",
         "declaration": "public func activate() throws"
       },
