@@ -40,6 +40,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         self.metadata = Metadata(name: ConfidenceFeatureProvider.providerId)
         self.initializationStrategy = initializationStrategy
         self.confidence = confidence
+        confidence.setTelemetryLibrary(.openFeature)
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws {

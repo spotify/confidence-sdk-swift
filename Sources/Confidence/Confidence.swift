@@ -31,6 +31,10 @@ public class Confidence: ConfidenceEventSender {
 
     public static let sdkId: String = "SDK_ID_SWIFT_CONFIDENCE"
 
+    public func setTelemetryLibrary(_ library: Telemetry.Library) {
+        telemetry.library = library
+    }
+
     required init(
         clientSecret: String,
         region: ConfidenceRegion,

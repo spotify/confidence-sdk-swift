@@ -2,7 +2,7 @@ import Foundation
 
 class Telemetry: @unchecked Sendable {
     let sdkId: String
-    let library: Library
+    private(set) var library: Library
     let libraryVersion: String
     let platform: Platform = .swift
     private let debugLogger: DebugLogger?
@@ -24,6 +24,7 @@ class Telemetry: @unchecked Sendable {
 
     enum Library: Int {
         case confidence = 1
+        case openFeature = 2
     }
 
     enum TraceId: Int {
