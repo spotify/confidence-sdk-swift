@@ -2,7 +2,7 @@ import Foundation
 
 class Telemetry: @unchecked Sendable {
     let sdkId: String
-    private(set) var library: Library
+    internal var library: Library
     let libraryVersion: String
     let platform: Platform = .swift
     private let debugLogger: DebugLogger?
@@ -144,6 +144,7 @@ class Telemetry: @unchecked Sendable {
         }
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     static func mapEvaluationReason(
         reason: ResolveReason, errorCode: ErrorCode?
     ) -> (reason: EvaluationReason, errorCode: EvaluationErrorCode) {

@@ -31,8 +31,8 @@ public class Confidence: ConfidenceEventSender {
 
     public static let sdkId: String = "SDK_ID_SWIFT_CONFIDENCE"
 
-    public func setTelemetryLibrary(_ library: Telemetry.Library) {
-        telemetry.library = library
+    public func setTelemetryLibraryOpenFeature() {
+        telemetry.library = .openFeature
     }
 
     required init(
