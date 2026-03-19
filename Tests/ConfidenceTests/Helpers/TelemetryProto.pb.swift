@@ -179,21 +179,19 @@ struct Confidence_Telemetry_V1_LibraryTraces: Sendable {
 
   enum TraceId: SwiftProtobuf.Enum, Swift.CaseIterable {
     typealias RawValue = Int
-    case unknown // = 0
+    case unspecified // = 0
     case resolveLatency // = 1
-
-    /// TODO deprecate?
-    case staleFlag // = 2
+    case staleFlag // = 2 [deprecated]
     case flagEvaluation // = 3
     case UNRECOGNIZED(Int)
 
     init() {
-      self = .unknown
+      self = .unspecified
     }
 
     init?(rawValue: Int) {
       switch rawValue {
-      case 0: self = .unknown
+      case 0: self = .unspecified
       case 1: self = .resolveLatency
       case 2: self = .staleFlag
       case 3: self = .flagEvaluation
@@ -203,7 +201,7 @@ struct Confidence_Telemetry_V1_LibraryTraces: Sendable {
 
     var rawValue: Int {
       switch self {
-      case .unknown: return 0
+      case .unspecified: return 0
       case .resolveLatency: return 1
       case .staleFlag: return 2
       case .flagEvaluation: return 3
@@ -213,7 +211,7 @@ struct Confidence_Telemetry_V1_LibraryTraces: Sendable {
 
     // The compiler won't synthesize support with the UNRECOGNIZED case.
     static let allCases: [Confidence_Telemetry_V1_LibraryTraces.TraceId] = [
-      .unknown,
+      .unspecified,
       .resolveLatency,
       .staleFlag,
       .flagEvaluation,
@@ -226,7 +224,7 @@ struct Confidence_Telemetry_V1_LibraryTraces: Sendable {
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
 
-    var id: Confidence_Telemetry_V1_LibraryTraces.TraceId = .unknown
+    var id: Confidence_Telemetry_V1_LibraryTraces.TraceId = .unspecified
 
     var traceData: Confidence_Telemetry_V1_LibraryTraces.Trace.OneOf_TraceData? = nil
 
@@ -349,56 +347,132 @@ struct Confidence_Telemetry_V1_LibraryTraces: Sendable {
       // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
       // methods supported on all messages.
 
-      var evaluationReason: Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationReason = .unknown
+      var reason: Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationReason = .unspecified
+
+      var errorCode: Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationErrorCode = .unspecified
 
       var unknownFields = SwiftProtobuf.UnknownStorage()
 
       enum EvaluationReason: SwiftProtobuf.Enum, Swift.CaseIterable {
         typealias RawValue = Int
-        case unknown // = 0
-        case success // = 1
-        case stale // = 2
-        case flagNotFound // = 3
-        case typeMismatch // = 4
-        case error // = 5
+        case unspecified // = 0
+        case targetingMatch // = 1
+        case `default` // = 2
+        case stale // = 3
+        case disabled // = 4
+        case cached // = 5
+        case `static` // = 6
+        case split // = 7
+        case error // = 8
         case UNRECOGNIZED(Int)
 
         init() {
-          self = .unknown
+          self = .unspecified
         }
 
         init?(rawValue: Int) {
           switch rawValue {
-          case 0: self = .unknown
-          case 1: self = .success
-          case 2: self = .stale
-          case 3: self = .flagNotFound
-          case 4: self = .typeMismatch
-          case 5: self = .error
+          case 0: self = .unspecified
+          case 1: self = .targetingMatch
+          case 2: self = .default
+          case 3: self = .stale
+          case 4: self = .disabled
+          case 5: self = .cached
+          case 6: self = .static
+          case 7: self = .split
+          case 8: self = .error
           default: self = .UNRECOGNIZED(rawValue)
           }
         }
 
         var rawValue: Int {
           switch self {
-          case .unknown: return 0
-          case .success: return 1
-          case .stale: return 2
-          case .flagNotFound: return 3
-          case .typeMismatch: return 4
-          case .error: return 5
+          case .unspecified: return 0
+          case .targetingMatch: return 1
+          case .default: return 2
+          case .stale: return 3
+          case .disabled: return 4
+          case .cached: return 5
+          case .static: return 6
+          case .split: return 7
+          case .error: return 8
           case .UNRECOGNIZED(let i): return i
           }
         }
 
         // The compiler won't synthesize support with the UNRECOGNIZED case.
         static let allCases: [Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationReason] = [
-          .unknown,
-          .success,
+          .unspecified,
+          .targetingMatch,
+          .default,
           .stale,
-          .flagNotFound,
-          .typeMismatch,
+          .disabled,
+          .cached,
+          .static,
+          .split,
           .error,
+        ]
+
+      }
+
+      enum EvaluationErrorCode: SwiftProtobuf.Enum, Swift.CaseIterable {
+        typealias RawValue = Int
+        case unspecified // = 0
+        case providerNotReady // = 1
+        case flagNotFound // = 2
+        case parseError // = 3
+        case typeMismatch // = 4
+        case targetingKeyMissing // = 5
+        case invalidContext // = 6
+        case providerFatal // = 7
+        case general // = 8
+        case UNRECOGNIZED(Int)
+
+        init() {
+          self = .unspecified
+        }
+
+        init?(rawValue: Int) {
+          switch rawValue {
+          case 0: self = .unspecified
+          case 1: self = .providerNotReady
+          case 2: self = .flagNotFound
+          case 3: self = .parseError
+          case 4: self = .typeMismatch
+          case 5: self = .targetingKeyMissing
+          case 6: self = .invalidContext
+          case 7: self = .providerFatal
+          case 8: self = .general
+          default: self = .UNRECOGNIZED(rawValue)
+          }
+        }
+
+        var rawValue: Int {
+          switch self {
+          case .unspecified: return 0
+          case .providerNotReady: return 1
+          case .flagNotFound: return 2
+          case .parseError: return 3
+          case .typeMismatch: return 4
+          case .targetingKeyMissing: return 5
+          case .invalidContext: return 6
+          case .providerFatal: return 7
+          case .general: return 8
+          case .UNRECOGNIZED(let i): return i
+          }
+        }
+
+        // The compiler won't synthesize support with the UNRECOGNIZED case.
+        static let allCases: [Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationErrorCode] = [
+          .unspecified,
+          .providerNotReady,
+          .flagNotFound,
+          .parseError,
+          .typeMismatch,
+          .targetingKeyMissing,
+          .invalidContext,
+          .providerFatal,
+          .general,
         ]
 
       }
@@ -582,7 +656,7 @@ extension Confidence_Telemetry_V1_LibraryTraces.Library: SwiftProtobuf._ProtoNam
 }
 
 extension Confidence_Telemetry_V1_LibraryTraces.TraceId: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0TRACE_ID_UNKNOWN\0\u{1}TRACE_ID_RESOLVE_LATENCY\0\u{1}TRACE_ID_STALE_FLAG\0\u{1}TRACE_ID_FLAG_EVALUATION\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0TRACE_ID_UNSPECIFIED\0\u{1}TRACE_ID_RESOLVE_LATENCY\0\u{1}TRACE_ID_STALE_FLAG\0\u{1}TRACE_ID_FLAG_EVALUATION\0")
 }
 
 extension Confidence_Telemetry_V1_LibraryTraces.Trace: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
@@ -653,7 +727,7 @@ extension Confidence_Telemetry_V1_LibraryTraces.Trace: SwiftProtobuf.Message, Sw
     // allocates stack space for every if/case branch local when no optimizations
     // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
     // https://github.com/apple/swift-protobuf/issues/1182
-    if self.id != .unknown {
+    if self.id != .unspecified {
       try visitor.visitSingularEnumField(value: self.id, fieldNumber: 1)
     }
     switch self.traceData {
@@ -746,34 +820,40 @@ extension Confidence_Telemetry_V1_LibraryTraces.Trace.RequestTrace.Status: Swift
 
 extension Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = Confidence_Telemetry_V1_LibraryTraces.Trace.protoMessageName + ".EvaluationTrace"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}evaluation_reason\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}reason\0\u{3}error_code\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularEnumField(value: &self.evaluationReason) }()
+      case 1: try { try decoder.decodeSingularEnumField(value: &self.reason) }()
+      case 2: try { try decoder.decodeSingularEnumField(value: &self.errorCode) }()
       default: break
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.evaluationReason != .unknown {
-      try visitor.visitSingularEnumField(value: self.evaluationReason, fieldNumber: 1)
+    if self.reason != .unspecified {
+      try visitor.visitSingularEnumField(value: self.reason, fieldNumber: 1)
+    }
+    if self.errorCode != .unspecified {
+      try visitor.visitSingularEnumField(value: self.errorCode, fieldNumber: 2)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace, rhs: Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace) -> Bool {
-    if lhs.evaluationReason != rhs.evaluationReason {return false}
+    if lhs.reason != rhs.reason {return false}
+    if lhs.errorCode != rhs.errorCode {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
 extension Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationReason: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0EVALUATION_REASON_UNKNOWN\0\u{1}EVALUATION_REASON_SUCCESS\0\u{1}EVALUATION_REASON_STALE\0\u{1}EVALUATION_REASON_FLAG_NOT_FOUND\0\u{1}EVALUATION_REASON_TYPE_MISMATCH\0\u{1}EVALUATION_REASON_ERROR\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0EVALUATION_REASON_UNSPECIFIED\0\u{1}EVALUATION_REASON_TARGETING_MATCH\0\u{1}EVALUATION_REASON_DEFAULT\0\u{1}EVALUATION_REASON_STALE\0\u{1}EVALUATION_REASON_DISABLED\0\u{1}EVALUATION_REASON_CACHED\0\u{1}EVALUATION_REASON_STATIC\0\u{1}EVALUATION_REASON_SPLIT\0\u{1}EVALUATION_REASON_ERROR\0")
+}
+
+extension Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace.EvaluationErrorCode: SwiftProtobuf._ProtoNameProviding {
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0EVALUATION_ERROR_CODE_UNSPECIFIED\0\u{1}EVALUATION_ERROR_CODE_PROVIDER_NOT_READY\0\u{1}EVALUATION_ERROR_CODE_FLAG_NOT_FOUND\0\u{1}EVALUATION_ERROR_CODE_PARSE_ERROR\0\u{1}EVALUATION_ERROR_CODE_TYPE_MISMATCH\0\u{1}EVALUATION_ERROR_CODE_TARGETING_KEY_MISSING\0\u{1}EVALUATION_ERROR_CODE_INVALID_CONTEXT\0\u{1}EVALUATION_ERROR_CODE_PROVIDER_FATAL\0\u{1}EVALUATION_ERROR_CODE_GENERAL\0")
 }

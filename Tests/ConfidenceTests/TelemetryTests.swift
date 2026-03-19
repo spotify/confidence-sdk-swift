@@ -25,82 +25,98 @@ class TelemetryTests: XCTestCase {
 
     func testMapReason_errorCode_flagNotFound() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .flagNotFound)
-        XCTAssertEqual(result, .flagNotFound)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .flagNotFound)
     }
 
     func testMapReason_errorCode_typeMismatch() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .typeMismatch())
-        XCTAssertEqual(result, .typeMismatch)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .typeMismatch)
     }
 
     func testMapReason_errorCode_evaluationError() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .evaluationError)
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .general)
     }
 
     func testMapReason_errorCode_providerNotReady() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .providerNotReady)
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .providerNotReady)
     }
 
     func testMapReason_errorCode_parseError() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .parseError(message: "bad"))
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .parseError)
     }
 
     func testMapReason_errorCode_generalError() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .generalError(message: "oops"))
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .general)
     }
 
     func testMapReason_errorCode_invalidContext() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: .invalidContext)
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .invalidContext)
     }
 
     func testMapReason_match() {
         let result = Telemetry.mapEvaluationReason(reason: .match, errorCode: nil)
-        XCTAssertEqual(result, .success)
+        XCTAssertEqual(result.reason, .targetingMatch)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     func testMapReason_noSegmentMatch() {
         let result = Telemetry.mapEvaluationReason(reason: .noSegmentMatch, errorCode: nil)
-        XCTAssertEqual(result, .success)
+        XCTAssertEqual(result.reason, .default)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     func testMapReason_noTreatmentMatch() {
         let result = Telemetry.mapEvaluationReason(reason: .noTreatmentMatch, errorCode: nil)
-        XCTAssertEqual(result, .success)
+        XCTAssertEqual(result.reason, .default)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     func testMapReason_stale() {
         let result = Telemetry.mapEvaluationReason(reason: .stale, errorCode: nil)
-        XCTAssertEqual(result, .stale)
+        XCTAssertEqual(result.reason, .stale)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     func testMapReason_archived() {
         let result = Telemetry.mapEvaluationReason(reason: .archived, errorCode: nil)
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .disabled)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     func testMapReason_error() {
         let result = Telemetry.mapEvaluationReason(reason: .error, errorCode: nil)
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .general)
     }
 
     func testMapReason_targetingKeyError() {
         let result = Telemetry.mapEvaluationReason(reason: .targetingKeyError, errorCode: nil)
-        XCTAssertEqual(result, .error)
+        XCTAssertEqual(result.reason, .error)
+        XCTAssertEqual(result.errorCode, .targetingKeyMissing)
     }
 
     func testMapReason_unspecified() {
         let result = Telemetry.mapEvaluationReason(reason: .unspecified, errorCode: nil)
-        XCTAssertEqual(result, .unknown)
+        XCTAssertEqual(result.reason, .unspecified)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     func testMapReason_unknown() {
         let result = Telemetry.mapEvaluationReason(reason: .unknown, errorCode: nil)
-        XCTAssertEqual(result, .unknown)
+        XCTAssertEqual(result.reason, .unspecified)
+        XCTAssertEqual(result.errorCode, .unspecified)
     }
 
     // MARK: - Snapshot and clear
@@ -134,7 +150,7 @@ class TelemetryTests: XCTestCase {
 
     // MARK: - Protobuf encoding: evaluation traces
 
-    func testEncodingEvaluationTrace_success() throws {
+    func testEncodingEvaluationTrace_match() throws {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
 
@@ -144,7 +160,8 @@ class TelemetryTests: XCTestCase {
 
         let trace = traces[0]
         XCTAssertEqual(trace.id, .flagEvaluation)
-        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .success)
+        XCTAssertEqual(trace.evaluationTrace.reason, .targetingMatch)
+        XCTAssertEqual(trace.evaluationTrace.errorCode, .unspecified)
     }
 
     func testEncodingEvaluationTrace_stale() throws {
@@ -153,7 +170,8 @@ class TelemetryTests: XCTestCase {
 
         let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.id, .flagEvaluation)
-        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .stale)
+        XCTAssertEqual(trace.evaluationTrace.reason, .stale)
+        XCTAssertEqual(trace.evaluationTrace.errorCode, .unspecified)
     }
 
     func testEncodingEvaluationTrace_typeMismatch() throws {
@@ -161,7 +179,8 @@ class TelemetryTests: XCTestCase {
         telemetry.trackEvaluation(reason: .match, errorCode: .typeMismatch())
 
         let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .typeMismatch)
+        XCTAssertEqual(trace.evaluationTrace.reason, .error)
+        XCTAssertEqual(trace.evaluationTrace.errorCode, .typeMismatch)
     }
 
     func testEncodingEvaluationTrace_flagNotFound() throws {
@@ -169,7 +188,8 @@ class TelemetryTests: XCTestCase {
         telemetry.trackEvaluation(reason: .match, errorCode: .flagNotFound)
 
         let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .flagNotFound)
+        XCTAssertEqual(trace.evaluationTrace.reason, .error)
+        XCTAssertEqual(trace.evaluationTrace.errorCode, .flagNotFound)
     }
 
     func testEncodingEvaluationTrace_error() throws {
@@ -177,7 +197,8 @@ class TelemetryTests: XCTestCase {
         telemetry.trackEvaluation(reason: .error, errorCode: nil)
 
         let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
-        XCTAssertEqual(trace.evaluationTrace.evaluationReason, .error)
+        XCTAssertEqual(trace.evaluationTrace.reason, .error)
+        XCTAssertEqual(trace.evaluationTrace.errorCode, .general)
     }
 
     func testEncodingMultipleEvaluationTraces() throws {
@@ -188,9 +209,12 @@ class TelemetryTests: XCTestCase {
 
         let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 3)
-        XCTAssertEqual(traces[0].evaluationTrace.evaluationReason, .success)
-        XCTAssertEqual(traces[1].evaluationTrace.evaluationReason, .stale)
-        XCTAssertEqual(traces[2].evaluationTrace.evaluationReason, .typeMismatch)
+        XCTAssertEqual(traces[0].evaluationTrace.reason, .targetingMatch)
+        XCTAssertEqual(traces[0].evaluationTrace.errorCode, .unspecified)
+        XCTAssertEqual(traces[1].evaluationTrace.reason, .stale)
+        XCTAssertEqual(traces[1].evaluationTrace.errorCode, .unspecified)
+        XCTAssertEqual(traces[2].evaluationTrace.reason, .error)
+        XCTAssertEqual(traces[2].evaluationTrace.errorCode, .typeMismatch)
     }
 
     // MARK: - Protobuf encoding: resolve traces
@@ -241,10 +265,10 @@ class TelemetryTests: XCTestCase {
         XCTAssertEqual(traces[0].requestTrace.status, .success)
 
         XCTAssertEqual(traces[1].id, .flagEvaluation)
-        XCTAssertEqual(traces[1].evaluationTrace.evaluationReason, .success)
+        XCTAssertEqual(traces[1].evaluationTrace.reason, .targetingMatch)
 
         XCTAssertEqual(traces[2].id, .flagEvaluation)
-        XCTAssertEqual(traces[2].evaluationTrace.evaluationReason, .stale)
+        XCTAssertEqual(traces[2].evaluationTrace.reason, .stale)
     }
 
     // MARK: - Thread safety

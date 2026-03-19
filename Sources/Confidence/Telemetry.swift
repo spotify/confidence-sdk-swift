@@ -8,7 +8,7 @@ class Telemetry: @unchecked Sendable {
     private let debugLogger: DebugLogger?
 
     private let lock = NSLock()
-    private var pendingEvaluations: [EvaluationReason] = []
+    private var pendingEvaluations: [(reason: EvaluationReason, errorCode: EvaluationErrorCode)] = []
     private var pendingResolveTraces: [ResolveTrace] = []
 
     init(sdkId: String, library: Library, libraryVersion: String, debugLogger: DebugLogger? = nil) {
@@ -53,21 +53,53 @@ class Telemetry: @unchecked Sendable {
     }
 
     enum EvaluationReason: Int, CustomStringConvertible {
-        case unknown = 0
-        case success = 1
-        case stale = 2
-        case flagNotFound = 3
-        case typeMismatch = 4
-        case error = 5
+        case unspecified = 0
+        case targetingMatch = 1
+        case `default` = 2
+        case stale = 3
+        case disabled = 4
+        case cached = 5
+        case `static` = 6
+        case split = 7
+        case error = 8
 
         var description: String {
             switch self {
-            case .unknown: return "UNKNOWN"
-            case .success: return "SUCCESS"
+            case .unspecified: return "UNSPECIFIED"
+            case .targetingMatch: return "TARGETING_MATCH"
+            case .default: return "DEFAULT"
             case .stale: return "STALE"
-            case .flagNotFound: return "FLAG_NOT_FOUND"
-            case .typeMismatch: return "TYPE_MISMATCH"
+            case .disabled: return "DISABLED"
+            case .cached: return "CACHED"
+            case .static: return "STATIC"
+            case .split: return "SPLIT"
             case .error: return "ERROR"
+            }
+        }
+    }
+
+    enum EvaluationErrorCode: Int, CustomStringConvertible {
+        case unspecified = 0
+        case providerNotReady = 1
+        case flagNotFound = 2
+        case parseError = 3
+        case typeMismatch = 4
+        case targetingKeyMissing = 5
+        case invalidContext = 6
+        case providerFatal = 7
+        case general = 8
+
+        var description: String {
+            switch self {
+            case .unspecified: return "UNSPECIFIED"
+            case .providerNotReady: return "PROVIDER_NOT_READY"
+            case .flagNotFound: return "FLAG_NOT_FOUND"
+            case .parseError: return "PARSE_ERROR"
+            case .typeMismatch: return "TYPE_MISMATCH"
+            case .targetingKeyMissing: return "TARGETING_KEY_MISSING"
+            case .invalidContext: return "INVALID_CONTEXT"
+            case .providerFatal: return "PROVIDER_FATAL"
+            case .general: return "GENERAL"
             }
         }
     }
@@ -79,9 +111,9 @@ class Telemetry: @unchecked Sendable {
     }
 
     func trackEvaluation(reason: ResolveReason, errorCode: ErrorCode?) {
-        let evalReason = Self.mapEvaluationReason(reason: reason, errorCode: errorCode)
+        let mapped = Self.mapEvaluationReason(reason: reason, errorCode: errorCode)
         lock.withLock {
-            pendingEvaluations.append(evalReason)
+            pendingEvaluations.append(mapped)
         }
     }
 
@@ -101,7 +133,7 @@ class Telemetry: @unchecked Sendable {
         return Data(monitoringBytes).base64EncodedString()
     }
 
-    private func snapshotAndClearTraces() -> ([EvaluationReason], [ResolveTrace]) {
+    private func snapshotAndClearTraces() -> ([(reason: EvaluationReason, errorCode: EvaluationErrorCode)], [ResolveTrace]) {
         lock.withLock {
             let evals = pendingEvaluations
             let resolves = pendingResolveTraces
@@ -111,26 +143,42 @@ class Telemetry: @unchecked Sendable {
         }
     }
 
-    static func mapEvaluationReason(reason: ResolveReason, errorCode: ErrorCode?) -> EvaluationReason {
+    static func mapEvaluationReason(
+        reason: ResolveReason, errorCode: ErrorCode?
+    ) -> (reason: EvaluationReason, errorCode: EvaluationErrorCode) {
         if let errorCode = errorCode {
+            let mappedError: EvaluationErrorCode
             switch errorCode {
             case .flagNotFound:
-                return .flagNotFound
+                mappedError = .flagNotFound
             case .typeMismatch:
-                return .typeMismatch
+                mappedError = .typeMismatch
+            case .parseError:
+                mappedError = .parseError
+            case .invalidContext:
+                mappedError = .invalidContext
+            case .providerNotReady:
+                mappedError = .providerNotReady
             default:
-                return .error
+                mappedError = .general
             }
+            return (.error, mappedError)
         }
         switch reason {
-        case .match, .noSegmentMatch, .noTreatmentMatch:
-            return .success
+        case .match:
+            return (.targetingMatch, .unspecified)
+        case .noSegmentMatch, .noTreatmentMatch:
+            return (.default, .unspecified)
         case .stale:
-            return .stale
-        case .archived, .error, .targetingKeyError:
-            return .error
+            return (.stale, .unspecified)
+        case .archived:
+            return (.disabled, .unspecified)
+        case .targetingKeyError:
+            return (.error, .targetingKeyMissing)
+        case .error:
+            return (.error, .general)
         default:
-            return .unknown
+            return (.unspecified, .unspecified)
         }
     }
 }
@@ -139,7 +187,7 @@ class Telemetry: @unchecked Sendable {
 // Matches confidence/telemetry.proto without requiring a SwiftProtobuf dependency.
 extension Telemetry {
     private func encodeMonitoring(
-        evaluationTraces: [EvaluationReason],
+        evaluationTraces: [(reason: EvaluationReason, errorCode: EvaluationErrorCode)],
         resolveTraces: [ResolveTrace]
     ) -> [UInt8] {
         var bytes: [UInt8] = []
@@ -161,7 +209,7 @@ extension Telemetry {
     }
 
     private func encodeLibraryTraces(
-        evaluationTraces: [EvaluationReason],
+        evaluationTraces: [(reason: EvaluationReason, errorCode: EvaluationErrorCode)],
         resolveTraces: [ResolveTrace]
     ) -> [UInt8] {
         var bytes: [UInt8] = []
@@ -185,8 +233,8 @@ extension Telemetry {
         }
 
         // Evaluation traces (field 3: repeated Trace)
-        for evalReason in evaluationTraces {
-            let traceBytes = encodeEvaluationTrace(reason: evalReason)
+        for eval in evaluationTraces {
+            let traceBytes = encodeEvaluationTrace(reason: eval.reason, errorCode: eval.errorCode)
             bytes.append(contentsOf: fieldKey(fieldNumber: 3, wireType: .lengthDelimited))
             bytes.append(contentsOf: encodeVarint(UInt64(traceBytes.count)))
             bytes.append(contentsOf: traceBytes)
@@ -229,14 +277,14 @@ extension Telemetry {
         return bytes
     }
 
-    // Trace { id = TRACE_ID_FLAG_EVALUATION, evaluation_trace = EvaluationTrace { evaluation_reason } }
-    private func encodeEvaluationTrace(reason: EvaluationReason) -> [UInt8] {
+    // Trace { id = TRACE_ID_FLAG_EVALUATION, evaluation_trace = EvaluationTrace { reason, error_code } }
+    private func encodeEvaluationTrace(reason: EvaluationReason, errorCode: EvaluationErrorCode) -> [UInt8] {
         var bytes: [UInt8] = []
 
         bytes.append(contentsOf: fieldKey(fieldNumber: 1, wireType: .varint))
         bytes.append(contentsOf: encodeVarint(UInt64(TraceId.flagEvaluation.rawValue)))
 
-        let evalPayload = encodeEvaluationTracePayload(reason: reason)
+        let evalPayload = encodeEvaluationTracePayload(reason: reason, errorCode: errorCode)
         if !evalPayload.isEmpty {
             bytes.append(contentsOf: fieldKey(fieldNumber: 5, wireType: .lengthDelimited))
             bytes.append(contentsOf: encodeVarint(UInt64(evalPayload.count)))
@@ -246,12 +294,16 @@ extension Telemetry {
         return bytes
     }
 
-    // EvaluationTrace { evaluation_reason }
-    private func encodeEvaluationTracePayload(reason: EvaluationReason) -> [UInt8] {
+    // EvaluationTrace { reason, error_code }
+    private func encodeEvaluationTracePayload(reason: EvaluationReason, errorCode: EvaluationErrorCode) -> [UInt8] {
         var bytes: [UInt8] = []
         if reason.rawValue != 0 {
             bytes.append(contentsOf: fieldKey(fieldNumber: 1, wireType: .varint))
             bytes.append(contentsOf: encodeVarint(UInt64(reason.rawValue)))
+        }
+        if errorCode.rawValue != 0 {
+            bytes.append(contentsOf: fieldKey(fieldNumber: 2, wireType: .varint))
+            bytes.append(contentsOf: encodeVarint(UInt64(errorCode.rawValue)))
         }
         return bytes
     }
