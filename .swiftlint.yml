@@ -5,6 +5,7 @@ excluded:
   - ${PWD}/.build
   - ${PWD}/Tools/*/.build
   - ${PWD}/ConfidenceDemoApp
+  - ${PWD}/Tests/ConfidenceTests/Helpers/TelemetryProto.pb.swift
 
 disabled_rules:
   - discarded_notification_center_observer

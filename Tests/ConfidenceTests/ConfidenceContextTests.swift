@@ -4,11 +4,12 @@ import XCTest
 // swiftlint:disable type_body_length
 final class ConfidenceContextTests: XCTestCase {
     func testWithContext() {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -17,6 +18,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             debugLogger: nil
         )
@@ -31,11 +33,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testWithContextUpdateParent() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -44,6 +47,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -63,11 +67,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testUpdateLocalContext() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidence = Confidence.init(
             clientSecret: "",
@@ -76,6 +81,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -90,11 +96,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testUpdateLocalContextWithoutOverride() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -103,6 +110,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -121,11 +129,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testUpdateParentContextWithOverride() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -134,6 +143,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -152,11 +162,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntry() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidence = Confidence.init(
             clientSecret: "",
@@ -165,6 +176,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -177,11 +189,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParent() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -190,6 +203,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -205,11 +219,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParentAndChild() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -218,6 +233,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -236,11 +252,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testRemoveContextEntryFromParentAndChildThenUpdate() async {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidenceParent = Confidence.init(
             clientSecret: "",
@@ -249,6 +266,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             debugLogger: nil
@@ -269,11 +287,12 @@ final class ConfidenceContextTests: XCTestCase {
     }
 
     func testVisitorId() {
+        let telemetry = Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
         let client = RemoteConfidenceResolveClient(
             options: ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: ""), timeoutIntervalForRequest: 10),
             session: MockedClientURLProtocol.mockedSession(),
-            metadata: ConfidenceMetadata(name: "", version: ""))
+            telemetry: telemetry)
 
         let confidence = Confidence.init(
             clientSecret: "",
@@ -282,6 +301,7 @@ final class ConfidenceContextTests: XCTestCase {
             flagApplier: FlagApplierMock(),
             remoteFlagResolver: client,
             storage: StorageMock(),
+            telemetry: telemetry,
             context: ["k1": ConfidenceValue(string: "v1")],
             parent: nil,
             visitorId: "uuid",

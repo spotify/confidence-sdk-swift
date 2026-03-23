@@ -31,9 +31,10 @@ final class NetworkClient: HttpClient {
 
     public func post<T: Decodable>(
         path: String,
-        data: Encodable
+        data: Encodable,
+        headers: [String: String] = [:]
     ) async throws -> HttpClientResult<T> {
-        let request = try buildRequest(path: path, data: data)
+        let request = try buildRequest(path: path, data: data, headers: headers)
         let requestResult = await perform(request: request, retry: self.retry)
         if let error = requestResult.error {
             return .failure(error)
@@ -96,7 +97,7 @@ extension NetworkClient {
         return URL(string: "\(normalisedBase)\(normalisedPath)")
     }
 
-    private func buildRequest(path: String, data: Encodable) throws -> URLRequest {
+    private func buildRequest(path: String, data: Encodable, headers: [String: String] = [:]) throws -> URLRequest {
         guard let url = constructURL(base: baseUrl, path: path) else {
             throw ConfidenceError.internalError(message: "Could not create service url")
         }
@@ -106,6 +107,10 @@ extension NetworkClient {
 
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("application/json", forHTTPHeaderField: "Accept")
+
+        for (key, value) in headers {
+            request.addValue(value, forHTTPHeaderField: key)
+        }
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601

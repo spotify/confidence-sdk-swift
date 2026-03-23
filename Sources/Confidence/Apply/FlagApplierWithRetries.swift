@@ -9,14 +9,14 @@ final class FlagApplierWithRetries: FlagApplier {
     private let httpClient: HttpClient
     private let options: ConfidenceClientOptions
     private let cacheDataInteractor: CacheDataActor
-    private let metadata: ConfidenceMetadata
+    private let telemetry: Telemetry
     private let debugLogger: DebugLogger?
 
     init(
         httpClient: HttpClient,
         storage: Storage,
         options: ConfidenceClientOptions,
-        metadata: ConfidenceMetadata,
+        telemetry: Telemetry,
         cacheDataInteractor: CacheDataActor? = nil,
         triggerBatch: Bool = true,
         debugLogger: DebugLogger? = nil
@@ -24,7 +24,7 @@ final class FlagApplierWithRetries: FlagApplier {
         self.storage = storage
         self.httpClient = httpClient
         self.options = options
-        self.metadata = metadata
+        self.telemetry = telemetry
         self.debugLogger = debugLogger
 
         let storedData = try? storage.load(defaultValue: CacheData.empty())
@@ -122,10 +122,11 @@ final class FlagApplierWithRetries: FlagApplier {
             sendTime: Date.backport.nowISOString,
             clientSecret: options.credentials.getSecret(),
             resolveToken: resolveToken,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
+            sdk: telemetry.sdk
         )
 
-        let result = await performRequest(request: request)
+        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue()]
+        let result = await performRequest(request: request, headers: headers)
         switch result {
         case .success:
             return true
@@ -136,10 +137,11 @@ final class FlagApplierWithRetries: FlagApplier {
     }
 
     private func performRequest(
-        request: ApplyFlagsRequest
+        request: ApplyFlagsRequest,
+        headers: [String: String]
     ) async -> ApplyFlagResult {
         do {
-            return try await httpClient.post(path: ":apply", data: request)
+            return try await httpClient.post(path: ":apply", data: request, headers: headers)
         } catch {
             return .failure(handleError(error: error))
         }

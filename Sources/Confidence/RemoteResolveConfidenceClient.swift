@@ -3,7 +3,7 @@ import Foundation
 class RemoteConfidenceResolveClient: ConfidenceResolveClient {
     private let targetingKey = "targeting_key"
     private var options: ConfidenceClientOptions
-    private let metadata: ConfidenceMetadata
+    private let telemetry: Telemetry
 
     private var httpClient: HttpClient
     private var applyOnResolve: Bool
@@ -12,11 +12,11 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         options: ConfidenceClientOptions,
         session: URLSession? = nil,
         applyOnResolve: Bool = false,
-        metadata: ConfidenceMetadata
+        telemetry: Telemetry
     ) {
         self.options = options
         self.applyOnResolve = applyOnResolve
-        self.metadata = metadata
+        self.telemetry = telemetry
         self.httpClient = NetworkClient(
             session: session,
             baseUrl: BaseUrlMapper.from(region: options.region),
@@ -31,12 +31,16 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             evaluationContext: TypeMapper.convert(structure: ctx),
             clientSecret: options.credentials.getSecret(),
             apply: applyOnResolve,
-            sdk: Sdk(id: metadata.name, version: metadata.version)
+            sdk: telemetry.sdk
         )
 
+        let headers = [Telemetry.headerName: telemetry.encodedHeaderValue()]
+        let start = CFAbsoluteTimeGetCurrent()
         do {
             let result: HttpClientResult<ResolveFlagsResponse> =
-            try await self.httpClient.post(path: ":resolve", data: request)
+            try await self.httpClient.post(
+                path: ":resolve", data: request, headers: headers
+            )
             switch result {
             case .success(let successData):
                 guard successData.response.status == .ok else {
@@ -48,10 +52,21 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                 let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
                     try convert(resolvedFlag: resolvedFlag)
                 }
-                return ResolvesResult(resolvedValues: resolvedValues, resolveToken: response.resolveToken)
+                let elapsed = Self.elapsedMs(since: start)
+                telemetry.trackResolveLatency(durationMs: elapsed, status: .success)
+                return ResolvesResult(
+                    resolvedValues: resolvedValues,
+                    resolveToken: response.resolveToken
+                )
             case .failure(let errorData):
                 throw handleError(error: errorData)
             }
+        } catch {
+            let elapsed = Self.elapsedMs(since: start)
+            let status: Telemetry.RequestStatus =
+                (error as? URLError)?.code == .timedOut ? .timeout : .error
+            telemetry.trackResolveLatency(durationMs: elapsed, status: status)
+            throw error
         }
     }
 
@@ -86,6 +101,10 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
             resolveReason: resolvedFlag.reason,
             shouldApply: true
         )
+    }
+
+    private static func elapsedMs(since start: CFAbsoluteTime) -> UInt64 {
+        UInt64(max(0, (CFAbsoluteTimeGetCurrent() - start) * 1000))
     }
 
     private func handleError(error: Error) -> Error {
