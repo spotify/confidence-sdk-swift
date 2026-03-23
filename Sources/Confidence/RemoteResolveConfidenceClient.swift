@@ -49,11 +49,11 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
                 guard let response = successData.decodedData else {
                     throw ConfidenceError.parseError(message: "Unable to parse request response")
                 }
-                let elapsed = Self.elapsedMs(since: start)
-                telemetry.trackResolveLatency(durationMs: elapsed, status: .success)
                 let resolvedValues = try response.resolvedFlags.map { resolvedFlag in
                     try convert(resolvedFlag: resolvedFlag)
                 }
+                let elapsed = Self.elapsedMs(since: start)
+                telemetry.trackResolveLatency(durationMs: elapsed, status: .success)
                 return ResolvesResult(
                     resolvedValues: resolvedValues,
                     resolveToken: response.resolveToken

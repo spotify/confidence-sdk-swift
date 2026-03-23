@@ -271,6 +271,50 @@ class TelemetryTests: XCTestCase {
         XCTAssertEqual(traces[2].evaluationTrace.reason, .stale)
     }
 
+    // MARK: - Library configuration
+
+    func testLibraryDefaultIsConfidence() throws {
+        let telemetry = makeTelemetry()
+        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertEqual(monitoring.libraryTraces[0].library, .confidence)
+    }
+
+    func testSetLibraryOpenFeature() throws {
+        let telemetry = makeTelemetry()
+        telemetry.library = .openFeature
+        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertEqual(monitoring.libraryTraces[0].library, .openFeature)
+    }
+
+    // MARK: - Snapshot-and-clear semantics
+
+    func testMultipleSnapshotClearCycles() throws {
+        let telemetry = makeTelemetry()
+
+        // Cycle 1: add traces, snapshot clears them
+        telemetry.trackEvaluation(reason: .match, errorCode: nil)
+        telemetry.trackResolveLatency(durationMs: 50, status: .success)
+        let first = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertEqual(first.libraryTraces[0].traces.count, 2)
+
+        // Cycle 2: empty after clear
+        let second = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertTrue(second.libraryTraces[0].traces.isEmpty)
+
+        // Cycle 3: new traces accumulate independently
+        telemetry.trackEvaluation(reason: .stale, errorCode: nil)
+        let third = try decodeMonitoring(telemetry.encodedHeaderValue())
+        XCTAssertEqual(third.libraryTraces[0].traces.count, 1)
+        XCTAssertEqual(third.libraryTraces[0].traces[0].evaluationTrace.reason, .stale)
+    }
+
+    func testSdkPropertyReturnsCorrectValues() {
+        let telemetry = Telemetry(sdkId: "MY_SDK", library: .confidence, libraryVersion: "2.0.0")
+        let sdk = telemetry.sdk
+        XCTAssertEqual(sdk.id, "MY_SDK")
+        XCTAssertEqual(sdk.version, "2.0.0")
+    }
+
     // MARK: - Thread safety
 
     func testConcurrentTracking() throws {
@@ -297,4 +341,113 @@ class TelemetryTests: XCTestCase {
         let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, iterations * 2)
     }
+
+    func testConcurrentTrackAndSnapshot() throws {
+        let telemetry = makeTelemetry()
+        let group = DispatchGroup()
+        let iterations = 200
+        let totalTraces = Atomic(0)
+
+        // Writers: continuously add traces
+        for i in 0..<iterations {
+            group.enter()
+            DispatchQueue.global().async {
+                telemetry.trackEvaluation(reason: .match, errorCode: nil)
+                if i % 3 == 0 {
+                    telemetry.trackResolveLatency(durationMs: UInt64(i), status: .success)
+                }
+                group.leave()
+            }
+        }
+
+        // Readers: concurrently snapshot-and-clear
+        for _ in 0..<10 {
+            group.enter()
+            DispatchQueue.global().async {
+                let monitoring = try? self.decodeMonitoring(telemetry.encodedHeaderValue())
+                let count = monitoring?.libraryTraces[0].traces.count ?? 0
+                totalTraces.add(count)
+                group.leave()
+            }
+        }
+
+        group.wait()
+
+        // Final drain
+        let remaining = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces.count
+        let total = totalTraces.value + remaining
+        // iterations evaluations + iterations/3 resolve traces (i = 0, 3, 6, ... 198 → 67 values)
+        let expectedResolves = (0..<iterations).filter { $0 % 3 == 0 }.count
+        XCTAssertEqual(total, iterations + expectedResolves)
+    }
+
+    func testConcurrentLibrarySetAndEncode() throws {
+        let telemetry = makeTelemetry()
+        let group = DispatchGroup()
+
+        // Flip library concurrently while encoding
+        for i in 0..<200 {
+            group.enter()
+            DispatchQueue.global().async {
+                if i % 2 == 0 {
+                    telemetry.library = .openFeature
+                } else {
+                    telemetry.library = .confidence
+                }
+                group.leave()
+            }
+            group.enter()
+            DispatchQueue.global().async {
+                telemetry.trackEvaluation(reason: .match, errorCode: nil)
+                // Must not crash; library must be one of the two valid values
+                let monitoring = try? self.decodeMonitoring(telemetry.encodedHeaderValue())
+                if let lib = monitoring?.libraryTraces[0].library {
+                    XCTAssertTrue(lib == .confidence || lib == .openFeature)
+                }
+                group.leave()
+            }
+        }
+
+        group.wait()
+    }
+
+    func testConcurrentSnapshotsDoNotDuplicateTraces() throws {
+        let telemetry = makeTelemetry()
+        let iterations = 500
+        let totalTraces = Atomic(0)
+
+        // Pre-fill traces
+        for _ in 0..<iterations {
+            telemetry.trackEvaluation(reason: .match, errorCode: nil)
+        }
+
+        // Multiple concurrent snapshots — each trace must appear exactly once
+        let group = DispatchGroup()
+        for _ in 0..<20 {
+            group.enter()
+            DispatchQueue.global().async {
+                let monitoring = try? self.decodeMonitoring(telemetry.encodedHeaderValue())
+                let count = monitoring?.libraryTraces[0].traces.count ?? 0
+                totalTraces.add(count)
+                group.leave()
+            }
+        }
+
+        group.wait()
+        let remaining = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces.count
+        XCTAssertEqual(totalTraces.value + remaining, iterations, "Traces must not be duplicated or lost")
+    }
+}
+
+// MARK: - Thread-safe counter for tests
+
+private final class Atomic: @unchecked Sendable {
+    private var _value: Int
+    private let lock = NSLock()
+
+    init(_ value: Int) { _value = value }
+
+    var value: Int { lock.withLock { _value } }
+
+    func add(_ delta: Int) { lock.withLock { _value += delta } }
 }
