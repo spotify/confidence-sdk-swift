@@ -129,27 +129,33 @@ class Telemetry: @unchecked Sendable {
         }
     }
 
+    private struct Snapshot {
+        let evaluations: [(reason: EvaluationReason, errorCode: EvaluationErrorCode)]
+        let resolveTraces: [ResolveTrace]
+        let library: Library
+    }
+
     /// Returns the base64-encoded Monitoring protobuf, including any accumulated traces (which are then cleared).
     func encodedHeaderValue() -> String {
-        let (evalTraces, resolveTraces, lib) = snapshotAndClearTraces()
+        let snapshot = snapshotAndClearTraces()
         let monitoringBytes = encodeMonitoring(
-            library: lib,
-            evaluationTraces: evalTraces,
-            resolveTraces: resolveTraces
+            library: snapshot.library,
+            evaluationTraces: snapshot.evaluations,
+            resolveTraces: snapshot.resolveTraces
         )
         return Data(monitoringBytes).base64EncodedString()
     }
 
-    private func snapshotAndClearTraces()
-        -> ([(reason: EvaluationReason, errorCode: EvaluationErrorCode)], [ResolveTrace], Library)
-    {
+    private func snapshotAndClearTraces() -> Snapshot {
         lock.withLock {
-            let evals = pendingEvaluations
-            let resolves = pendingResolveTraces
-            let lib = _library
+            let snapshot = Snapshot(
+                evaluations: pendingEvaluations,
+                resolveTraces: pendingResolveTraces,
+                library: _library
+            )
             pendingEvaluations.removeAll()
             pendingResolveTraces.removeAll()
-            return (evals, resolves, lib)
+            return snapshot
         }
     }
 

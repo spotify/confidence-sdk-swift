@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import SwiftProtobuf
 import XCTest
@@ -11,6 +12,7 @@ private typealias ProtoTrace = Confidence_Telemetry_V1_LibraryTraces.Trace
 private typealias ProtoRequestTrace = Confidence_Telemetry_V1_LibraryTraces.Trace.RequestTrace
 private typealias ProtoEvaluationTrace = Confidence_Telemetry_V1_LibraryTraces.Trace.EvaluationTrace
 
+// swiftlint:disable:next type_body_length
 class TelemetryTests: XCTestCase {
     private func makeTelemetry(version: String = "1.0.0") -> Telemetry {
         Telemetry(sdkId: "SDK_ID_SWIFT_CONFIDENCE", library: .confidence, libraryVersion: version)
