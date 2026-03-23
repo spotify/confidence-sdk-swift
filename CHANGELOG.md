@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.0](https://github.com/spotify/confidence-sdk-swift/compare/1.4.5...1.5.0) (2026-03-23)
+
+
+### 🐛 Bug Fixes
+
+* empty struct default causing parseError in getObjectDetails ([#242](https://github.com/spotify/confidence-sdk-swift/issues/242)) ([9da80a1](https://github.com/spotify/confidence-sdk-swift/commit/9da80a1175e12f7924b227b505105df16ec615b1))
+
+
+### ✨ New Features
+
+* add X-CONFIDENCE-TELEMETRY header to Swift SDK ([#244](https://github.com/spotify/confidence-sdk-swift/issues/244)) ([72bceb4](https://github.com/spotify/confidence-sdk-swift/commit/72bceb42e8b6d5629c82ad1d893ad0001be1c12f))
+
+
+### 📚 Documentation
+
+* add getting involved section to contribution guidelines ([#239](https://github.com/spotify/confidence-sdk-swift/issues/239)) ([3a04784](https://github.com/spotify/confidence-sdk-swift/commit/3a04784aa10eefc50c0615f02407f6f5b931300f))
+* More detailed guidelines for vanilla sdk ([74a5b7b](https://github.com/spotify/confidence-sdk-swift/commit/74a5b7b81a0723c79d73f077ae2c21a8e7097fef))
+* More detailed guidelines for vanilla SDK ([#236](https://github.com/spotify/confidence-sdk-swift/issues/236)) ([74a5b7b](https://github.com/spotify/confidence-sdk-swift/commit/74a5b7b81a0723c79d73f077ae2c21a8e7097fef))
+
 ## [1.4.5](https://github.com/spotify/confidence-sdk-swift/compare/1.4.4...1.4.5) (2025-11-12)
 
 

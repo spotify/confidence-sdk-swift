@@ -482,7 +482,7 @@ extension Confidence {
             let telemetry = Telemetry(
                 sdkId: sdkId,
                 library: .confidence,
-                libraryVersion: "1.4.5", // x-release-please-version
+                libraryVersion: "1.5.0", // x-release-please-version
                 debugLogger: debugLogger)
             let uploader = RemoteConfidenceClient(
                 options: options,
