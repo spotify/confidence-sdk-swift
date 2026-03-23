@@ -2,7 +2,7 @@ import Foundation
 
 class Telemetry: @unchecked Sendable {
     let sdkId: String
-    internal var library: Library
+    private var _library: Library
     let libraryVersion: String
     let platform: Platform = .swift
     private let debugLogger: DebugLogger?
@@ -13,7 +13,7 @@ class Telemetry: @unchecked Sendable {
 
     init(sdkId: String, library: Library, libraryVersion: String, debugLogger: DebugLogger? = nil) {
         self.sdkId = sdkId
-        self.library = library
+        self._library = library
         self.libraryVersion = libraryVersion
         self.debugLogger = debugLogger
     }
@@ -107,6 +107,11 @@ class Telemetry: @unchecked Sendable {
 
     static let headerName = "X-CONFIDENCE-TELEMETRY"
 
+    var library: Library {
+        get { lock.withLock { _library } }
+        set { lock.withLock { _library = newValue } }
+    }
+
     var sdk: Sdk {
         Sdk(id: sdkId, version: libraryVersion)
     }
@@ -126,21 +131,25 @@ class Telemetry: @unchecked Sendable {
 
     /// Returns the base64-encoded Monitoring protobuf, including any accumulated traces (which are then cleared).
     func encodedHeaderValue() -> String {
-        let (evalTraces, resolveTraces) = snapshotAndClearTraces()
+        let (evalTraces, resolveTraces, lib) = snapshotAndClearTraces()
         let monitoringBytes = encodeMonitoring(
+            library: lib,
             evaluationTraces: evalTraces,
             resolveTraces: resolveTraces
         )
         return Data(monitoringBytes).base64EncodedString()
     }
 
-    private func snapshotAndClearTraces() -> ([(reason: EvaluationReason, errorCode: EvaluationErrorCode)], [ResolveTrace]) {
+    private func snapshotAndClearTraces()
+        -> ([(reason: EvaluationReason, errorCode: EvaluationErrorCode)], [ResolveTrace], Library)
+    {
         lock.withLock {
             let evals = pendingEvaluations
             let resolves = pendingResolveTraces
+            let lib = _library
             pendingEvaluations.removeAll()
             pendingResolveTraces.removeAll()
-            return (evals, resolves)
+            return (evals, resolves, lib)
         }
     }
 
@@ -189,12 +198,14 @@ class Telemetry: @unchecked Sendable {
 // Matches confidence/telemetry.proto without requiring a SwiftProtobuf dependency.
 extension Telemetry {
     private func encodeMonitoring(
+        library: Library,
         evaluationTraces: [(reason: EvaluationReason, errorCode: EvaluationErrorCode)],
         resolveTraces: [ResolveTrace]
     ) -> [UInt8] {
         var bytes: [UInt8] = []
 
         let libraryTracesPayload = encodeLibraryTraces(
+            library: library,
             evaluationTraces: evaluationTraces,
             resolveTraces: resolveTraces
         )
@@ -211,6 +222,7 @@ extension Telemetry {
     }
 
     private func encodeLibraryTraces(
+        library: Library,
         evaluationTraces: [(reason: EvaluationReason, errorCode: EvaluationErrorCode)],
         resolveTraces: [ResolveTrace]
     ) -> [UInt8] {
