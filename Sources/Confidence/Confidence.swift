@@ -68,12 +68,13 @@ public class Confidence: ConfidenceEventSender {
     Errors can be thrown if something goes wrong access data on disk.
     */
     public func activate() throws {
-        try cacheQueue.sync {  [weak self] in
-            guard let self = self else {
-                return
-            }
-            let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
-            cache = savedFlags
+        // Perform the disk read and JSON decode OUTSIDE `cacheQueue` to avoid
+        // blocking concurrent `getEvaluation` calls (which also use `cacheQueue.sync`)
+        // for the entire duration of the load. Only the atomic pointer swap
+        // into `cache` needs mutual exclusion with readers.
+        let savedFlags = try storage.load(defaultValue: FlagResolution.EMPTY)
+        cacheQueue.sync {  [weak self] in
+            self?.cache = savedFlags
         }
     }
 
