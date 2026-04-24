@@ -20,19 +20,22 @@ public enum ErrorCode: Equatable {
 
 struct FlagResolution: Encodable, Decodable, Equatable {
     let context: ConfidenceStruct
-    let flags: [ResolvedValue]
     let resolveToken: String
 
-    // O(1) lookup index built once per resolution; queried on every evaluation.
-    // Not serialized — rebuilt from `flags` at construction / decode time to
-    // preserve the on-disk JSON format.
+    // Single source of truth: indexed by flag name for O(1) lookup during evaluation.
+    // The on-disk JSON format is preserved via a custom encoder that emits `flags`
+    // as an array (sorted by flag name for deterministic output).
     private let flagIndex: [String: ResolvedValue]
+
+    // Derived view: flags sorted by name for deterministic iteration / encoding.
+    var flags: [ResolvedValue] {
+        flagIndex.values.sorted { $0.flag < $1.flag }
+    }
 
     static let EMPTY = FlagResolution(context: [:], flags: [], resolveToken: "")
 
     init(context: ConfidenceStruct, flags: [ResolvedValue], resolveToken: String) {
         self.context = context
-        self.flags = flags
         self.resolveToken = resolveToken
         var index: [String: ResolvedValue] = [:]
         index.reserveCapacity(flags.count)
@@ -61,10 +64,9 @@ struct FlagResolution: Encodable, Decodable, Equatable {
         try container.encode(resolveToken, forKey: .resolveToken)
     }
 
-    // Equatable conformance ignores the derived `flagIndex`.
     static func == (lhs: FlagResolution, rhs: FlagResolution) -> Bool {
         lhs.context == rhs.context
-            && lhs.flags == rhs.flags
+            && lhs.flagIndex == rhs.flagIndex
             && lhs.resolveToken == rhs.resolveToken
     }
 
