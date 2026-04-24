@@ -22,7 +22,55 @@ struct FlagResolution: Encodable, Decodable, Equatable {
     let context: ConfidenceStruct
     let flags: [ResolvedValue]
     let resolveToken: String
+
+    // O(1) lookup index built once per resolution; queried on every evaluation.
+    // Not serialized — rebuilt from `flags` at construction / decode time to
+    // preserve the on-disk JSON format.
+    private let flagIndex: [String: ResolvedValue]
+
     static let EMPTY = FlagResolution(context: [:], flags: [], resolveToken: "")
+
+    init(context: ConfidenceStruct, flags: [ResolvedValue], resolveToken: String) {
+        self.context = context
+        self.flags = flags
+        self.resolveToken = resolveToken
+        var index: [String: ResolvedValue] = [:]
+        index.reserveCapacity(flags.count)
+        for flag in flags {
+            index[flag.flag] = flag
+        }
+        self.flagIndex = index
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case context, flags, resolveToken
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let context = try container.decode(ConfidenceStruct.self, forKey: .context)
+        let flags = try container.decode([ResolvedValue].self, forKey: .flags)
+        let resolveToken = try container.decode(String.self, forKey: .resolveToken)
+        self.init(context: context, flags: flags, resolveToken: resolveToken)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(context, forKey: .context)
+        try container.encode(flags, forKey: .flags)
+        try container.encode(resolveToken, forKey: .resolveToken)
+    }
+
+    // Equatable conformance ignores the derived `flagIndex`.
+    static func == (lhs: FlagResolution, rhs: FlagResolution) -> Bool {
+        lhs.context == rhs.context
+            && lhs.flags == rhs.flags
+            && lhs.resolveToken == rhs.resolveToken
+    }
+
+    func resolvedFlag(named name: String) -> ResolvedValue? {
+        flagIndex[name]
+    }
 }
 
 extension FlagResolution {
@@ -37,8 +85,7 @@ extension FlagResolution {
     ) -> Evaluation<T> {
         do {
             let parsedKey = try FlagPath.getPath(for: flagName)
-            let resolvedFlag = self.flags.first { resolvedFlag in resolvedFlag.flag == parsedKey.flag }
-            guard let resolvedFlag = resolvedFlag else {
+            guard let resolvedFlag = self.resolvedFlag(named: parsedKey.flag) else {
                 return Evaluation(
                     value: defaultValue,
                     variant: nil,
