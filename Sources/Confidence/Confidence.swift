@@ -424,6 +424,16 @@ extension Confidence {
             return self
         }
 
+        /// NOTE(unit-local experiment): wires up a WASM-backed local resolver that
+        /// fetches per-unit slices from a local server instead of hitting the
+        /// remote backend. The first resolve after a unit change triggers a
+        /// slice fetch; subsequent resolves with the same unit are fully local.
+        @discardableResult
+        public func withLocalResolver(_ client: LocalConfidenceResolveClient) -> Builder {
+            self.flagResolver = client
+            return self
+        }
+
 
         internal func withFlagApplier(flagApplier: FlagApplier) -> Builder {
             self.flagApplier = flagApplier
