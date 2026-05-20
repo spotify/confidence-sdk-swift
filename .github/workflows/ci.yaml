@@ -20,21 +20,21 @@ jobs:
     steps:
     - name: install sourcekitten
       run: brew install sourcekitten
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
     - name: Run public API diff
       run: scripts/api_diff.sh ${{ matrix.module }}
 
   Unit-Tests:
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Build and Run Unit Tests
         run: scripts/run_tests.sh
 
   Integration-Tests:
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Build and Run Integration Tests
         env:
           CLIENT_TOKEN: ${{ secrets.CONFIDENCE_CLIENT_TOKEN }}
@@ -48,15 +48,15 @@ jobs:
   DemoApp:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
     - name: Build Demo App
       run: ConfidenceDemoApp/scripts/build.sh
 
   SwiftLint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
     - name: GitHub Action for SwiftLint
-      uses: norio-nomura/action-swiftlint@3.2.1
+      uses: norio-nomura/action-swiftlint@9f4dcd7fd46b4e75d7935cf2f4df406d5cae3684 # 3.2.1
       with:
         args: --strict --config .swiftlint.yml
