@@ -14,12 +14,10 @@ jobs:
 
     # Release-please creates a PR that tracks all changes
     steps:
-      - uses: google-github-actions/release-please-action@db8f2c60ee802b3748b512940dde88eabd7b7e01 # v3
+      - uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169500e7d3b4ee # v4.1.1
         id: release
         with:
-          release-type: simple
-          command: manifest
-          default-branch: main
+          target-branch: main
 
       - name: Dump Release Please Output
         env:
