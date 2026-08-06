@@ -787,6 +787,170 @@ class ConfidenceProviderTest: XCTestCase {
         }
     }
 
+    func testTrackForwardsToConfidence() async throws {
+        let storage = StorageMock()
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        let details = ImmutableTrackingEventDetails(
+            attributes: ["plan": .string("premium"), "amount": .integer(42)]
+        )
+        XCTAssertNoThrow(try provider.track(key: "purchase", context: nil, details: details))
+    }
+
+    func testTrackWithValueForwardsToConfidence() async throws {
+        let storage = StorageMock()
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        let details = ImmutableTrackingEventDetails(
+            value: 99.9,
+            structure: ImmutableStructure(attributes: ["item": .string("widget")])
+        )
+        XCTAssertNoThrow(try provider.track(key: "conversion", context: nil, details: details))
+    }
+
+    func testTrackWithNoDetailsForwardsToConfidence() async throws {
+        let storage = StorageMock()
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        cancellable.cancel()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        XCTAssertNoThrow(try provider.track(key: "page_view", context: nil, details: nil))
+    }
+
+    func testProviderEmitsReadyEvent() async throws {
+        let readyExpectation = XCTestExpectation(description: "Ready event emitted")
+        let storage = StorageMock()
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        let cancellable = provider.observe().sink { event in
+            if let event = event, event == .ready() {
+                readyExpectation.fulfill()
+            }
+        }
+
+        try await provider.initialize(initialContext: ImmutableContext(targetingKey: "user1"))
+        await fulfillment(of: [readyExpectation], timeout: 5.0)
+        cancellable.cancel()
+    }
+
+    func testProviderEmitsErrorEvent() async throws {
+        let errorExpectation = XCTestExpectation(description: "Error event emitted")
+        let storage = createFakeStorage(shouldThrowOnLoad: true)
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(
+            confidence: confidence,
+            initializationStrategy: .activateAndFetchAsync
+        )
+
+        let cancellable = provider.observe().sink { event in
+            if let event = event, case .error = event {
+                errorExpectation.fulfill()
+            }
+        }
+
+        do {
+            try await provider.initialize(initialContext: ImmutableContext(targetingKey: "user1"))
+        } catch {
+            // Expected error
+        }
+        await fulfillment(of: [errorExpectation], timeout: 5.0)
+        cancellable.cancel()
+    }
+
+    func testProviderEmitsReconcilingAndContextChangedEvents() async throws {
+        let reconcilingExpectation = XCTestExpectation(description: "Reconciling event emitted")
+        let contextChangedExpectation = XCTestExpectation(description: "ContextChanged event emitted")
+        let storage = StorageMock()
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: storage)
+            .build()
+
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+        try await provider.initialize(initialContext: ImmutableContext(targetingKey: "user1"))
+
+        let cancellable = provider.observe().sink { event in
+            if let event = event {
+                if case .reconciling = event {
+                    reconcilingExpectation.fulfill()
+                }
+                if case .contextChanged = event {
+                    contextChangedExpectation.fulfill()
+                }
+            }
+        }
+
+        await provider.onContextSet(
+            oldContext: ImmutableContext(targetingKey: "user1"),
+            newContext: ImmutableContext(targetingKey: "user2")
+        )
+
+        await fulfillment(of: [reconcilingExpectation, contextChangedExpectation], timeout: 5.0)
+        cancellable.cancel()
+    }
+
     func testProviderResolveAllListTypes() async throws {
         let context = ImmutableContext(targetingKey: "user2")
         let storage = StorageMock()

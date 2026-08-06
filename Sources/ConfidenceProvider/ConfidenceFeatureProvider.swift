@@ -46,13 +46,20 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws {
         let context = ConfidenceTypeMapper.from(ctx: initialContext ?? ImmutableContext(attributes: [:]))
         confidence.putContextLocal(context: context)
-        if initializationStrategy == .activateAndFetchAsync {
-            try confidence.activate()
-            Task {
-                await confidence.asyncFetch()
+        do {
+            if initializationStrategy == .activateAndFetchAsync {
+                try confidence.activate()
+                Task {
+                    await confidence.asyncFetch()
+                }
+            } else {
+                try await confidence.fetchAndActivate()
             }
-        } else {
-            try await confidence.fetchAndActivate()
+            eventHandler.send(ProviderEvent.ready())
+        } catch {
+            eventHandler.send(
+                ProviderEvent.error(ProviderEventDetails(message: error.localizedDescription)))
+            throw error
         }
     }
 
@@ -67,6 +74,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) async {
+        eventHandler.send(ProviderEvent.reconciling())
+
         let newContextMap = newContext.asMap()
         let newKeys = Set(Array(newContextMap.keys))
         let targetingKey = newContext.getTargetingKey()
@@ -79,6 +88,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         await confidence.putContextAndWait(
             context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
             removedKeys: removedKeys)
+
+        eventHandler.send(ProviderEvent.contextChanged())
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -128,6 +139,24 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent?, Never> {
         return eventHandler.observe()
+    }
+
+    public func track(
+        key: String,
+        context: (any EvaluationContext)?,
+        details: (any TrackingEventDetails)?
+    ) throws {
+        var data: ConfidenceStruct = [:]
+        if let details = details {
+            let map = details.asMap()
+            for (mapKey, value) in map {
+                data[mapKey] = ConfidenceTypeMapper.from(value: value)
+            }
+            if let numericValue = details.getValue() {
+                data["value"] = ConfidenceValue(double: numericValue)
+            }
+        }
+        try confidence.track(eventName: key, data: data)
     }
 
     private func withLock(callback: @escaping (ConfidenceFeatureProvider) -> Void) {
