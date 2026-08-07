@@ -11,6 +11,10 @@
         "declaration": "public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws"
       },
       {
+        "name": "shutdown()",
+        "declaration": "public func shutdown()"
+      },
+      {
         "name": "onContextSet(oldContext:newContext:)",
         "declaration": "public func onContextSet(\n    oldContext: OpenFeature.EvaluationContext?,\n    newContext: OpenFeature.EvaluationContext\n) async"
       },
