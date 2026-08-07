@@ -4,9 +4,11 @@ import XCTest
 @testable import Confidence
 
 final class EventSenderEngineReliabilityTest: XCTestCase {
+    // swiftlint:disable implicitly_unwrapped_optional
     var writeQueue: DispatchQueue!
     var uploaderMock: EventUploaderMock!
     var storageMock: EventStorageMock!
+    // swiftlint:enable implicitly_unwrapped_optional
 
     override func setUp() async throws {
         writeQueue = DispatchQueue(label: "ConfidenceWriteQueue")
