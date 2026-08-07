@@ -30,12 +30,15 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let semaphore = DispatchSemaphore(value: 1)
     private let writeQueue: DispatchQueue
     private let debugLogger: DebugLogger?
+    private var flushIntervalTimer: DispatchSourceTimer?
+    private var isShutdown = false
 
     convenience init(
         clientSecret: String,
         uploader: ConfidenceClient,
         storage: EventStorage,
-        debugLogger: DebugLogger?
+        debugLogger: DebugLogger?,
+        flushInterval: TimeInterval? = nil
     ) {
         self.init(
             clientSecret: clientSecret,
@@ -43,7 +46,8 @@ final class EventSenderEngineImpl: EventSenderEngine {
             storage: storage,
             flushPolicies: [SizeFlushPolicy(batchSize: 10)],
             writeQueue: DispatchQueue(label: "ConfidenceWriteQueue"),
-            debugLogger: debugLogger
+            debugLogger: debugLogger,
+            flushInterval: flushInterval
         )
     }
 
@@ -53,7 +57,8 @@ final class EventSenderEngineImpl: EventSenderEngine {
         storage: EventStorage,
         flushPolicies: [FlushPolicy],
         writeQueue: DispatchQueue,
-        debugLogger: DebugLogger?
+        debugLogger: DebugLogger?,
+        flushInterval: TimeInterval? = nil
     ) {
         self.uploader = uploader
         self.clientSecret = clientSecret
@@ -84,16 +89,26 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
         uploadReqChannel.sink { [weak self] _ in
             guard let self = self else { return }
-            await self.upload()
+            await self.upload(sealCurrentBatch: true)
         }
         .store(in: &cancellables)
+
+        if let flushInterval, flushInterval > 0 {
+            startFlushIntervalTimer(flushInterval)
+        }
+
+        Task {
+            await self.upload(sealCurrentBatch: false)
+        }
     }
 
-    func upload() async {
+    func upload(sealCurrentBatch: Bool = true) async {
         await withSemaphore { [weak self] in
             guard let self = self else { return }
             do {
-                try self.storage.startNewBatch()
+                if sealCurrentBatch {
+                    try self.storage.startNewBatch()
+                }
                 let ids = try storage.batchReadyIds()
                 if ids.isEmpty {
                     return
@@ -138,6 +153,9 @@ final class EventSenderEngineImpl: EventSenderEngine {
         data: ConfidenceStruct,
         context: ConfidenceStruct
     ) throws {
+        guard !isShutdown else {
+            return
+        }
         let event = ConfidenceEvent(
             name: eventName,
             payload: try payloadMerger.merge(context: context, data: data),
@@ -152,10 +170,31 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func shutdown() {
+        isShutdown = true
+        flushIntervalTimer?.cancel()
+        flushIntervalTimer = nil
+
+        let shutdownComplete = DispatchSemaphore(value: 0)
+        Task {
+            await self.upload(sealCurrentBatch: true)
+            shutdownComplete.signal()
+        }
+        shutdownComplete.wait()
+
         for cancellable in cancellables {
             cancellable.cancel()
         }
         cancellables.removeAll()
+    }
+
+    private func startFlushIntervalTimer(_ interval: TimeInterval) {
+        let timer = DispatchSource.makeTimerSource(queue: writeQueue)
+        timer.schedule(deadline: .now() + interval, repeating: interval)
+        timer.setEventHandler { [weak self] in
+            self?.flush()
+        }
+        timer.resume()
+        flushIntervalTimer = timer
     }
 }
 

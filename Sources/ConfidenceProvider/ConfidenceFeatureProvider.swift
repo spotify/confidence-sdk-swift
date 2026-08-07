@@ -56,7 +56,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    func shutdown() {
+    public func shutdown() {
+        confidence.flush()
         for cancellable in cancellables {
             cancellable.cancel()
         }
