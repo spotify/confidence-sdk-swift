@@ -1,30 +1,5 @@
 # Changelog
 
-## Unreleased
-
-### 🐛 Bug Fixes
-
-* Log per-event rejection reason and message when the events API returns HTTP 200 with batch errors.
-* Synchronize `EventSenderEngine` shutdown state to avoid a data race on concurrent `emit()` calls.
-* Drain the event write queue before the final shutdown upload so in-flight events are persisted.
-
-### ✨ New Features
-
-* OpenFeature `track()` support in `ConfidenceFeatureProvider`, merging stored client evaluation context with the Confidence session at provider track time.
-* Optional timed event flush via `Confidence.Builder.withEventFlushInterval(_:)`.
-* Startup and shutdown event flush in `EventSenderEngine`.
-* Public `ConfidenceFeatureProvider.shutdown()` drains and shuts down the event sender via `confidence.stop()` (OpenFeature provider lifecycle).
-
-### 🔄 Refactoring
-
-* Event payload merger: an explicit `"context"` key in event data overrides the evaluation context instead of throwing `invalidContextInMessage`.
-
-### ⚠️ Breaking Changes
-
-* Pin OpenFeature Swift SDK to version 0.6.0 (`ProviderStatusTracker`, `Future`-based `initialize`/`onContextSet`, non-optional `observe()` events). Minimum iOS deployment target raised to 15.0.
-* OpenFeature track mapping omits the `"value"` field when no numeric tracking value is set (previously sent `"value": null`).
-* Passing `"context"` in event data no longer throws; it overrides the evaluation context for that event.
-
 ## [1.5.0](https://github.com/spotify/confidence-sdk-swift/compare/1.4.5...1.5.0) (2026-03-23)
 
 
