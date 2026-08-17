@@ -202,8 +202,7 @@ try confidence.track(eventName: "MyEvent", data: ["field": ConfidenceValue(strin
 
 The SDK takes care of storing events in case of offline and retries in case of transient failures.
 
-Note that the data struct can't contain the key `context`, as that is reserved for entries set via `putContext` (see below):
-violating this rule will cause the track function to throw an error.
+Note that an explicit `"context"` entry in event data overrides the evaluation context attached to that event. Evaluation context is otherwise appended automatically from context set via `putContext` (see below):
 
 To set context data to be appended to all tracked events, here is an example:
 ```swift

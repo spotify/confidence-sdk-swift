@@ -145,4 +145,41 @@ class ValueConverterTest: XCTestCase {
         ]))
         XCTAssertEqual(confidenceValue, expected)
     }
+
+    func testMergeEventContextUsesOpenFeatureValuesOnConflict() {
+        let merged = ConfidenceTypeMapper.mergeEventContext(
+            sessionContext: ["plan": ConfidenceValue(string: "free"), "visitor_id": ConfidenceValue(string: "v1")],
+            openFeatureContext: ["plan": ConfidenceValue(string: "premium"), "country": ConfidenceValue(string: "SE")]
+        )
+        XCTAssertEqual(merged["plan"], ConfidenceValue(string: "premium"))
+        XCTAssertEqual(merged["visitor_id"], ConfidenceValue(string: "v1"))
+        XCTAssertEqual(merged["country"], ConfidenceValue(string: "SE"))
+    }
+
+    func testTrackingDetailsValueAttributeOverridesNumericValue() {
+        let details = ImmutableTrackingEventDetails(
+            value: 99.77,
+            structure: ImmutableStructure(attributes: ["value": .string("override")])
+        )
+        let data = ConfidenceTypeMapper.from(trackingDetails: details)
+        XCTAssertEqual(data["value"], ConfidenceValue(string: "override"))
+    }
+
+    func testTrackingDetailsMapsStructureAttributes() {
+        let details = ImmutableTrackingEventDetails(
+            structure: ImmutableStructure(attributes: [
+                "key": .string("value"),
+                "count": .integer(4),
+                "meta": .structure(["flag": .boolean(true)])
+            ])
+        )
+        let data = ConfidenceTypeMapper.from(trackingDetails: details)
+        XCTAssertNil(data["value"])
+        XCTAssertEqual(data["key"], ConfidenceValue(string: "value"))
+        XCTAssertEqual(data["count"], ConfidenceValue(integer: 4))
+        XCTAssertEqual(
+            data["meta"],
+            ConfidenceValue(structure: ["flag": ConfidenceValue(boolean: true)])
+        )
+    }
 }

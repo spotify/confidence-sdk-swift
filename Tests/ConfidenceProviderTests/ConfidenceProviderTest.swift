@@ -834,6 +834,162 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
     }
+
+    // MARK: - Tracking
+
+    func testTrackForwardsEventToConfidence() throws {
+        let engine = EventSenderEngineSpy()
+        let provider = ConfidenceFeatureProvider(confidence: makeConfidence(eventSenderEngine: engine))
+
+        let details = ImmutableTrackingEventDetails(
+            value: 499.99,
+            structure: ImmutableStructure(attributes: [
+                "numberOfItems": .integer(4),
+                "timeInCheckout": .string("PT3M20S")
+            ])
+        )
+
+        try provider.track(key: "Checkout", context: nil, details: details)
+
+        XCTAssertEqual(engine.emittedEvents.count, 1)
+        let event = try XCTUnwrap(engine.emittedEvents.first)
+        XCTAssertEqual(event.name, "Checkout")
+        XCTAssertEqual(event.data["value"], ConfidenceValue(double: 499.99))
+        XCTAssertEqual(event.data["numberOfItems"], ConfidenceValue(integer: 4))
+        XCTAssertEqual(event.data["timeInCheckout"], ConfidenceValue(string: "PT3M20S"))
+    }
+
+    func testTrackWithoutDetailsSendsEmptyData() throws {
+        let engine = EventSenderEngineSpy()
+        let provider = ConfidenceFeatureProvider(confidence: makeConfidence(eventSenderEngine: engine))
+
+        try provider.track(key: "PageView", context: nil, details: nil)
+
+        XCTAssertEqual(engine.emittedEvents.count, 1)
+        let event = try XCTUnwrap(engine.emittedEvents.first)
+        XCTAssertEqual(event.name, "PageView")
+        XCTAssertTrue(event.data.isEmpty)
+    }
+
+    func testTrackWithoutNumericValueOmitsValueKey() throws {
+        let engine = EventSenderEngineSpy()
+        let provider = ConfidenceFeatureProvider(confidence: makeConfidence(eventSenderEngine: engine))
+
+        let details = ImmutableTrackingEventDetails(attributes: ["item": .string("shoes")])
+        try provider.track(key: "AddToCart", context: nil, details: details)
+
+        let event = try XCTUnwrap(engine.emittedEvents.first)
+        XCTAssertNil(event.data["value"])
+        XCTAssertEqual(event.data["item"], ConfidenceValue(string: "shoes"))
+    }
+
+    func testTrackValueAttributeOverridesNumericValue() throws {
+        let engine = EventSenderEngineSpy()
+        let provider = ConfidenceFeatureProvider(confidence: makeConfidence(eventSenderEngine: engine))
+
+        let details = ImmutableTrackingEventDetails(
+            value: 99.77,
+            structure: ImmutableStructure(attributes: ["value": .string("override")])
+        )
+        try provider.track(key: "Checkout", context: nil, details: details)
+
+        let event = try XCTUnwrap(engine.emittedEvents.first)
+        XCTAssertEqual(event.data["value"], ConfidenceValue(string: "override"))
+    }
+
+    func testTrackMergesStoredEvaluationContextWithSessionContext() throws {
+        let engine = EventSenderEngineSpy()
+        let confidence = makeConfidence(
+            eventSenderEngine: engine,
+            initialContext: ["plan": ConfidenceValue(string: "free")]
+        )
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        let storedContext = ImmutableContext(
+            targetingKey: "user-1",
+            structure: ImmutableStructure(attributes: [
+                "plan": .string("premium"),
+                "country": .string("SE")
+            ])
+        )
+        try provider.track(key: "Checkout", context: storedContext, details: nil)
+
+        let event = try XCTUnwrap(engine.emittedEvents.first)
+        XCTAssertEqual(event.context["plan"], ConfidenceValue(string: "premium"))
+        XCTAssertEqual(event.context["country"], ConfidenceValue(string: "SE"))
+        XCTAssertEqual(event.context["targeting_key"], ConfidenceValue(string: "user-1"))
+    }
+
+    func testTrackContextAttributeOverridesMergedEvaluationContext() throws {
+        let engine = EventSenderEngineSpy()
+        let confidence = makeConfidence(
+            eventSenderEngine: engine,
+            initialContext: ["plan": ConfidenceValue(string: "free")]
+        )
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+
+        let details = ImmutableTrackingEventDetails(attributes: [
+            "context": .structure(["source": .string("details")])
+        ])
+        try provider.track(
+            key: "Checkout",
+            context: ImmutableContext(attributes: ["plan": .string("premium")]),
+            details: details
+        )
+
+        let event = try XCTUnwrap(engine.emittedEvents.first)
+        XCTAssertEqual(
+            event.payload["context"],
+            ConfidenceValue(structure: ["source": ConfidenceValue(string: "details")])
+        )
+    }
+
+    private func makeConfidence(
+        eventSenderEngine: EventSenderEngine,
+        initialContext: ConfidenceStruct = [:]
+    ) -> Confidence {
+        Confidence(
+            clientSecret: "test",
+            region: .global,
+            eventSenderEngine: eventSenderEngine,
+            flagApplier: NoOpFlagApplier(),
+            remoteFlagResolver: createFakeClient(resolvedValues: []),
+            storage: StorageMock(),
+            telemetry: Telemetry(sdkId: Confidence.sdkId, library: .confidence, libraryVersion: "test"),
+            context: initialContext,
+            debugLogger: nil
+        )
+    }
+}
+
+private struct EmittedEvent {
+    let name: String
+    let data: ConfidenceStruct
+    let context: ConfidenceStruct
+    let payload: ConfidenceStruct
+}
+
+private class EventSenderEngineSpy: EventSenderEngine {
+    var emittedEvents: [EmittedEvent] = []
+
+    func emit(eventName: String, data: ConfidenceStruct, context: ConfidenceStruct) throws {
+        emittedEvents.append(
+            EmittedEvent(
+                name: eventName,
+                data: data,
+                context: context,
+                payload: try PayloadMergerImpl().merge(context: context, data: data)
+            )
+        )
+    }
+
+    func shutdown() {}
+
+    func flush() {}
+}
+
+private class NoOpFlagApplier: FlagApplier {
+    func apply(flagName: String, resolveToken: String) async {}
 }
 
 private class StorageMock: Storage {

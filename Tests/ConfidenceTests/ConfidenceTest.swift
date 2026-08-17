@@ -814,15 +814,32 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 0)
     }
 
-    func testInvalidContextInMessage() async throws {
-        let confidence = Confidence.Builder(clientSecret: "test")
-            .build()
-
-        XCTAssertThrowsError(
-            try confidence.track(eventName: "test", data: ["context": ConfidenceValue(string: "test")])
-        ) { error in
-            XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
+    func testContextInDataOverridesEvaluationContext() throws {
+        let engine = EventSenderEngineSpy()
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                .init(resolvedValues: [], resolveToken: "token")
+            }
         }
+        let confidence = Confidence(
+            clientSecret: "test",
+            region: .global,
+            eventSenderEngine: engine,
+            flagApplier: flagApplier,
+            remoteFlagResolver: FakeClient(),
+            storage: storage,
+            telemetry: Telemetry(sdkId: Confidence.sdkId, library: .confidence, libraryVersion: "test"),
+            debugLogger: nil
+        )
+
+        try confidence.track(
+            eventName: "test",
+            data: ["context": ConfidenceValue(string: "override")],
+            eventContext: ["session": ConfidenceValue(string: "ignored")]
+        )
+
+        XCTAssertEqual(engine.emittedPayloads.count, 1)
+        XCTAssertEqual(engine.emittedPayloads[0]["context"], ConfidenceValue(string: "override"))
     }
 
     func testTypeMismatch() async throws {
@@ -1374,6 +1391,18 @@ class ConfidenceTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertNil(evaluation.errorCode)
     }
+}
+
+private final class EventSenderEngineSpy: EventSenderEngine {
+    var emittedPayloads: [ConfidenceStruct] = []
+
+    func emit(eventName: String, data: ConfidenceStruct, context: ConfidenceStruct) throws {
+        emittedPayloads.append(try PayloadMergerImpl().merge(context: context, data: data))
+    }
+
+    func shutdown() {}
+
+    func flush() {}
 }
 
 final class DispatchQueueFake: DispatchQueueType {
