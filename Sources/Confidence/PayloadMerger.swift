@@ -6,11 +6,13 @@ internal protocol PayloadMerger {
 
 internal struct PayloadMergerImpl: PayloadMerger {
     func merge(context: ConfidenceStruct, data: ConfidenceStruct) throws -> ConfidenceStruct {
-        guard data["context"] == nil else {
-            throw ConfidenceError.invalidContextInMessage
-        }
         var map: ConfidenceStruct = data
-        map["context"] = ConfidenceValue.init(structure: context)
+        if let contextFromData = data["context"] {
+            // An explicit "context" entry in event data overrides the evaluation context for this event.
+            map["context"] = contextFromData
+        } else {
+            map["context"] = ConfidenceValue.init(structure: context)
+        }
         return map
     }
 }

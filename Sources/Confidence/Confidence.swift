@@ -328,15 +328,27 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func track(eventName: String, data: ConfidenceStruct) throws {
+        try track(eventName: eventName, data: data, eventContext: getContext())
+    }
+
+    public func track(eventName: String, data: ConfidenceStruct, eventContext: ConfidenceStruct) throws {
         try eventSenderEngine.emit(
             eventName: eventName,
             data: data,
-            context: getContext()
+            context: eventContext
         )
     }
 
     public func flush() {
         eventSenderEngine.flush()
+    }
+
+    /**
+    Flush pending tracked events and shut down the event sender engine.
+    Call when the SDK is no longer needed, for example on app termination.
+    */
+    public func stop() {
+        eventSenderEngine.shutdown()
     }
 }
 
@@ -395,6 +407,7 @@ extension Confidence {
         internal var region: ConfidenceRegion = .global
         internal var initialContext: ConfidenceStruct = [:]
         internal var timeout: Double = 10
+        internal var eventFlushInterval: TimeInterval?
 
         // Injectable for testing
         internal var flagApplier: FlagApplier?
@@ -463,6 +476,15 @@ extension Confidence {
         }
 
         /**
+        Set a periodic flush interval for tracked events, in seconds. Disabled by default.
+        When set, pending events are uploaded on this interval even if the batch size threshold has not been reached.
+        */
+        public func withEventFlushInterval(_ interval: TimeInterval) -> Builder {
+            self.eventFlushInterval = interval
+            return self
+        }
+
+        /**
         Build the Confidence instance.
         */
         public func build() -> Confidence {
@@ -506,7 +528,8 @@ extension Confidence {
                 clientSecret: clientSecret,
                 uploader: uploader,
                 storage: eventStorage,
-                debugLogger: debugLogger
+                debugLogger: debugLogger,
+                flushInterval: eventFlushInterval
             )
             return Confidence(
                 clientSecret: clientSecret,
