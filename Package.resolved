@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "swift-log",
+        "repositoryURL": "https://github.com/apple/swift-log",
+        "state": {
+          "branch": null,
+          "revision": "3ffafb9722d5d918c614feb496c8789a3b59d222",
+          "version": "1.15.0"
+        }
+      },
+      {
         "package": "SwiftProtobuf",
         "repositoryURL": "https://github.com/apple/swift-protobuf.git",
         "state": {
@@ -15,8 +24,8 @@
         "repositoryURL": "https://github.com/open-feature/swift-sdk.git",
         "state": {
           "branch": null,
-          "revision": "d71686219a65ab78f77923ceb0e2ea549e1e50ef",
-          "version": "0.5.0"
+          "revision": "2815888f22f6e0e8adad0fa80f089bd821210545",
+          "version": null
         }
       }
     ]

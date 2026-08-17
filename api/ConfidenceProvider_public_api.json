@@ -8,11 +8,15 @@
       },
       {
         "name": "initialize(initialContext:)",
-        "declaration": "public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws"
+        "declaration": "public func initialize(initialContext: OpenFeature.EvaluationContext?) -> Future<Void, Never>"
+      },
+      {
+        "name": "shutdown()",
+        "declaration": "public func shutdown()"
       },
       {
         "name": "onContextSet(oldContext:newContext:)",
-        "declaration": "public func onContextSet(\n    oldContext: OpenFeature.EvaluationContext?,\n    newContext: OpenFeature.EvaluationContext\n) async"
+        "declaration": "public func onContextSet(\n    oldContext: OpenFeature.EvaluationContext?,\n    newContext: OpenFeature.EvaluationContext\n) -> Future<Void, Never>"
       },
       {
         "name": "getBooleanEvaluation(key:defaultValue:context:)",
@@ -36,7 +40,7 @@
       },
       {
         "name": "observe()",
-        "declaration": "public func observe() -> AnyPublisher<OpenFeature.ProviderEvent?, Never>"
+        "declaration": "public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never>"
       }
     ]
   }

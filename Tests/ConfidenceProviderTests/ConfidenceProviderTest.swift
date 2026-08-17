@@ -76,44 +76,25 @@ class ConfidenceProviderTest: XCTestCase {
 
     private func setupProviderAndWaitForReady(
         confidence: Confidence,
-        initializationStrategy: InitializationStrategy = .fetchAndActivate,
-        timeout: TimeInterval = 5.0
+        initializationStrategy: InitializationStrategy = .fetchAndActivate
     ) async -> AnyCancellable {
-        let readyExpectation = XCTestExpectation(description: "Ready")
-
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
+        let cancellable = provider.observe().sink { _ in }
 
-        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if event == .ready() {
-                readyExpectation.fulfill()
-            } else {
-                print(event.debugDescription)
-            }
-        }
-
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-        await fulfillment(of: [readyExpectation], timeout: timeout)
+        await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
         return cancellable
     }
 
     private func setupProviderAndWaitForError(
         confidence: Confidence,
-        initializationStrategy: InitializationStrategy = .activateAndFetchAsync,
-        timeout: TimeInterval = 5.0
+        initializationStrategy: InitializationStrategy = .activateAndFetchAsync
     ) async -> AnyCancellable {
-        let errorExpectation = XCTestExpectation(description: "Error")
-
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
-        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if let event = event {
-                if case .error = event {
-                    errorExpectation.fulfill()
-                }
-            }
-        }
+        let cancellable = provider.observe().sink { _ in }
 
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-        await fulfillment(of: [errorExpectation], timeout: timeout)
+        await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .error)
         return cancellable
     }
 
@@ -144,8 +125,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         let cancellable = await setupProviderAndWaitForReady(
             confidence: confidence,
-            initializationStrategy: .activateAndFetchAsync,
-            timeout: 5.0
+            initializationStrategy: .activateAndFetchAsync
         )
         cancellable.cancel()
     }
@@ -159,8 +139,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         let cancellable = await setupProviderAndWaitForError(
             confidence: confidence,
-            initializationStrategy: .activateAndFetchAsync,
-            timeout: 5.0
+            initializationStrategy: .activateAndFetchAsync
         )
         cancellable.cancel()
     }

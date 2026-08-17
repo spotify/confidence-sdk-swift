@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### ⚠️ Breaking Changes
+
+* Pin OpenFeature Swift SDK to revision `2815888f` (0.6.0 provider lifecycle API: `ProviderStatusTracker`, `Future`-based `initialize`/`onContextSet`, non-optional `observe()` events). Minimum iOS deployment target raised to 15.0.
+
 ## [1.5.0](https://github.com/spotify/confidence-sdk-swift/compare/1.4.5...1.5.0) (2026-03-23)
 
 
