@@ -18,10 +18,7 @@ let package = Package(
             targets: ["Confidence"])
     ],
     dependencies: [
-        .package(
-            url: "https://github.com/open-feature/swift-sdk.git",
-            revision: "2815888f22f6e0e8adad0fa80f089bd821210545"
-        ),
+        .package(url: "https://github.com/open-feature/swift-sdk.git", .exact("0.6.0")),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.20.2"),
     ],
     targets: [
