@@ -144,6 +144,61 @@ class ConfidenceProviderTest: XCTestCase {
         cancellable.cancel()
     }
 
+    func testContextSetEmitsReadyWhenFetchSucceeds() async throws {
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = createFakeClient(resolvedValues: [resolvedValue])
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
+            evaluationContext: ImmutableContext(targetingKey: "user2")
+        )
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
+        cancellable.cancel()
+    }
+
+    func testContextSetEmitsErrorWhenFetchFails() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            var shouldThrow = false
+            let resolvedValues: [ResolvedValue]
+
+            init(resolvedValues: [ResolvedValue]) {
+                self.resolvedValues = resolvedValues
+            }
+
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                if shouldThrow {
+                    throw ConfidenceError.internalError(message: "fetch failed")
+                }
+                return .init(resolvedValues: resolvedValues, resolveToken: "token")
+            }
+        }
+
+        let resolvedValue = createResolvedValue(
+            structure: ["size": .init(integer: 3)]
+        )
+        let client = FakeClient(resolvedValues: [resolvedValue])
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        client.shouldThrow = true
+        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
+            evaluationContext: ImmutableContext(targetingKey: "user2")
+        )
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .error)
+        cancellable.cancel()
+    }
+
     func testProviderThrowsOpenFeatureErrors() async throws {
         let context = ImmutableContext(targetingKey: "t")
         let storage = StorageMock()

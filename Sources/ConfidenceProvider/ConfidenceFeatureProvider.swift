@@ -96,11 +96,16 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                     return Array(Set(oldKeys).subtracting(newKeys))
                 } ?? []
 
-                await self.confidence.putContextAndWait(
+                let result = await self.confidence.reconcileContext(
                     context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
                     removedKeys: removedKeys
                 )
-                self.statusTracker.send(.contextChanged(nil))
+                switch result {
+                case .success:
+                    self.statusTracker.send(.contextChanged(nil))
+                case .failure(let error):
+                    self.statusTracker.send(.error(ProviderEventDetails(message: error.localizedDescription)))
+                }
                 promise(.success(()))
             }
         }

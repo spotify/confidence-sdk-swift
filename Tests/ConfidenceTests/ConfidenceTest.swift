@@ -413,6 +413,59 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(flagApplier.applyCallCount, 1)
     }
 
+    func testReconcileContextReportsSuccess() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                return .init(resolvedValues: [], resolveToken: "token")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let result = await confidence.reconcileContext(context: ["hello": .init(string: "world")])
+        guard case .success = result else {
+            XCTFail("expected successful reconciliation")
+            return
+        }
+    }
+
+    func testReconcileContextReportsFetchFailure() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                throw ConfidenceError.internalError(message: "test")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        let result = await confidence.reconcileContext(context: ["hello": .init(string: "world")])
+        guard case .failure = result else {
+            XCTFail("expected failed reconciliation")
+            return
+        }
+    }
+
+    func testPutContextAndWaitDoesNotThrowOnFetchFailure() async throws {
+        class FakeClient: ConfidenceResolveClient {
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                throw ConfidenceError.internalError(message: "test")
+            }
+        }
+
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: FakeClient())
+            .withStorage(storage: storage)
+            .build()
+
+        await confidence.putContextAndWait(context: ["hello": .init(string: "world")])
+    }
+
     func testResolveDoubleFlag() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
