@@ -68,7 +68,7 @@ public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
         self.value = .list(stringList.map { .string($0) })
     }
 
-    internal init(list: [ConfidenceValue]) {
+    public init(list: [ConfidenceValue]) {
         self.value = .list(list.map { $0.value })
     }
 

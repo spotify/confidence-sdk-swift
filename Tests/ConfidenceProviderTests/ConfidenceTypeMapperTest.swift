@@ -182,4 +182,39 @@ class ValueConverterTest: XCTestCase {
             ConfidenceValue(structure: ["flag": ConfidenceValue(boolean: true)])
         )
     }
+
+    func testTrackingDetailsPreservesRecursiveLists() {
+        let details = ImmutableTrackingEventDetails(
+            structure: ImmutableStructure(attributes: [
+                "empty": .list([]),
+                "structures": .list([
+                    .structure(["name": .string("first")]),
+                    .structure(["name": .string("second")])
+                ]),
+                "nested": .list([
+                    .list([.integer(1), .string("two")])
+                ])
+            ])
+        )
+
+        let data = ConfidenceTypeMapper.from(trackingDetails: details)
+
+        XCTAssertEqual(data["empty"], ConfidenceValue(list: []))
+        XCTAssertEqual(
+            data["structures"],
+            ConfidenceValue(list: [
+                ConfidenceValue(structure: ["name": ConfidenceValue(string: "first")]),
+                ConfidenceValue(structure: ["name": ConfidenceValue(string: "second")])
+            ])
+        )
+        XCTAssertEqual(
+            data["nested"],
+            ConfidenceValue(list: [
+                ConfidenceValue(list: [
+                    ConfidenceValue(integer: 1),
+                    ConfidenceValue(string: "two")
+                ])
+            ])
+        )
+    }
 }

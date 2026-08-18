@@ -407,7 +407,7 @@ extension Confidence {
         internal var region: ConfidenceRegion = .global
         internal var initialContext: ConfidenceStruct = [:]
         internal var timeout: Double = 10
-        internal var eventFlushInterval: TimeInterval?
+        internal var eventFlushInterval = EventSenderEngineImpl.defaultFlushInterval
 
         // Injectable for testing
         internal var flagApplier: FlagApplier?
@@ -476,8 +476,9 @@ extension Confidence {
         }
 
         /**
-        Set a periodic flush interval for tracked events, in seconds. Disabled by default.
-        When set, pending events are uploaded on this interval even if the batch size threshold has not been reached.
+        Set the periodic flush interval for tracked events, in seconds. Defaults to 60 seconds.
+        Pending events are uploaded on this interval even if the batch size threshold has not been reached.
+        Set a non-positive interval to disable periodic flushing.
         */
         public func withEventFlushInterval(_ interval: TimeInterval) -> Builder {
             self.eventFlushInterval = interval

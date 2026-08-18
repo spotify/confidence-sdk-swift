@@ -4,6 +4,9 @@ final class EventStorageInMemory: EventStorage {
     private var events: [ConfidenceEvent] = []
     private var batches: [String: [ConfidenceEvent]] = [:]
     func startNewBatch() throws {
+        guard !events.isEmpty else {
+            return
+        }
         batches[("\(batches.count)")] = events
         events.removeAll()
     }

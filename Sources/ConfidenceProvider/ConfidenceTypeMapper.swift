@@ -50,9 +50,30 @@ public enum ConfidenceTypeMapper {
             data["value"] = ConfidenceValue(double: numericValue)
         }
         for (attributeKey, attributeValue) in trackingDetails.asMap() {
-            data[attributeKey] = convertValue(attributeValue)
+            data[attributeKey] = convertTrackingValue(attributeValue)
         }
         return data
+    }
+
+    static private func convertTrackingValue(_ value: Value) -> ConfidenceValue {
+        switch value {
+        case .boolean(let value):
+            return ConfidenceValue(boolean: value)
+        case .string(let value):
+            return ConfidenceValue(string: value)
+        case .integer(let value):
+            return ConfidenceValue(integer: Int(value))
+        case .double(let value):
+            return ConfidenceValue(double: value)
+        case .date(let value):
+            return ConfidenceValue(timestamp: value)
+        case .list(let values):
+            return ConfidenceValue(list: values.map(convertTrackingValue))
+        case .structure(let values):
+            return ConfidenceValue(structure: values.mapValues(convertTrackingValue))
+        case .null:
+            return ConfidenceValue(null: ())
+        }
     }
 
     // swiftlint:disable:next cyclomatic_complexity

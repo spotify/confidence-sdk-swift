@@ -35,6 +35,10 @@ internal class EventStorageImpl: EventStorage {
             guard let currentFileName = self.currentFileUrl else {
                 return
             }
+            let attributes = try FileManager.default.attributesOfItem(atPath: currentFileName.path)
+            guard let fileSize = attributes[.size] as? NSNumber, fileSize.intValue > 0 else {
+                return
+            }
             try currentFileHandle?.close()
             try FileManager.default.moveItem(
                 at: currentFileName,

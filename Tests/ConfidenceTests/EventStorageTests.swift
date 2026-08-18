@@ -29,6 +29,14 @@ class EventStorageTest: XCTestCase {
         XCTAssertEqual(events[1].name, "some event 2")
     }
 
+    func testEmptyCurrentBatchIsNotSealed() throws {
+        let eventStorage = try EventStorageImpl()
+
+        try eventStorage.startNewBatch()
+
+        XCTAssertTrue(try eventStorage.batchReadyIds().isEmpty)
+    }
+
     func testContinueWritingToOldBatch() throws {
         let eventStorage = try EventStorageImpl()
         try eventStorage.writeEvent(event: ConfidenceEvent(

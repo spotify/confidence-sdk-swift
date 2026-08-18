@@ -17,7 +17,7 @@ final class EventSenderEngineReliabilityTest: XCTestCase {
         try await super.setUp()
     }
 
-    func testStartupUploadsPendingReadyBatchesWithoutSealingCurrentBatch() throws {
+    func testStartupSealsAndUploadsRecoveredCurrentBatch() throws {
         storageMock.events = [
             ConfidenceEvent(name: "pending", payload: [:], eventTime: Date.backport.now)
         ]
@@ -27,6 +27,7 @@ final class EventSenderEngineReliabilityTest: XCTestCase {
         ]
 
         let expectation = XCTestExpectation(description: "Startup upload finished")
+        expectation.expectedFulfillmentCount = 2
         let cancellable = uploaderMock.subject.sink { _ in
             expectation.fulfill()
         }
@@ -41,10 +42,11 @@ final class EventSenderEngineReliabilityTest: XCTestCase {
         )
 
         wait(for: [expectation], timeout: 5)
-        XCTAssertEqual(uploaderMock.calledRequest?.count, 1)
-        XCTAssertEqual(uploaderMock.calledRequest?.first?.eventDefinition, "pending")
-        XCTAssertEqual(storageMock.events.count, 1)
-        XCTAssertEqual(storageMock.events.first?.name, "current")
+        let uploadedEventNames = uploaderMock.calledRequests
+            .flatMap { $0 }
+            .map(\.eventDefinition)
+        XCTAssertEqual(Set(uploadedEventNames), Set(["pending", "current"]))
+        XCTAssertTrue(storageMock.events.isEmpty)
         cancellable.cancel()
     }
 
@@ -114,5 +116,47 @@ final class EventSenderEngineReliabilityTest: XCTestCase {
         writeQueue.sync { }
 
         XCTAssertTrue(storageMock.events.isEmpty)
+    }
+
+    func testShutdownWaitIsBounded() throws {
+        let blockingUploader = BlockingEventUploaderMock()
+        let eventSenderEngine = EventSenderEngineImpl(
+            clientSecret: "CLIENT_SECRET",
+            uploader: blockingUploader,
+            storage: storageMock,
+            flushPolicies: [],
+            writeQueue: writeQueue,
+            debugLogger: nil,
+            shutdownTimeout: 0.05
+        )
+        try eventSenderEngine.emit(eventName: "pending", data: [:], context: [:])
+        writeQueue.sync { }
+
+        let shutdownFinished = expectation(description: "Shutdown wait finished")
+        DispatchQueue.global().async {
+            eventSenderEngine.shutdown()
+            shutdownFinished.fulfill()
+        }
+
+        wait(for: [shutdownFinished], timeout: 1)
+        blockingUploader.release()
+    }
+}
+
+private final class BlockingEventUploaderMock: ConfidenceClient {
+    private let uploadRelease = DispatchSemaphore(value: 0)
+
+    func upload(events: [NetworkEvent]) async throws -> Bool {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.global().async {
+                self.uploadRelease.wait()
+                continuation.resume()
+            }
+        }
+        return true
+    }
+
+    func release() {
+        uploadRelease.signal()
     }
 }

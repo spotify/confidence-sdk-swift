@@ -18,7 +18,9 @@ protocol EventSenderEngine {
 }
 
 final class EventSenderEngineImpl: EventSenderEngine {
+    static let defaultFlushInterval: TimeInterval = 60
     private static let sendSignalName: String = "FLUSH"
+    private static let defaultShutdownTimeout: TimeInterval = 10
     private let storage: any EventStorage
     private let writeReqChannel = PassthroughSubject<ConfidenceEvent, Never>()
     private let uploadReqChannel = PassthroughSubject<String, Never>()
@@ -30,6 +32,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let semaphore = DispatchSemaphore(value: 1)
     private let writeQueue: DispatchQueue
     private let debugLogger: DebugLogger?
+    private let shutdownTimeout: TimeInterval
     private var flushIntervalTimer: DispatchSourceTimer?
     private let shutdownLock = NSLock()
     private var isShutdown = false
@@ -39,7 +42,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
         uploader: ConfidenceClient,
         storage: EventStorage,
         debugLogger: DebugLogger?,
-        flushInterval: TimeInterval? = nil
+        flushInterval: TimeInterval = EventSenderEngineImpl.defaultFlushInterval
     ) {
         self.init(
             clientSecret: clientSecret,
@@ -59,7 +62,8 @@ final class EventSenderEngineImpl: EventSenderEngine {
         flushPolicies: [FlushPolicy],
         writeQueue: DispatchQueue,
         debugLogger: DebugLogger?,
-        flushInterval: TimeInterval? = nil
+        flushInterval: TimeInterval = EventSenderEngineImpl.defaultFlushInterval,
+        shutdownTimeout: TimeInterval = EventSenderEngineImpl.defaultShutdownTimeout
     ) {
         self.uploader = uploader
         self.clientSecret = clientSecret
@@ -67,6 +71,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
         self.flushPolicies = flushPolicies + [ManualFlushPolicy()]
         self.writeQueue = writeQueue
         self.debugLogger = debugLogger
+        self.shutdownTimeout = shutdownTimeout
 
         writeReqChannel
             .receive(on: self.writeQueue)
@@ -94,10 +99,14 @@ final class EventSenderEngineImpl: EventSenderEngine {
         }
         .store(in: &cancellables)
 
-        if let flushInterval, flushInterval > 0 {
+        if flushInterval > 0 {
             startFlushIntervalTimer(flushInterval)
         }
 
+        do {
+            try storage.startNewBatch()
+        } catch {
+        }
         Task {
             await self.upload(sealCurrentBatch: false)
         }
@@ -154,21 +163,23 @@ final class EventSenderEngineImpl: EventSenderEngine {
         data: ConfidenceStruct,
         context: ConfidenceStruct
     ) throws {
+        let event = ConfidenceEvent(
+            name: eventName,
+            payload: try payloadMerger.merge(context: context, data: data),
+            eventTime: Date.backport.now)
+
         shutdownLock.lock()
-        let rejected = isShutdown
-        shutdownLock.unlock()
-        guard !rejected else {
+        guard !isShutdown else {
+            shutdownLock.unlock()
             debugLogger?.logMessage(
                 message: "Event '\(eventName)' dropped: engine is shut down",
                 isWarning: true
             )
             return
         }
-        let event = ConfidenceEvent(
-            name: eventName,
-            payload: try payloadMerger.merge(context: context, data: data),
-            eventTime: Date.backport.now)
         writeReqChannel.send(event)
+        shutdownLock.unlock()
+
         debugLogger?.logEvent(action: "Emitting event", event: event)
     }
 
@@ -179,6 +190,10 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
     func shutdown() {
         shutdownLock.lock()
+        guard !isShutdown else {
+            shutdownLock.unlock()
+            return
+        }
         isShutdown = true
         shutdownLock.unlock()
 
@@ -206,12 +221,11 @@ final class EventSenderEngineImpl: EventSenderEngine {
             await self.upload(sealCurrentBatch: true)
             shutdownComplete.signal()
         }
-        if Thread.isMainThread {
-            DispatchQueue.global(qos: .userInitiated).sync {
-                shutdownComplete.wait()
-            }
-        } else {
-            shutdownComplete.wait()
+        if shutdownComplete.wait(timeout: .now() + shutdownTimeout) == .timedOut {
+            debugLogger?.logMessage(
+                message: "Timed out waiting for final event upload; pending events remain stored for retry",
+                isWarning: true
+            )
         }
     }
 

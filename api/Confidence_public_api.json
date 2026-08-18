@@ -212,6 +212,10 @@
         "declaration": "public init(stringList: [String])"
       },
       {
+        "name": "init(list:)",
+        "declaration": "public init(list: [ConfidenceValue])"
+      },
+      {
         "name": "init(integerList:)",
         "declaration": "public init(integerList: [Int])"
       },
