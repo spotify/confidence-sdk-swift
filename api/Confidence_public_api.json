@@ -52,7 +52,7 @@
       },
       {
         "name": "reconcileContext(context:removedKeys:)",
-        "declaration": "public func reconcileContext(context: ConfidenceStruct, removedKeys: [String] = []) async -> Result<Void, Error>"
+        "declaration": "public func reconcileContext(\n    context: ConfidenceStruct,\n    removedKeys: [String] = []\n) async -> Result<Void, Error>"
       },
       {
         "name": "putContextLocal(context:removeKeys:)",
