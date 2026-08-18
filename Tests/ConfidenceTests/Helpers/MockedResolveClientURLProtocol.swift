@@ -1,5 +1,4 @@
 import Foundation
-import OpenFeature
 
 @testable import Confidence
 
