@@ -43,6 +43,34 @@ class ConfidenceProviderTest: XCTestCase {
         return FakeClient(resolvedValues: resolvedValues, shouldThrow: shouldThrow, error: error)
     }
 
+    private class TargetingKeyFakeClient: ConfidenceResolveClient {
+        var throwOnTargetingKey: String?
+
+        init(throwOnTargetingKey: String? = nil) {
+            self.throwOnTargetingKey = throwOnTargetingKey
+        }
+
+        func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            let targetingKey = ctx["targeting_key"]?.asString() ?? ""
+            if throwOnTargetingKey == targetingKey {
+                throw ConfidenceError.internalError(message: "fetch failed")
+            }
+            let size = targetingKey == "user2" ? 7 : 3
+            return .init(
+                resolvedValues: [
+                    ResolvedValue(
+                        variant: "control",
+                        value: .init(structure: ["size": .init(integer: size)]),
+                        flag: "flag",
+                        resolveReason: .match,
+                        shouldApply: true
+                    )
+                ],
+                resolveToken: "token"
+            )
+        }
+    }
+
     private func createFakeStorage(shouldThrowOnLoad: Bool = false) -> Storage {
         class FakeStorage: Storage {
             let shouldThrowOnLoad: Bool
@@ -145,10 +173,7 @@ class ConfidenceProviderTest: XCTestCase {
     }
 
     func testContextSetEmitsReadyWhenFetchSucceeds() async throws {
-        let resolvedValue = createResolvedValue(
-            structure: ["size": .init(integer: 3)]
-        )
-        let client = createFakeClient(resolvedValues: [resolvedValue])
+        let client = TargetingKeyFakeClient()
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user1")])
             .withFlagResolverClient(flagResolver: client)
@@ -160,30 +185,14 @@ class ConfidenceProviderTest: XCTestCase {
             evaluationContext: ImmutableContext(targetingKey: "user2")
         )
         XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
+        let details = OpenFeatureAPI.shared.getClient().getIntegerDetails(key: "flag.size", defaultValue: 0)
+        XCTAssertEqual(details.value, 7)
+        XCTAssertEqual(details.reason, ResolveReason.match.rawValue)
         cancellable.cancel()
     }
 
     func testContextSetEmitsStaleWhenFetchFails() async throws {
-        class FakeClient: ConfidenceResolveClient {
-            var shouldThrow = false
-            let resolvedValues: [ResolvedValue]
-
-            init(resolvedValues: [ResolvedValue]) {
-                self.resolvedValues = resolvedValues
-            }
-
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                if shouldThrow {
-                    throw ConfidenceError.internalError(message: "fetch failed")
-                }
-                return .init(resolvedValues: resolvedValues, resolveToken: "token")
-            }
-        }
-
-        let resolvedValue = createResolvedValue(
-            structure: ["size": .init(integer: 3)]
-        )
-        let client = FakeClient(resolvedValues: [resolvedValue])
+        let client = TargetingKeyFakeClient(throwOnTargetingKey: "user2")
         let confidence = Confidence.Builder(clientSecret: "test")
             .withContext(initialContext: ["targeting_key": .init(string: "user1")])
             .withFlagResolverClient(flagResolver: client)
@@ -191,7 +200,6 @@ class ConfidenceProviderTest: XCTestCase {
             .build()
 
         let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
-        client.shouldThrow = true
         await OpenFeatureAPI.shared.setEvaluationContextAndWait(
             evaluationContext: ImmutableContext(targetingKey: "user2")
         )
