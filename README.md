@@ -47,6 +47,18 @@ let ctx = ImmutableContext(targetingKey: "myTargetingKey", structure: ImmutableS
 OpenFeatureAPI.shared.setProvider(provider: provider, initialContext: ctx)
 ```
 
+### Using a self-hosted local resolver sdk or sidecar resolver
+
+Configure a custom resolve base URL to send flag resolve and apply requests to a [Confidence local resolver](https://confidence.spotify.com/docs/flags/local-resolver) or self-hosted sidecar resolver:
+
+```swift
+let confidence = Confidence.Builder(clientSecret: "mysecret")
+    .withResolveBaseUrl(resolveBaseUrl: "http://localhost:8090")
+    .build()
+```
+
+The SDK appends `/v1/flags:resolve` and `/v1/flags:apply` to this URL. Event tracking is not supported by the sidecar resolver and continues to use the Confidence events endpoint selected by `withRegion`.
+
 The evaluation context is the way for the client to specify contextual data that Confidence uses to evaluate rules defined on the flag.
 
 The `setProvider()` function is synchronous and returns immediately, however this does not mean that the provider is ready to be used. An asynchronous network request to the Confidence backend to fetch all the flags configured for your application must be completed by the provider first. The provider will then emit a _READY_ event indicating you can start resolving flags.

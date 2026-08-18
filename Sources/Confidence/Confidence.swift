@@ -401,6 +401,7 @@ extension Confidence {
 
         // Can be configured
         internal var region: ConfidenceRegion = .global
+        internal var resolveBaseUrl: String?
         internal var initialContext: ConfidenceStruct = [:]
         internal var timeout: Double = 10
         internal var eventFlushInterval = EventSenderEngineImpl.defaultFlushInterval
@@ -463,6 +464,15 @@ extension Confidence {
             return self
         }
 
+        /**
+        Set a custom base URL for resolving and applying flags.
+        Event tracking continues to use the endpoint selected by `withRegion`.
+        */
+        public func withResolveBaseUrl(resolveBaseUrl: String) -> Builder {
+            self.resolveBaseUrl = resolveBaseUrl
+            return self
+        }
+
     /**
     Set the timeout for the network request, defaulting to 10 seconds.
     */
@@ -494,6 +504,7 @@ extension Confidence {
             let options = ConfidenceClientOptions(
                 credentials: ConfidenceClientCredentials.clientSecret(secret: clientSecret),
                 region: region,
+                resolveBaseUrl: resolveBaseUrl,
                 timeoutIntervalForRequest: timeout)
             let telemetry = Telemetry(
                 sdkId: sdkId,
@@ -506,7 +517,7 @@ extension Confidence {
                 debugLogger: debugLogger
             )
             let httpClient = NetworkClient(
-                baseUrl: BaseUrlMapper.from(region: options.region),
+                baseUrl: BaseUrlMapper.from(options: options),
                 timeoutIntervalForRequests: options.timeoutIntervalForRequest
             )
             let flagApplier = flagApplier ?? FlagApplierWithRetries(

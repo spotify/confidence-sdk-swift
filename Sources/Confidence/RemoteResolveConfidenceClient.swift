@@ -19,7 +19,7 @@ class RemoteConfidenceResolveClient: ConfidenceResolveClient {
         self.telemetry = telemetry
         self.httpClient = NetworkClient(
             session: session,
-            baseUrl: BaseUrlMapper.from(region: options.region),
+            baseUrl: BaseUrlMapper.from(options: options),
             timeoutIntervalForRequests: options.timeoutIntervalForRequest)
     }
 
