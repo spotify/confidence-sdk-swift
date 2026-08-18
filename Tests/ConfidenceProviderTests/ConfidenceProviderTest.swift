@@ -163,7 +163,7 @@ class ConfidenceProviderTest: XCTestCase {
         cancellable.cancel()
     }
 
-    func testContextSetEmitsErrorWhenFetchFails() async throws {
+    func testContextSetEmitsStaleWhenFetchFails() async throws {
         class FakeClient: ConfidenceResolveClient {
             var shouldThrow = false
             let resolvedValues: [ResolvedValue]
@@ -195,7 +195,10 @@ class ConfidenceProviderTest: XCTestCase {
         await OpenFeatureAPI.shared.setEvaluationContextAndWait(
             evaluationContext: ImmutableContext(targetingKey: "user2")
         )
-        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .error)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .stale)
+        let details = OpenFeatureAPI.shared.getClient().getIntegerDetails(key: "flag.size", defaultValue: 0)
+        XCTAssertEqual(details.value, 3)
+        XCTAssertEqual(details.reason, ResolveReason.stale.rawValue)
         cancellable.cancel()
     }
 

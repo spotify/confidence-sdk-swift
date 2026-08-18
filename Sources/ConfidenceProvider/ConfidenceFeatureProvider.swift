@@ -104,7 +104,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 case .success:
                     self.statusTracker.send(.contextChanged(nil))
                 case .failure(let error):
-                    self.statusTracker.send(.error(ProviderEventDetails(message: error.localizedDescription)))
+                    self.statusTracker.send(.stale(ProviderEventDetails(message: error.localizedDescription)))
                 }
                 promise(.success(()))
             }
