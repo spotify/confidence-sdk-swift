@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.0](https://github.com/spotify/confidence-sdk-swift/compare/1.5.0...1.6.0) (2026-08-19)
+
+
+### ✨ New Features
+
+* migrate provider to OpenFeature 0.6.0 lifecycle API ([#259](https://github.com/spotify/confidence-sdk-swift/issues/259)) ([cd34d8f](https://github.com/spotify/confidence-sdk-swift/commit/cd34d8f5f48fc9e86b3d56adfabbdcc952680605))
+* OpenFeature track and event delivery reliability ([#254](https://github.com/spotify/confidence-sdk-swift/issues/254)) ([e55788f](https://github.com/spotify/confidence-sdk-swift/commit/e55788fb3a82aef94172d08f1da1ae5b434ccc7f))
+* support custom resolve base URL ([#260](https://github.com/spotify/confidence-sdk-swift/issues/260)) ([162684b](https://github.com/spotify/confidence-sdk-swift/commit/162684bfc1695256c84909eccb2a6c4ca5e67c80))
+
 ## [1.5.0](https://github.com/spotify/confidence-sdk-swift/compare/1.4.5...1.5.0) (2026-03-23)
 
 
