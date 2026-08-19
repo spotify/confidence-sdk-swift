@@ -95,7 +95,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
         uploadReqChannel.sink { [weak self] _ in
             guard let self = self else { return }
-            await self.upload()
+            await self.sealAndUpload()
         }
         .store(in: &cancellables)
 
@@ -103,40 +103,55 @@ final class EventSenderEngineImpl: EventSenderEngine {
             startFlushIntervalTimer(flushInterval)
         }
 
+        do {
+            try storage.startNewBatch()
+        } catch {
+        }
         Task {
-            await self.upload()
+            await self.uploadReadyBatches()
         }
     }
 
-    func upload() async {
+    func sealAndUpload() async {
         await withSemaphore { [weak self] in
             guard let self = self else { return }
             do {
                 try self.storage.startNewBatch()
-                let ids = try storage.batchReadyIds()
-                if ids.isEmpty {
-                    return
-                }
-                for id in ids {
-                    let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
-                        .compactMap { event in
-                            return NetworkEvent(
-                                eventDefinition: event.name,
-                                payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
-                                eventTime: Date.backport.toISOString(date: event.eventTime))
-                        }
-                    var shouldCleanup = false
-                    if events.isEmpty {
-                        shouldCleanup = true
-                    } else {
-                        shouldCleanup = try await self.uploader.upload(events: events)
-                    }
-
-                    if shouldCleanup {
-                        try storage.remove(id: id)
-                    }
-                }
+                try await self.uploadReadyBatchesWithoutLock()
             } catch {
+            }
+        }
+    }
+
+    private func uploadReadyBatches() async {
+        await withSemaphore { [weak self] in
+            guard let self = self else { return }
+            do {
+                try await self.uploadReadyBatchesWithoutLock()
+            } catch {
+            }
+        }
+    }
+
+    private func uploadReadyBatchesWithoutLock() async throws {
+        let ids = try storage.batchReadyIds()
+        for id in ids {
+            let events: [NetworkEvent] = try storage.eventsFrom(id: id)
+                .compactMap { event in
+                    NetworkEvent(
+                        eventDefinition: event.name,
+                        payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
+                        eventTime: Date.backport.toISOString(date: event.eventTime)
+                    )
+                }
+            let shouldCleanup: Bool
+            if events.isEmpty {
+                shouldCleanup = true
+            } else {
+                shouldCleanup = try await uploader.upload(events: events)
+            }
+            if shouldCleanup {
+                try storage.remove(id: id)
             }
         }
     }
@@ -212,7 +227,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private func waitForFinalUpload() {
         let shutdownComplete = DispatchSemaphore(value: 0)
         Task {
-            await self.upload()
+            await self.sealAndUpload()
             shutdownComplete.signal()
         }
         if shutdownComplete.wait(timeout: .now() + shutdownTimeout) == .timedOut {
