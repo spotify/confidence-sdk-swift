@@ -112,12 +112,6 @@ final class WatchDemoModel: ObservableObject {
     }
 
     func login(as user: String) async {
-        do {
-            try confidence.activate()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        fixedEvaluation = evaluateActivatedCache()
         currentUser = user
         UserDefaults.standard.set(user, forKey: loggedUserKey)
         await reconcileContext()
@@ -273,7 +267,7 @@ private struct WatchFlagScreen: View {
                     evaluation: liveEvaluation
                 )
                 WatchFlagRow(
-                    label: "[3] Fixed value",
+                    label: "[3] Fixed until logout",
                     evaluation: model.fixedEvaluation
                 )
 

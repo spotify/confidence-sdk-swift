@@ -18,7 +18,7 @@ The flag screen mirrors the iOS demo:
 
 - `[1] After loading` shows the latest evaluation after reconciliation, with two seconds of simulated latency so the loading state is visible.
 - `[2] Latest cache` evaluates from the active cache whenever the view updates.
-- `[3] Fixed value` captures the activated cache at startup and before login, and resets to Gray on logout.
+- `[3] Fixed until logout` captures the activated cache at startup and resets to Gray on logout.
 - `[4] On navigation` captures the evaluation when the destination screen appears.
 
 To exercise stale behavior, log in as one user and load a value, make the watch unable to reach the network, log out, then log in as the other user. The old cache remains usable, but the evaluation reason and provider status show that it is stale for the new context. Restore connectivity and tap Refresh to reconcile it.

@@ -25,19 +25,6 @@ struct LoginView: View {
                 Spacer()
                 ZStack {
                     Button(action: {
-                        do {
-                            try confidence.activate()
-                        } catch {
-                            flaggingState.state = .error(
-                                ExperimentationFlags.CustomError(message: error.localizedDescription))
-                        }
-
-                        let eval = confidence.getEvaluation(key: "swift-demoapp.color", defaultValue: "Gray")
-                        flaggingState.color = ContentView.getColor(
-                            color: eval.value
-                        )
-                        flaggingState.reason = eval.reason
-
                         // Simulating a module that handles feature flagging state during login
                         Task {
                             flaggingState.state = .loading

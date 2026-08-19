@@ -45,6 +45,7 @@ struct ContentView: View {
                     loggedUser = nil
                     flaggingState.state = .loading
                     flaggingState.color = .gray
+                    flaggingState.reason = .unknown
                     Task {
                         await confidence.removeContextAndWait(key: "user_id")
                         flaggingState.state = .ready
@@ -120,7 +121,7 @@ struct ContentView: View {
 
             HStack {
                 Text("[3]")
-                Text("This text color is fixed from app start, doesn't react on flag fetches")
+                Text("This text color is fixed from app start until logout")
                     .font(.body)
                     .foregroundStyle(flaggingState.color)
                 Spacer()
