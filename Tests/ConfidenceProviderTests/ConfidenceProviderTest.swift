@@ -963,7 +963,7 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertEqual(event.data["value"], ConfidenceValue(string: "override"))
     }
 
-    func testTrackMergesStoredEvaluationContextWithSessionContext() throws {
+    func testTrackPrefersOpenFeatureContextOverSessionContext() throws {
         let engine = EventSenderEngineSpy()
         let confidence = makeConfidence(
             eventSenderEngine: engine,
@@ -981,12 +981,13 @@ class ConfidenceProviderTest: XCTestCase {
         try provider.track(key: "Checkout", context: storedContext, details: nil)
 
         let event = try XCTUnwrap(engine.emittedEvents.first)
-        XCTAssertEqual(event.context["plan"], ConfidenceValue(string: "premium"))
-        XCTAssertEqual(event.context["country"], ConfidenceValue(string: "SE"))
-        XCTAssertEqual(event.context["targeting_key"], ConfidenceValue(string: "user-1"))
+        let context = try XCTUnwrap(event.payload["context"]?.asStructure())
+        XCTAssertEqual(context["plan"], ConfidenceValue(string: "premium"))
+        XCTAssertEqual(context["country"], ConfidenceValue(string: "SE"))
+        XCTAssertEqual(context["targeting_key"], ConfidenceValue(string: "user-1"))
     }
 
-    func testTrackContextAttributeOverridesMergedEvaluationContext() throws {
+    func testTrackContextAttributeOverridesEvaluationContext() throws {
         let engine = EventSenderEngineSpy()
         let confidence = makeConfidence(
             eventSenderEngine: engine,

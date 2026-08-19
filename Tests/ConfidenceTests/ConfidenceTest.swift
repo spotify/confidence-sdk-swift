@@ -885,10 +885,10 @@ class ConfidenceTest: XCTestCase {
             debugLogger: nil
         )
 
+        confidence.putContext(context: ["session": ConfidenceValue(string: "ignored")])
         try confidence.track(
             eventName: "test",
-            data: ["context": ConfidenceValue(string: "override")],
-            eventContext: ["session": ConfidenceValue(string: "ignored")]
+            data: ["context": ConfidenceValue(string: "override")]
         )
 
         XCTAssertEqual(engine.emittedPayloads.count, 1)

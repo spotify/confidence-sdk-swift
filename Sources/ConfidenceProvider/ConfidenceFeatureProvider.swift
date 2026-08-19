@@ -158,16 +158,17 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func track(key: String, context: (any EvaluationContext)?, details: (any TrackingEventDetails)?) throws {
-        // OpenFeature static-context clients pass the stored evaluation context here (not per-call overrides).
-        let eventContext = ConfidenceTypeMapper.mergeEventContext(
-            sessionContext: confidence.getContext(),
-            openFeatureContext: ConfidenceTypeMapper.from(ctx: context)
-        )
-        try confidence.track(
-            eventName: key,
-            data: ConfidenceTypeMapper.from(trackingDetails: details),
-            eventContext: eventContext
-        )
+        var data = ConfidenceTypeMapper.from(trackingDetails: details)
+        let openFeatureContext = ConfidenceTypeMapper.from(ctx: context)
+        if data["context"] == nil && !openFeatureContext.isEmpty {
+            data["context"] = ConfidenceValue(
+                structure: ConfidenceTypeMapper.mergeEventContext(
+                    sessionContext: confidence.getContext(),
+                    openFeatureContext: openFeatureContext
+                )
+            )
+        }
+        try confidence.track(eventName: key, data: data)
     }
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {

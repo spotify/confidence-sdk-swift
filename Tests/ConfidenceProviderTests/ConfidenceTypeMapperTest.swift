@@ -146,7 +146,7 @@ class ValueConverterTest: XCTestCase {
         XCTAssertEqual(confidenceValue, expected)
     }
 
-    func testMergeEventContextUsesOpenFeatureValuesOnConflict() {
+    func testMergeEventContextGivesOpenFeaturePrecedenceOnConflict() {
         let merged = ConfidenceTypeMapper.mergeEventContext(
             sessionContext: ["plan": ConfidenceValue(string: "free"), "visitor_id": ConfidenceValue(string: "v1")],
             openFeatureContext: ["plan": ConfidenceValue(string: "premium"), "country": ConfidenceValue(string: "SE")]

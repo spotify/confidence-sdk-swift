@@ -95,7 +95,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
         uploadReqChannel.sink { [weak self] _ in
             guard let self = self else { return }
-            await self.upload(sealCurrentBatch: true)
+            await self.upload()
         }
         .store(in: &cancellables)
 
@@ -103,22 +103,16 @@ final class EventSenderEngineImpl: EventSenderEngine {
             startFlushIntervalTimer(flushInterval)
         }
 
-        do {
-            try storage.startNewBatch()
-        } catch {
-        }
         Task {
-            await self.upload(sealCurrentBatch: false)
+            await self.upload()
         }
     }
 
-    func upload(sealCurrentBatch: Bool = true) async {
+    func upload() async {
         await withSemaphore { [weak self] in
             guard let self = self else { return }
             do {
-                if sealCurrentBatch {
-                    try self.storage.startNewBatch()
-                }
+                try self.storage.startNewBatch()
                 let ids = try storage.batchReadyIds()
                 if ids.isEmpty {
                     return
@@ -218,7 +212,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private func waitForFinalUpload() {
         let shutdownComplete = DispatchSemaphore(value: 0)
         Task {
-            await self.upload(sealCurrentBatch: true)
+            await self.upload()
             shutdownComplete.signal()
         }
         if shutdownComplete.wait(timeout: .now() + shutdownTimeout) == .timedOut {

@@ -95,10 +95,6 @@
         "declaration": "public func track(eventName: String, data: ConfidenceStruct) throws"
       },
       {
-        "name": "track(eventName:data:eventContext:)",
-        "declaration": "public func track(eventName: String, data: ConfidenceStruct, eventContext: ConfidenceStruct) throws"
-      },
-      {
         "name": "flush()",
         "declaration": "public func flush()"
       },

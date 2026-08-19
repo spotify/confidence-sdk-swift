@@ -25,6 +25,7 @@ public enum ConfidenceTypeMapper {
         return ofCtxMap.compactMapValues(convertValue)
     }
 
+    /// OpenFeature evaluation context takes precedence over Confidence session context on key conflicts.
     static func mergeEventContext(
         sessionContext: ConfidenceStruct,
         openFeatureContext: ConfidenceStruct

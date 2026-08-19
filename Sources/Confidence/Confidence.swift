@@ -328,14 +328,10 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func track(eventName: String, data: ConfidenceStruct) throws {
-        try track(eventName: eventName, data: data, eventContext: getContext())
-    }
-
-    public func track(eventName: String, data: ConfidenceStruct, eventContext: ConfidenceStruct) throws {
         try eventSenderEngine.emit(
             eventName: eventName,
             data: data,
-            context: eventContext
+            context: getContext()
         )
     }
 
