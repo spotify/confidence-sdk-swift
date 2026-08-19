@@ -900,6 +900,68 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
     }
+
+    func testContextChangeDuringInitializationKeepsLatestFlags() async throws {
+        actor DelayedFirstResolveClient: ConfidenceResolveClient {
+            private var callCount = 0
+            let firstStarted: XCTestExpectation
+
+            init(firstStarted: XCTestExpectation) {
+                self.firstStarted = firstStarted
+            }
+
+            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+                callCount += 1
+                let currentCall = callCount
+                if currentCall == 1 {
+                    firstStarted.fulfill()
+                    try await Task.sleep(nanoseconds: 200_000_000)
+                }
+                return .init(
+                    resolvedValues: [
+                        ResolvedValue(
+                            variant: currentCall == 1 ? "initial" : "updated",
+                            value: .init(structure: ["size": .init(integer: currentCall)]),
+                            flag: "flag",
+                            resolveReason: .match,
+                            shouldApply: true
+                        )
+                    ],
+                    resolveToken: "token"
+                )
+            }
+        }
+
+        let firstStarted = expectation(description: "initial resolve started")
+        let initializationFinished = expectation(description: "initialization finished")
+        let client = DelayedFirstResolveClient(firstStarted: firstStarted)
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+        let provider = ConfidenceFeatureProvider(confidence: confidence)
+        let cancellable = provider.observe().sink { event in
+            if event == .ready(nil) {
+                initializationFinished.fulfill()
+            }
+        }
+
+        OpenFeatureAPI.shared.setProvider(
+            provider: provider,
+            initialContext: ImmutableContext(targetingKey: "initial")
+        )
+        await fulfillment(of: [firstStarted], timeout: 1)
+        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
+            evaluationContext: ImmutableContext(targetingKey: "updated")
+        )
+        await fulfillment(of: [initializationFinished], timeout: 1)
+
+        let details = OpenFeatureAPI.shared.getClient().getIntegerDetails(
+            key: "flag.size", defaultValue: 0)
+        XCTAssertEqual(details.value, 2)
+        XCTAssertEqual(details.reason, ResolveReason.match.rawValue)
+        cancellable.cancel()
+    }
 }
 
 private class StorageMock: Storage {
