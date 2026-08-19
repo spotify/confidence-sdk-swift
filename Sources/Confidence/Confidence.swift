@@ -167,63 +167,30 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContextAndWait(key: String, value: ConfidenceValue) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: [key: value], removedKeys: [])
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(action: "PutContext", context: newContext)
-            } catch {
-                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
-            }
-        }
-        await awaitReconciliation()
+        _ = await scheduleContextChange(context: [key: value], removedKeys: [], logAction: "PutContext")
     }
 
     public func putContextAndWait(context: ConfidenceStruct, removedKeys: [String] = []) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(action: "PutContext", context: newContext)
-            } catch {
-                debugLogger?.logMessage(message: "Error when putting context: \(error)", isWarning: true)
-            }
-        }
-        await awaitReconciliation()
+        _ = await scheduleContextChange(context: context, removedKeys: removedKeys, logAction: "PutContext")
     }
 
     public func putContextAndWait(context: ConfidenceStruct) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: context, removedKeys: [])
-            do {
-                try await fetchAndActivate()
-                debugLogger?.logContext(
-                    action: "PutContext",
-                    context: newContext)
-            } catch {
-                debugLogger?.logMessage(
-                    message: "Error when putting context: \(error)",
-                    isWarning: true)
-            }
-        }
-        await awaitReconciliation()
+        _ = await scheduleContextChange(context: context, removedKeys: [], logAction: "PutContext")
     }
 
     public func removeContextAndWait(key: String) async {
-        taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: [:], removedKeys: [key])
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(
-                    action: "RemoveContext",
-                    context: newContext)
-            } catch {
-                debugLogger?.logMessage(
-                    message: "Error when removing context key: \(error)",
-                    isWarning: true)
-            }
-        }
-        await awaitReconciliation()
+        _ = await scheduleContextChange(context: [:], removedKeys: [key], logAction: "RemoveContext")
+    }
+
+    /**
+    Applies context and fetches flags for it.
+    Returns success only when the fetch is stored and activated; does not throw.
+    */
+    public func reconcileContext(
+        context: ConfidenceStruct,
+        removedKeys: [String] = []
+    ) async -> Result<Void, Error> {
+        await scheduleContextChange(context: context, removedKeys: removedKeys, logAction: "PutContext")
     }
 
     /**
@@ -238,41 +205,33 @@ public class Confidence: ConfidenceEventSender {
 
     public func putContext(key: String, value: ConfidenceValue) {
         taskManager.currentTask = Task {
-            await putContextAndWait(key: key, value: value)
+            await self.performContextChange(context: [key: value], removedKeys: [], logAction: "PutContext")
         }
     }
 
     public func putContext(context: ConfidenceStruct) {
         taskManager.currentTask = Task {
-            await putContextAndWait(context: context)
+            await self.performContextChange(context: context, removedKeys: [], logAction: "PutContext")
         }
     }
 
     public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
         taskManager.currentTask = Task {
-            await putContextAndWait(context: context, removedKeys: removedKeys)
+            await self.performContextChange(
+                context: context, removedKeys: removedKeys, logAction: "PutContext")
         }
     }
 
     public func removeContext(key: String) {
         taskManager.currentTask = Task {
-            await removeContextAndWait(key: key)
+            await self.performContextChange(context: [:], removedKeys: [key], logAction: "RemoveContext")
         }
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
         taskManager.currentTask = Task {
-            let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
-            do {
-                try await self.fetchAndActivate()
-                debugLogger?.logContext(
-                    action: "RemoveContext",
-                    context: newContext)
-            } catch {
-                debugLogger?.logMessage(
-                    message: "Error when putting context: \(error)",
-                    isWarning: true)
-            }
+            await self.performContextChange(
+                context: context, removedKeys: removedKeys, logAction: "RemoveContext")
         }
     }
 
@@ -281,6 +240,44 @@ public class Confidence: ConfidenceEventSender {
     */
     public func awaitReconciliation() async {
         await taskManager.awaitReconciliation()
+    }
+
+    private func scheduleContextChange(
+        context: ConfidenceStruct,
+        removedKeys: [String],
+        logAction: String
+    ) async -> Result<Void, Error> {
+        taskManager.currentTask = Task {
+            await self.performContextChange(
+                context: context, removedKeys: removedKeys, logAction: logAction)
+        }
+        return await taskManager.awaitReconciliation()
+    }
+
+    private func performContextChange(
+        context: ConfidenceStruct,
+        removedKeys: [String],
+        logAction: String
+    ) async -> Result<Void, Error> {
+        if Task.isCancelled {
+            return .failure(CancellationError())
+        }
+
+        let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+        do {
+            try await internalFetch()
+            try activate()
+            debugLogger?.logContext(action: logAction, context: newContext)
+            return .success(())
+        } catch is CancellationError {
+            return .failure(CancellationError())
+        } catch {
+            debugLogger?.logMessage(
+                message: "Error when putting context: \(error)",
+                isWarning: true)
+            try? activate()
+            return .failure(error)
+        }
     }
 
     public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {

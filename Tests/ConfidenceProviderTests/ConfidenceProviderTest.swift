@@ -43,6 +43,34 @@ class ConfidenceProviderTest: XCTestCase {
         return FakeClient(resolvedValues: resolvedValues, shouldThrow: shouldThrow, error: error)
     }
 
+    private class TargetingKeyFakeClient: ConfidenceResolveClient {
+        var throwOnTargetingKey: String?
+
+        init(throwOnTargetingKey: String? = nil) {
+            self.throwOnTargetingKey = throwOnTargetingKey
+        }
+
+        func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+            let targetingKey = ctx["targeting_key"]?.asString() ?? ""
+            if throwOnTargetingKey == targetingKey {
+                throw ConfidenceError.internalError(message: "fetch failed")
+            }
+            let size = targetingKey == "user2" ? 7 : 3
+            return .init(
+                resolvedValues: [
+                    ResolvedValue(
+                        variant: "control",
+                        value: .init(structure: ["size": .init(integer: size)]),
+                        flag: "flag",
+                        resolveReason: .match,
+                        shouldApply: true
+                    )
+                ],
+                resolveToken: "token"
+            )
+        }
+    }
+
     private func createFakeStorage(shouldThrowOnLoad: Bool = false) -> Storage {
         class FakeStorage: Storage {
             let shouldThrowOnLoad: Bool
@@ -76,44 +104,25 @@ class ConfidenceProviderTest: XCTestCase {
 
     private func setupProviderAndWaitForReady(
         confidence: Confidence,
-        initializationStrategy: InitializationStrategy = .fetchAndActivate,
-        timeout: TimeInterval = 5.0
+        initializationStrategy: InitializationStrategy = .fetchAndActivate
     ) async -> AnyCancellable {
-        let readyExpectation = XCTestExpectation(description: "Ready")
-
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
+        let cancellable = provider.observe().sink { _ in }
 
-        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if event == .ready() {
-                readyExpectation.fulfill()
-            } else {
-                print(event.debugDescription)
-            }
-        }
-
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-        await fulfillment(of: [readyExpectation], timeout: timeout)
+        await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
         return cancellable
     }
 
     private func setupProviderAndWaitForError(
         confidence: Confidence,
-        initializationStrategy: InitializationStrategy = .activateAndFetchAsync,
-        timeout: TimeInterval = 5.0
+        initializationStrategy: InitializationStrategy = .activateAndFetchAsync
     ) async -> AnyCancellable {
-        let errorExpectation = XCTestExpectation(description: "Error")
-
         let provider = ConfidenceFeatureProvider(confidence: confidence, initializationStrategy: initializationStrategy)
-        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if let event = event {
-                if case .error = event {
-                    errorExpectation.fulfill()
-                }
-            }
-        }
+        let cancellable = provider.observe().sink { _ in }
 
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-        await fulfillment(of: [errorExpectation], timeout: timeout)
+        await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .error)
         return cancellable
     }
 
@@ -144,8 +153,7 @@ class ConfidenceProviderTest: XCTestCase {
 
         let cancellable = await setupProviderAndWaitForReady(
             confidence: confidence,
-            initializationStrategy: .activateAndFetchAsync,
-            timeout: 5.0
+            initializationStrategy: .activateAndFetchAsync
         )
         cancellable.cancel()
     }
@@ -159,9 +167,46 @@ class ConfidenceProviderTest: XCTestCase {
 
         let cancellable = await setupProviderAndWaitForError(
             confidence: confidence,
-            initializationStrategy: .activateAndFetchAsync,
-            timeout: 5.0
+            initializationStrategy: .activateAndFetchAsync
         )
+        cancellable.cancel()
+    }
+
+    func testContextSetEmitsReadyWhenFetchSucceeds() async throws {
+        let client = TargetingKeyFakeClient()
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
+            evaluationContext: ImmutableContext(targetingKey: "user2")
+        )
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
+        let details = OpenFeatureAPI.shared.getClient().getIntegerDetails(key: "flag.size", defaultValue: 0)
+        XCTAssertEqual(details.value, 7)
+        XCTAssertEqual(details.reason, ResolveReason.match.rawValue)
+        cancellable.cancel()
+    }
+
+    func testContextSetEmitsStaleWhenFetchFails() async throws {
+        let client = TargetingKeyFakeClient(throwOnTargetingKey: "user2")
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withContext(initialContext: ["targeting_key": .init(string: "user1")])
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+
+        let cancellable = await setupProviderAndWaitForReady(confidence: confidence)
+        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
+            evaluationContext: ImmutableContext(targetingKey: "user2")
+        )
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .stale)
+        let details = OpenFeatureAPI.shared.getClient().getIntegerDetails(key: "flag.size", defaultValue: 0)
+        XCTAssertEqual(details.value, 3)
+        XCTAssertEqual(details.reason, ResolveReason.stale.rawValue)
         cancellable.cancel()
     }
 

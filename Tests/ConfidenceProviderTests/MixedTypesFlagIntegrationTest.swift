@@ -39,18 +39,13 @@ class MixedTypesFlagOpenFeatureIntegrationTest: XCTestCase {
     }
 
     private func setupProvider(confidence: Confidence) async -> AnyCancellable {
-        let readyExpectation = XCTestExpectation(description: "Ready")
         let provider = ConfidenceFeatureProvider(
             confidence: confidence,
             initializationStrategy: .fetchAndActivate
         )
-        let cancellable = OpenFeatureAPI.shared.observe().sink { event in
-            if event == .ready() {
-                readyExpectation.fulfill()
-            }
-        }
-        OpenFeatureAPI.shared.setProvider(provider: provider)
-        await fulfillment(of: [readyExpectation], timeout: 5.0)
+        let cancellable = provider.observe().sink { _ in }
+        await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
         return cancellable
     }
 

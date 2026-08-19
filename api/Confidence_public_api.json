@@ -51,6 +51,10 @@
         "declaration": "public func removeContextAndWait(key: String) async"
       },
       {
+        "name": "reconcileContext(context:removedKeys:)",
+        "declaration": "public func reconcileContext(\n    context: ConfidenceStruct,\n    removedKeys: [String] = []\n) async -> Result<Void, Error>"
+      },
+      {
         "name": "putContextLocal(context:removeKeys:)",
         "declaration": "public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
       },

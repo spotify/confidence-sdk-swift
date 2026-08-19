@@ -9,12 +9,14 @@ class TaskManagerTests: XCTestCase {
         let cancelTaskExpectation = XCTestExpectation(description: "cancelTaskExpectation")
         let taskManager = TaskManager()
 
-        let tenSeconds = Task {
+        let tenSeconds = Task<Result<Void, Error>, Never> {
             do {
                 try await Task.sleep(nanoseconds: 10_000_000_000)
                 await signalManager.setSignal1(true)
+                return .success(())
             } catch {
                 cancelTaskExpectation.fulfill()
+                return .failure(error)
             }
         }
         taskManager.currentTask = tenSeconds
@@ -39,21 +41,24 @@ class TaskManagerTests: XCTestCase {
         let secondTaskExpectation = XCTestExpectation(description: "secondTaskExpectation")
         let taskManager = TaskManager()
 
-        let tenSeconds1 = Task {
+        let tenSeconds1 = Task<Result<Void, Error>, Never> {
             do {
                 try await Task.sleep(nanoseconds: 10_000_000_000)
                 await signalManager.setSignal1(true)
+                return .success(())
             } catch {
                 cancelTaskExpectation.fulfill()
+                return .failure(error)
             }
         }
         taskManager.currentTask = tenSeconds1
         // Ensures the currentTask is set and has started
         try await Task.sleep(nanoseconds: 100_000_000)
 
-        let tenSeconds2 = Task {
+        let tenSeconds2 = Task<Result<Void, Error>, Never> {
             await signalManager.setSignal2(true)
             secondTaskExpectation.fulfill()
+            return .success(())
         }
         taskManager.currentTask = tenSeconds2
         // Ensures the currentTask is set and has started
@@ -73,7 +78,10 @@ class TaskManagerTests: XCTestCase {
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<10000 {
                 group.addTask {
-                    let task = Task { await Task.yield() }
+                    let task = Task<Result<Void, Error>, Never> {
+                        await Task.yield()
+                        return .success(())
+                    }
                     taskManager.currentTask = task
                 }
             }

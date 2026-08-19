@@ -102,7 +102,8 @@ OpenFeatureAPI.shared.setEvaluationContext(evaluationContext: ctx)
 
 ## Handling Provider Errors
 
-When calling `setEvaluationContext()` or `setProvider()` via the `OpenFeatureAPI` an _ERROR_ event can be emitted if something goes wrong.
+When calling `setProvider()` via the `OpenFeatureAPI` an _ERROR_ event can be emitted if something goes wrong.
+If `setEvaluationContext()` cannot fetch flags for the new context, a _STALE_ event is emitted and evaluations continue from the last cache.
 
 To listen for the _ERROR_ event, you can add an event handler via the `OpenFeatureAPI` shared instance:
 ```swift

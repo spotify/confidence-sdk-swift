@@ -15,7 +15,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public var hooks: [any Hook] = []
     private let lock = UnfairLock()
     private let initializationStrategy: InitializationStrategy
-    private let eventHandler = EventHandler()
+    private let statusTracker = ProviderStatusTracker()
     private let confidence: Confidence
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
@@ -43,20 +43,37 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         confidence.setTelemetryLibraryOpenFeature()
     }
 
-    public func initialize(initialContext: OpenFeature.EvaluationContext?) async throws {
-        let context = ConfidenceTypeMapper.from(ctx: initialContext ?? ImmutableContext(attributes: [:]))
-        confidence.putContextLocal(context: context)
-        if initializationStrategy == .activateAndFetchAsync {
-            try confidence.activate()
+    public var status: ProviderStatus {
+        statusTracker.status
+    }
+
+    public func initialize(initialContext: OpenFeature.EvaluationContext?) -> Future<Void, Never> {
+        Future { promise in
             Task {
-                await confidence.asyncFetch()
+                do {
+                    let context = ConfidenceTypeMapper.from(
+                        ctx: initialContext ?? ImmutableContext(attributes: [:])
+                    )
+                    self.confidence.putContextLocal(context: context)
+                    if self.initializationStrategy == .activateAndFetchAsync {
+                        try self.confidence.activate()
+                        self.statusTracker.send(.ready(nil))
+                        promise(.success(()))
+                        await self.confidence.asyncFetch()
+                    } else {
+                        try await self.confidence.fetchAndActivate()
+                        self.statusTracker.send(.ready(nil))
+                        promise(.success(()))
+                    }
+                } catch {
+                    self.statusTracker.send(.error(ProviderEventDetails(message: error.localizedDescription)))
+                    promise(.success(()))
+                }
             }
-        } else {
-            try await confidence.fetchAndActivate()
         }
     }
 
-    func shutdown() {
+    public func shutdown() {
         for cancellable in cancellables {
             cancellable.cancel()
         }
@@ -66,19 +83,32 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func onContextSet(
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
-    ) async {
-        let newContextMap = newContext.asMap()
-        let newKeys = Set(Array(newContextMap.keys))
-        let targetingKey = newContext.getTargetingKey()
+    ) -> Future<Void, Never> {
+        Future { promise in
+            Task {
+                self.statusTracker.send(.reconciling(nil))
+                let newContextMap = newContext.asMap()
+                let newKeys = Set(Array(newContextMap.keys))
+                let targetingKey = newContext.getTargetingKey()
 
-        let removedKeys: [String] = oldContext.map { oldCtx in
-            let oldKeys = Array(oldCtx.asMap().keys)
-            return Array(Set(oldKeys).subtracting(newKeys))
-        } ?? []
+                let removedKeys: [String] = oldContext.map { oldCtx in
+                    let oldKeys = Array(oldCtx.asMap().keys)
+                    return Array(Set(oldKeys).subtracting(newKeys))
+                } ?? []
 
-        await confidence.putContextAndWait(
-            context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
-            removedKeys: removedKeys)
+                let result = await self.confidence.reconcileContext(
+                    context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
+                    removedKeys: removedKeys
+                )
+                switch result {
+                case .success:
+                    self.statusTracker.send(.contextChanged(nil))
+                case .failure(let error):
+                    self.statusTracker.send(.stale(ProviderEventDetails(message: error.localizedDescription)))
+                }
+                promise(.success(()))
+            }
+        }
     }
 
     public func getBooleanEvaluation(key: String, defaultValue: Bool, context: EvaluationContext?) throws
@@ -126,8 +156,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         }
     }
 
-    public func observe() -> AnyPublisher<OpenFeature.ProviderEvent?, Never> {
-        return eventHandler.observe()
+    public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
+        statusTracker.observe()
     }
 
     private func withLock(callback: @escaping (ConfidenceFeatureProvider) -> Void) {
