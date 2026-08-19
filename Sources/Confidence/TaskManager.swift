@@ -16,6 +16,29 @@ internal class TaskManager {
         }
     }
 
+    /// Cancels any in-flight task, optionally applies state, then starts `operation` as the current generation.
+    @discardableResult
+    func start(
+        applying: (() -> Void)? = nil,
+        operation: @escaping () async -> Result<Void, Error>
+    ) -> Task<Result<Void, Error>, Never> {
+        queue.sync {
+            if let oldTask = _currentTask {
+                oldTask.cancel()
+            }
+            applying?()
+            let task = Task<Result<Void, Error>, Never> {
+                await operation()
+            }
+            _currentTask = task
+            return task
+        }
+    }
+
+    func isCurrent(_ task: Task<Result<Void, Error>, Never>) -> Bool {
+        queue.sync { _currentTask == task }
+    }
+
     @discardableResult
     public func awaitReconciliation() async -> Result<Void, Error> {
         while let task = self.currentTask {

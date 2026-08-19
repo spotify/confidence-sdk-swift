@@ -900,6 +900,183 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorCode)
         XCTAssertNil(evaluation.errorMessage)
     }
+
+    func testContextChangeDuringInitializationKeepsLatestFlags() async throws {
+        let firstStarted = expectation(description: "initial resolve started")
+        let firstCancelled = expectation(description: "initial resolve cancelled")
+        let client = DelayTargetingKeyClient(
+            delayKey: "user1",
+            delayedStarted: firstStarted,
+            delayedCancelled: firstCancelled
+        )
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+        let provider = ConfidenceFeatureProvider(
+            confidence: confidence,
+            initializationStrategy: .fetchAndActivate
+        )
+
+        let initialize = provider.initialize(
+            initialContext: ImmutableContext(targetingKey: "user1")
+        )
+        await fulfillment(of: [firstStarted], timeout: 1)
+        let contextSet = provider.onContextSet(
+            oldContext: ImmutableContext(targetingKey: "user1"),
+            newContext: ImmutableContext(targetingKey: "user2")
+        )
+        await wait(initialize)
+        await wait(contextSet)
+        await fulfillment(of: [firstCancelled], timeout: 1)
+
+        XCTAssertEqual(provider.status, .ready)
+        let evaluation = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 0,
+            context: nil
+        )
+        XCTAssertEqual(evaluation.value, 7)
+        XCTAssertEqual(evaluation.reason, ResolveReason.match.rawValue)
+    }
+
+    func testContextChangeDuringAsyncPrefetchKeepsLatestFlags() async throws {
+        let prefetchStarted = expectation(description: "prefetch started")
+        let prefetchCancelled = expectation(description: "prefetch cancelled")
+        let client = DelayTargetingKeyClient(
+            delayKey: "user1",
+            delayedStarted: prefetchStarted,
+            delayedCancelled: prefetchCancelled
+        )
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+        let provider = ConfidenceFeatureProvider(
+            confidence: confidence,
+            initializationStrategy: .activateAndFetchAsync
+        )
+
+        await wait(provider.initialize(initialContext: ImmutableContext(targetingKey: "user1")))
+        XCTAssertEqual(provider.status, .ready)
+        await fulfillment(of: [prefetchStarted], timeout: 1)
+        await wait(provider.onContextSet(
+            oldContext: ImmutableContext(targetingKey: "user1"),
+            newContext: ImmutableContext(targetingKey: "user2")
+        ))
+        await fulfillment(of: [prefetchCancelled], timeout: 1)
+
+        XCTAssertEqual(provider.status, .ready)
+        let evaluation = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 0,
+            context: nil
+        )
+        XCTAssertEqual(evaluation.value, 7)
+        XCTAssertEqual(evaluation.reason, ResolveReason.match.rawValue)
+    }
+
+    func testOverlappingContextChangesKeepLatestFlags() async throws {
+        let delayedStarted = expectation(description: "first context resolve started")
+        let delayedCancelled = expectation(description: "first context resolve cancelled")
+        let client = DelayTargetingKeyClient(
+            delayKey: "user2",
+            delayedStarted: delayedStarted,
+            delayedCancelled: delayedCancelled
+        )
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+        let provider = ConfidenceFeatureProvider(
+            confidence: confidence,
+            initializationStrategy: .fetchAndActivate
+        )
+
+        await wait(provider.initialize(initialContext: ImmutableContext(targetingKey: "user1")))
+        let firstChange = provider.onContextSet(
+            oldContext: ImmutableContext(targetingKey: "user1"),
+            newContext: ImmutableContext(targetingKey: "user2")
+        )
+        await fulfillment(of: [delayedStarted], timeout: 1)
+        let secondChange = provider.onContextSet(
+            oldContext: ImmutableContext(targetingKey: "user2"),
+            newContext: ImmutableContext(targetingKey: "user3")
+        )
+        await wait(firstChange)
+        await wait(secondChange)
+        await fulfillment(of: [delayedCancelled], timeout: 1)
+
+        XCTAssertEqual(provider.status, .ready)
+        let evaluation = try provider.getIntegerEvaluation(
+            key: "flag.size",
+            defaultValue: 0,
+            context: nil
+        )
+        XCTAssertEqual(evaluation.value, 9)
+        XCTAssertEqual(evaluation.reason, ResolveReason.match.rawValue)
+    }
+
+    private func wait(_ future: Future<Void, Never>) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            var cancellable: AnyCancellable?
+            cancellable = future.sink { _ in
+                continuation.resume()
+                _ = cancellable
+            }
+        }
+    }
+}
+
+private class DelayTargetingKeyClient: ConfidenceResolveClient {
+    let delayKey: String
+    let delayedStarted: XCTestExpectation
+    let delayedCancelled: XCTestExpectation
+
+    init(
+        delayKey: String,
+        delayedStarted: XCTestExpectation,
+        delayedCancelled: XCTestExpectation
+    ) {
+        self.delayKey = delayKey
+        self.delayedStarted = delayedStarted
+        self.delayedCancelled = delayedCancelled
+    }
+
+    func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+        let targetingKey = ctx["targeting_key"]?.asString() ?? ""
+        if targetingKey == delayKey {
+            delayedStarted.fulfill()
+            do {
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+            } catch {
+                delayedCancelled.fulfill()
+                throw error
+            }
+            XCTFail("delayed resolve should have been cancelled")
+        }
+        let size: Int
+        switch targetingKey {
+        case "user2":
+            size = 7
+        case "user3":
+            size = 9
+        default:
+            size = 3
+        }
+        return .init(
+            resolvedValues: [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: ["size": .init(integer: size)]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true
+                )
+            ],
+            resolveToken: "token"
+        )
+    }
 }
 
 private class StorageMock: Storage {
