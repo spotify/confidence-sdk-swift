@@ -904,6 +904,7 @@ class ConfidenceProviderTest: XCTestCase {
     func testContextChangeDuringInitializationKeepsLatestFlags() async throws {
         actor DelayedFirstResolveClient: ConfidenceResolveClient {
             private var callCount = 0
+            private var cancellationCount = 0
             let firstStarted: XCTestExpectation
 
             init(firstStarted: XCTestExpectation) {
@@ -915,7 +916,12 @@ class ConfidenceProviderTest: XCTestCase {
                 let currentCall = callCount
                 if currentCall == 1 {
                     firstStarted.fulfill()
-                    try await Task.sleep(nanoseconds: 200_000_000)
+                    do {
+                        try await Task.sleep(nanoseconds: 200_000_000)
+                    } catch {
+                        cancellationCount += 1
+                        throw error
+                    }
                 }
                 return .init(
                     resolvedValues: [
@@ -929,6 +935,10 @@ class ConfidenceProviderTest: XCTestCase {
                     ],
                     resolveToken: "token"
                 )
+            }
+
+            func cancellations() -> Int {
+                cancellationCount
             }
         }
 
@@ -960,6 +970,8 @@ class ConfidenceProviderTest: XCTestCase {
             key: "flag.size", defaultValue: 0)
         XCTAssertEqual(details.value, 2)
         XCTAssertEqual(details.reason, ResolveReason.match.rawValue)
+        let cancellationCount = await client.cancellations()
+        XCTAssertEqual(cancellationCount, 1)
         cancellable.cancel()
     }
 }
