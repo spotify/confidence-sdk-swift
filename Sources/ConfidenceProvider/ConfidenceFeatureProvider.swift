@@ -19,8 +19,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let confidence: Confidence
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
-    // OpenFeature lifecycle futures may overlap, so keep their asynchronous work ordered.
-    private var lifecycleTail: Task<Void, Never>?
+    private var lifecycleTask: Task<Void, Never>?
+    private var lifecycleGeneration = 0
 
     /**
     Initialize the Provider via a `Confidence` object.
@@ -51,20 +51,34 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) -> Future<Void, Never> {
         Future { promise in
-            self.enqueueLifecycleWork {
+            self.replaceLifecycleWork { generation in
+                guard !Task.isCancelled else {
+                    promise(.success(()))
+                    return
+                }
                 do {
                     let context = ConfidenceTypeMapper.from(
                         ctx: initialContext ?? ImmutableContext(attributes: [:])
                     )
-                    self.confidence.putContextLocal(context: context)
                     if self.initializationStrategy == .activateAndFetchAsync {
+                        self.confidence.putContextLocal(context: context)
                         try self.confidence.activate()
                         self.statusTracker.send(.ready(nil))
                         promise(.success(()))
                         await self.confidence.asyncFetch()
                     } else {
-                        try await self.confidence.fetchAndActivate()
-                        self.statusTracker.send(.ready(nil))
+                        let result = await self.confidence.reconcileContext(context: context)
+                        guard self.isCurrentLifecycleWork(generation) else {
+                            promise(.success(()))
+                            return
+                        }
+                        switch result {
+                        case .success:
+                            self.statusTracker.send(.ready(nil))
+                        case .failure(let error):
+                            self.statusTracker.send(
+                                .error(ProviderEventDetails(message: error.localizedDescription)))
+                        }
                         promise(.success(()))
                     }
                 } catch {
@@ -87,7 +101,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         newContext: OpenFeature.EvaluationContext
     ) -> Future<Void, Never> {
         Future { promise in
-            self.enqueueLifecycleWork {
+            self.replaceLifecycleWork { generation in
+                guard !Task.isCancelled else {
+                    promise(.success(()))
+                    return
+                }
                 self.statusTracker.send(.reconciling(nil))
                 let newContextMap = newContext.asMap()
                 let newKeys = Set(Array(newContextMap.keys))
@@ -102,6 +120,10 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                     context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
                     removedKeys: removedKeys
                 )
+                guard self.isCurrentLifecycleWork(generation) else {
+                    promise(.success(()))
+                    return
+                }
                 switch result {
                 case .success:
                     self.statusTracker.send(.contextChanged(nil))
@@ -162,15 +184,22 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         statusTracker.observe()
     }
 
-    private func enqueueLifecycleWork(
-        _ operation: @escaping () async -> Void
+    private func replaceLifecycleWork(
+        _ operation: @escaping (Int) async -> Void
     ) {
         lock.locked {
-            let previousTask = lifecycleTail
-            lifecycleTail = Task {
-                await previousTask?.value
-                await operation()
+            lifecycleTask?.cancel()
+            lifecycleGeneration += 1
+            let generation = lifecycleGeneration
+            lifecycleTask = Task {
+                await operation(generation)
             }
+        }
+    }
+
+    private func isCurrentLifecycleWork(_ generation: Int) -> Bool {
+        lock.locked {
+            lifecycleGeneration == generation
         }
     }
 

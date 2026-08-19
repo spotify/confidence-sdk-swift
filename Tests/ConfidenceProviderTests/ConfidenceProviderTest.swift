@@ -901,78 +901,85 @@ class ConfidenceProviderTest: XCTestCase {
         XCTAssertNil(evaluation.errorMessage)
     }
 
-    func testContextChangeDuringInitializationKeepsLatestFlags() async throws {
-        actor DelayedFirstResolveClient: ConfidenceResolveClient {
-            private var callCount = 0
-            private var cancellationCount = 0
-            let firstStarted: XCTestExpectation
-
-            init(firstStarted: XCTestExpectation) {
-                self.firstStarted = firstStarted
-            }
-
-            func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
-                callCount += 1
-                let currentCall = callCount
-                if currentCall == 1 {
-                    firstStarted.fulfill()
-                    do {
-                        try await Task.sleep(nanoseconds: 200_000_000)
-                    } catch {
-                        cancellationCount += 1
-                        throw error
-                    }
-                }
-                return .init(
-                    resolvedValues: [
-                        ResolvedValue(
-                            variant: currentCall == 1 ? "initial" : "updated",
-                            value: .init(structure: ["size": .init(integer: currentCall)]),
-                            flag: "flag",
-                            resolveReason: .match,
-                            shouldApply: true
-                        )
-                    ],
-                    resolveToken: "token"
-                )
-            }
-
-            func cancellations() -> Int {
-                cancellationCount
-            }
-        }
-
+    func testLatestContextCancelsEarlierLifecycleRequests() async throws {
         let firstStarted = expectation(description: "initial resolve started")
-        let initializationFinished = expectation(description: "initialization finished")
-        let client = DelayedFirstResolveClient(firstStarted: firstStarted)
+        let secondStarted = expectation(description: "second resolve started")
+        let client = DelayedResolveClient(
+            firstStarted: firstStarted,
+            secondStarted: secondStarted
+        )
         let confidence = Confidence.Builder(clientSecret: "test")
             .withFlagResolverClient(flagResolver: client)
             .withStorage(storage: StorageMock())
             .build()
         let provider = ConfidenceFeatureProvider(confidence: confidence)
-        let cancellable = provider.observe().sink { event in
-            if event == .ready(nil) {
-                initializationFinished.fulfill()
-            }
-        }
 
         OpenFeatureAPI.shared.setProvider(
             provider: provider,
             initialContext: ImmutableContext(targetingKey: "initial")
         )
         await fulfillment(of: [firstStarted], timeout: 1)
-        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
-            evaluationContext: ImmutableContext(targetingKey: "updated")
+        OpenFeatureAPI.shared.setEvaluationContext(
+            evaluationContext: ImmutableContext(targetingKey: "second")
         )
-        await fulfillment(of: [initializationFinished], timeout: 1)
+        await fulfillment(of: [secondStarted], timeout: 1)
+        await OpenFeatureAPI.shared.setEvaluationContextAndWait(
+            evaluationContext: ImmutableContext(targetingKey: "latest")
+        )
 
         let details = OpenFeatureAPI.shared.getClient().getIntegerDetails(
             key: "flag.size", defaultValue: 0)
-        XCTAssertEqual(details.value, 2)
+        XCTAssertEqual(details.value, 3)
         XCTAssertEqual(details.reason, ResolveReason.match.rawValue)
+        XCTAssertEqual(OpenFeatureAPI.shared.getProviderStatus(), .ready)
         let cancellationCount = await client.cancellations()
-        XCTAssertEqual(cancellationCount, 1)
-        cancellable.cancel()
+        XCTAssertEqual(cancellationCount, 2)
+    }
+}
+
+private actor DelayedResolveClient: ConfidenceResolveClient {
+    private var callCount = 0
+    private var cancellationCount = 0
+    let firstStarted: XCTestExpectation
+    let secondStarted: XCTestExpectation
+
+    init(firstStarted: XCTestExpectation, secondStarted: XCTestExpectation) {
+        self.firstStarted = firstStarted
+        self.secondStarted = secondStarted
+    }
+
+    func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+        callCount += 1
+        let currentCall = callCount
+        if currentCall < 3 {
+            if currentCall == 1 {
+                firstStarted.fulfill()
+            } else {
+                secondStarted.fulfill()
+            }
+            do {
+                try await Task.sleep(nanoseconds: 200_000_000)
+            } catch {
+                cancellationCount += 1
+                throw error
+            }
+        }
+        return .init(
+            resolvedValues: [
+                ResolvedValue(
+                    variant: currentCall == 1 ? "initial" : "updated",
+                    value: .init(structure: ["size": .init(integer: currentCall)]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true
+                )
+            ],
+            resolveToken: "token"
+        )
+    }
+
+    func cancellations() -> Int {
+        cancellationCount
     }
 }
 
