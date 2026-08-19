@@ -50,16 +50,21 @@ final class WatchDemoModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var hasCompletedInitialization = false
     @Published private(set) var fixedEvaluation = WatchEvaluation.empty
+    @Published private(set) var appVersion: Int
 
     private let api = OpenFeatureAPI()
     private let confidence: Confidence
     private var hasStarted = false
     private let loggedUserKey = "watchDemoLoggedUser"
+    private let appVersionKey = "watchDemoAppVersion"
 
     init() {
         let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? "<Empty Secret>"
         confidence = Confidence.Builder(clientSecret: secret, loggerLevel: .DEBUG).build()
         currentUser = UserDefaults.standard.string(forKey: loggedUserKey)
+        let storedVersion = UserDefaults.standard.integer(forKey: appVersionKey)
+        appVersion = max(storedVersion, 1)
+        UserDefaults.standard.set(appVersion, forKey: appVersionKey)
     }
 
     func start() async {
@@ -81,11 +86,14 @@ final class WatchDemoModel: ObservableObject {
             confidence: confidence,
             initializationStrategy: .fetchAndActivate
         )
-        await waitForSimulatedLatency()
+        let latencyTask = Task {
+            await waitForSimulatedLatency()
+        }
         await api.setProviderAndWait(
             provider: provider,
             initialContext: evaluationContext()
         )
+        await latencyTask.value
 
         updateStatus()
         errorMessage = evaluate().errorMessage
@@ -94,6 +102,12 @@ final class WatchDemoModel: ObservableObject {
     }
 
     func refresh() async {
+        await reconcileContext()
+    }
+
+    func simulateAppUpdate() async {
+        appVersion += 1
+        UserDefaults.standard.set(appVersion, forKey: appVersionKey)
         await reconcileContext()
     }
 
@@ -131,8 +145,11 @@ final class WatchDemoModel: ObservableObject {
     private func reconcileContext() async {
         isLoading = true
         errorMessage = nil
-        await waitForSimulatedLatency()
+        let latencyTask = Task {
+            await waitForSimulatedLatency()
+        }
         await api.setEvaluationContextAndWait(evaluationContext: evaluationContext())
+        await latencyTask.value
         updateStatus()
         errorMessage = evaluate().errorMessage
         hasCompletedInitialization = true
@@ -157,7 +174,8 @@ final class WatchDemoModel: ObservableObject {
 
     private func confidenceContext() -> ConfidenceStruct {
         var context = [
-            "platform": ConfidenceValue(string: "watchOS")
+            "platform": ConfidenceValue(string: "watchOS"),
+            "app_version": ConfidenceValue(integer: appVersion)
         ]
         if let currentUser {
             context["user_id"] = ConfidenceValue(string: currentUser)
@@ -166,7 +184,10 @@ final class WatchDemoModel: ObservableObject {
     }
 
     private func evaluationContext() -> ImmutableContext {
-        var attributes = ["platform": OpenFeature.Value.string("watchOS")]
+        var attributes = [
+            "platform": OpenFeature.Value.string("watchOS"),
+            "app_version": OpenFeature.Value.integer(Int64(appVersion))
+        ]
         if let currentUser {
             attributes["user_id"] = .string(currentUser)
         }
@@ -258,6 +279,8 @@ private struct WatchFlagScreen: View {
 
                 Text("Provider: \(model.providerStatus)")
                     .font(.caption2)
+                Text("App version: \(model.appVersion)")
+                    .font(.caption2)
 
                 if let errorMessage = model.errorMessage {
                     Text(errorMessage)
@@ -268,6 +291,13 @@ private struct WatchFlagScreen: View {
                 Button("Refresh") {
                     Task {
                         await model.refresh()
+                    }
+                }
+                .disabled(model.isLoading)
+
+                Button("Simulate update") {
+                    Task {
+                        await model.simulateAppUpdate()
                     }
                 }
                 .disabled(model.isLoading)
