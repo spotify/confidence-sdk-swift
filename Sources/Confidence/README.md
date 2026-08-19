@@ -2,6 +2,8 @@
 # Confidence Vanilla SDK
 It is possible to use Confidence without the Open Feature SDK. Below you'll find instructions on how to run Confidence "vanilla".
 
+The SDK supports iOS 15+, macOS 12+, and watchOS 8+. On watchOS, the core fetching, caching, evaluation, context, and event APIs are available, while the UIKit-based device information decorator and screen tracker are not. Foreground network work may be suspended when the watch app becomes inactive, so cache-first initialization is recommended when cached values are available.
+
 ## Dependency Setup
 
 ### Swift Package Manager

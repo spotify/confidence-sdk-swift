@@ -12,6 +12,18 @@ Functionalities:
 - Automatic data collection about which flags have been accessed by the application
 - Event tracking for instrumenting your application
 
+## Supported platforms
+
+- iOS 15+
+- macOS 12+
+- watchOS 8+
+
+The core Confidence SDK and OpenFeature provider run natively on watchOS. Flag fetching, caching, evaluation, context management, and event tracking use the same APIs as on iOS.
+
+`ConfidenceDeviceInfoContextDecorator` and `ConfidenceScreenTracker` are unavailable on watchOS because they depend on UIKit. Network refreshes and event uploads use a foreground `URLSession` and remain subject to watchOS suspension and background-execution limits. For fast startup, prefer `.activateAndFetchAsync` when a cached flag snapshot is available.
+
+The generated `visitor_id` is local to each installation. Supply a stable targeting identity when iPhone and Apple Watch must receive consistent assignments.
+
 # Using Confidence with OpenFeature
 
 We suggest that you use Confidence together with the [OpenFeature SDK](https://github.com/open-feature/swift-sdk). This means that your app interacts completely with the OpenFeature SDK for feature flagging, and the Confidence Provider will be the engine for realizing the feature flagging values.

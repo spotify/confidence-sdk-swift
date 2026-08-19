@@ -26,10 +26,13 @@ jobs:
 
   Unit-Tests:
     runs-on: macOS-latest
+    strategy:
+      matrix:
+        platform: [iOS, watchOS]
     steps:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
-      - name: Build and Run Unit Tests
-        run: scripts/run_tests.sh
+      - name: Build and Run Unit Tests on ${{ matrix.platform }}
+        run: scripts/run_tests.sh ${{ matrix.platform }}
 
   Integration-Tests:
     runs-on: macOS-latest
