@@ -17,16 +17,17 @@ class PayloadMergerTests: XCTestCase {
         XCTAssertEqual(merged, expected)
     }
 
-    func testInvalidMessage() throws {
+    func testContextInDataOverridesEvaluationContext() throws {
         let context = ["a": ConfidenceValue(string: "hello"), "b": ConfidenceValue(string: "world")]
         let message = [
             "b": ConfidenceValue(string: "west"),
-            "context": ConfidenceValue(string: "world")  // simple value context is lost
+            "context": ConfidenceValue(string: "world")
         ]
-        XCTAssertThrowsError(
-            try PayloadMergerImpl().merge(context: context, data: message)
-        ) { error in
-            XCTAssertEqual(error as? ConfidenceError, ConfidenceError.invalidContextInMessage)
-        }
+        let expected = [
+            "b": ConfidenceValue(string: "west"),
+            "context": ConfidenceValue(string: "world")
+        ]
+        let merged = try PayloadMergerImpl().merge(context: context, data: message)
+        XCTAssertEqual(merged, expected)
     }
 }

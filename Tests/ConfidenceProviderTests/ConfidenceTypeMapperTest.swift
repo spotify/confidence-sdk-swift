@@ -145,4 +145,76 @@ class ValueConverterTest: XCTestCase {
         ]))
         XCTAssertEqual(confidenceValue, expected)
     }
+
+    func testMergeEventContextGivesOpenFeaturePrecedenceOnConflict() {
+        let merged = ConfidenceTypeMapper.mergeEventContext(
+            sessionContext: ["plan": ConfidenceValue(string: "free"), "visitor_id": ConfidenceValue(string: "v1")],
+            openFeatureContext: ["plan": ConfidenceValue(string: "premium"), "country": ConfidenceValue(string: "SE")]
+        )
+        XCTAssertEqual(merged["plan"], ConfidenceValue(string: "premium"))
+        XCTAssertEqual(merged["visitor_id"], ConfidenceValue(string: "v1"))
+        XCTAssertEqual(merged["country"], ConfidenceValue(string: "SE"))
+    }
+
+    func testTrackingDetailsValueAttributeOverridesNumericValue() {
+        let details = ImmutableTrackingEventDetails(
+            value: 99.77,
+            structure: ImmutableStructure(attributes: ["value": .string("override")])
+        )
+        let data = ConfidenceTypeMapper.from(trackingDetails: details)
+        XCTAssertEqual(data["value"], ConfidenceValue(string: "override"))
+    }
+
+    func testTrackingDetailsMapsStructureAttributes() {
+        let details = ImmutableTrackingEventDetails(
+            structure: ImmutableStructure(attributes: [
+                "key": .string("value"),
+                "count": .integer(4),
+                "meta": .structure(["flag": .boolean(true)])
+            ])
+        )
+        let data = ConfidenceTypeMapper.from(trackingDetails: details)
+        XCTAssertNil(data["value"])
+        XCTAssertEqual(data["key"], ConfidenceValue(string: "value"))
+        XCTAssertEqual(data["count"], ConfidenceValue(integer: 4))
+        XCTAssertEqual(
+            data["meta"],
+            ConfidenceValue(structure: ["flag": ConfidenceValue(boolean: true)])
+        )
+    }
+
+    func testTrackingDetailsPreservesRecursiveLists() {
+        let details = ImmutableTrackingEventDetails(
+            structure: ImmutableStructure(attributes: [
+                "empty": .list([]),
+                "structures": .list([
+                    .structure(["name": .string("first")]),
+                    .structure(["name": .string("second")])
+                ]),
+                "nested": .list([
+                    .list([.integer(1), .string("two")])
+                ])
+            ])
+        )
+
+        let data = ConfidenceTypeMapper.from(trackingDetails: details)
+
+        XCTAssertEqual(data["empty"], ConfidenceValue(list: []))
+        XCTAssertEqual(
+            data["structures"],
+            ConfidenceValue(list: [
+                ConfidenceValue(structure: ["name": ConfidenceValue(string: "first")]),
+                ConfidenceValue(structure: ["name": ConfidenceValue(string: "second")])
+            ])
+        )
+        XCTAssertEqual(
+            data["nested"],
+            ConfidenceValue(list: [
+                ConfidenceValue(list: [
+                    ConfidenceValue(integer: 1),
+                    ConfidenceValue(string: "two")
+                ])
+            ])
+        )
+    }
 }

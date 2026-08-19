@@ -18,7 +18,9 @@ protocol EventSenderEngine {
 }
 
 final class EventSenderEngineImpl: EventSenderEngine {
+    static let defaultFlushInterval: TimeInterval = 60
     private static let sendSignalName: String = "FLUSH"
+    private static let defaultShutdownTimeout: TimeInterval = 10
     private let storage: any EventStorage
     private let writeReqChannel = PassthroughSubject<ConfidenceEvent, Never>()
     private let uploadReqChannel = PassthroughSubject<String, Never>()
@@ -30,12 +32,17 @@ final class EventSenderEngineImpl: EventSenderEngine {
     private let semaphore = DispatchSemaphore(value: 1)
     private let writeQueue: DispatchQueue
     private let debugLogger: DebugLogger?
+    private let shutdownTimeout: TimeInterval
+    private var flushIntervalTimer: DispatchSourceTimer?
+    private let shutdownLock = NSLock()
+    private var isShutdown = false
 
     convenience init(
         clientSecret: String,
         uploader: ConfidenceClient,
         storage: EventStorage,
-        debugLogger: DebugLogger?
+        debugLogger: DebugLogger?,
+        flushInterval: TimeInterval = EventSenderEngineImpl.defaultFlushInterval
     ) {
         self.init(
             clientSecret: clientSecret,
@@ -43,7 +50,8 @@ final class EventSenderEngineImpl: EventSenderEngine {
             storage: storage,
             flushPolicies: [SizeFlushPolicy(batchSize: 10)],
             writeQueue: DispatchQueue(label: "ConfidenceWriteQueue"),
-            debugLogger: debugLogger
+            debugLogger: debugLogger,
+            flushInterval: flushInterval
         )
     }
 
@@ -53,7 +61,9 @@ final class EventSenderEngineImpl: EventSenderEngine {
         storage: EventStorage,
         flushPolicies: [FlushPolicy],
         writeQueue: DispatchQueue,
-        debugLogger: DebugLogger?
+        debugLogger: DebugLogger?,
+        flushInterval: TimeInterval = EventSenderEngineImpl.defaultFlushInterval,
+        shutdownTimeout: TimeInterval = EventSenderEngineImpl.defaultShutdownTimeout
     ) {
         self.uploader = uploader
         self.clientSecret = clientSecret
@@ -61,6 +71,7 @@ final class EventSenderEngineImpl: EventSenderEngine {
         self.flushPolicies = flushPolicies + [ManualFlushPolicy()]
         self.writeQueue = writeQueue
         self.debugLogger = debugLogger
+        self.shutdownTimeout = shutdownTimeout
 
         writeReqChannel
             .receive(on: self.writeQueue)
@@ -84,40 +95,63 @@ final class EventSenderEngineImpl: EventSenderEngine {
 
         uploadReqChannel.sink { [weak self] _ in
             guard let self = self else { return }
-            await self.upload()
+            await self.sealAndUpload()
         }
         .store(in: &cancellables)
+
+        if flushInterval > 0 {
+            startFlushIntervalTimer(flushInterval)
+        }
+
+        do {
+            try storage.startNewBatch()
+        } catch {
+        }
+        Task {
+            await self.uploadReadyBatches()
+        }
     }
 
-    func upload() async {
+    func sealAndUpload() async {
         await withSemaphore { [weak self] in
             guard let self = self else { return }
             do {
                 try self.storage.startNewBatch()
-                let ids = try storage.batchReadyIds()
-                if ids.isEmpty {
-                    return
-                }
-                for id in ids {
-                    let events: [NetworkEvent] = try self.storage.eventsFrom(id: id)
-                        .compactMap { event in
-                            return NetworkEvent(
-                                eventDefinition: event.name,
-                                payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
-                                eventTime: Date.backport.toISOString(date: event.eventTime))
-                        }
-                    var shouldCleanup = false
-                    if events.isEmpty {
-                        shouldCleanup = true
-                    } else {
-                        shouldCleanup = try await self.uploader.upload(events: events)
-                    }
-
-                    if shouldCleanup {
-                        try storage.remove(id: id)
-                    }
-                }
+                try await self.uploadReadyBatchesWithoutLock()
             } catch {
+            }
+        }
+    }
+
+    private func uploadReadyBatches() async {
+        await withSemaphore { [weak self] in
+            guard let self = self else { return }
+            do {
+                try await self.uploadReadyBatchesWithoutLock()
+            } catch {
+            }
+        }
+    }
+
+    private func uploadReadyBatchesWithoutLock() async throws {
+        let ids = try storage.batchReadyIds()
+        for id in ids {
+            let events: [NetworkEvent] = try storage.eventsFrom(id: id)
+                .compactMap { event in
+                    NetworkEvent(
+                        eventDefinition: event.name,
+                        payload: NetworkStruct(fields: TypeMapper.convert(structure: event.payload).fields),
+                        eventTime: Date.backport.toISOString(date: event.eventTime)
+                    )
+                }
+            let shouldCleanup: Bool
+            if events.isEmpty {
+                shouldCleanup = true
+            } else {
+                shouldCleanup = try await uploader.upload(events: events)
+            }
+            if shouldCleanup {
+                try storage.remove(id: id)
             }
         }
     }
@@ -142,7 +176,19 @@ final class EventSenderEngineImpl: EventSenderEngine {
             name: eventName,
             payload: try payloadMerger.merge(context: context, data: data),
             eventTime: Date.backport.now)
+
+        shutdownLock.lock()
+        guard !isShutdown else {
+            shutdownLock.unlock()
+            debugLogger?.logMessage(
+                message: "Event '\(eventName)' dropped: engine is shut down",
+                isWarning: true
+            )
+            return
+        }
         writeReqChannel.send(event)
+        shutdownLock.unlock()
+
         debugLogger?.logEvent(action: "Emitting event", event: event)
     }
 
@@ -152,10 +198,54 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 
     func shutdown() {
+        shutdownLock.lock()
+        guard !isShutdown else {
+            shutdownLock.unlock()
+            return
+        }
+        isShutdown = true
+        shutdownLock.unlock()
+
+        flushIntervalTimer?.cancel()
+        flushIntervalTimer = nil
+
+        flush()
+        writeQueue.sync { }
+
+        waitForFinalUpload()
+
         for cancellable in cancellables {
             cancellable.cancel()
         }
         cancellables.removeAll()
+    }
+
+    deinit {
+        flushIntervalTimer?.cancel()
+    }
+
+    private func waitForFinalUpload() {
+        let shutdownComplete = DispatchSemaphore(value: 0)
+        Task {
+            await self.sealAndUpload()
+            shutdownComplete.signal()
+        }
+        if shutdownComplete.wait(timeout: .now() + shutdownTimeout) == .timedOut {
+            debugLogger?.logMessage(
+                message: "Timed out waiting for final event upload; pending events remain stored for retry",
+                isWarning: true
+            )
+        }
+    }
+
+    private func startFlushIntervalTimer(_ interval: TimeInterval) {
+        let timer = DispatchSource.makeTimerSource(queue: writeQueue)
+        timer.schedule(deadline: .now() + interval, repeating: interval)
+        timer.setEventHandler { [weak self] in
+            self?.flush()
+        }
+        timer.resume()
+        flushIntervalTimer = timer
     }
 }
 

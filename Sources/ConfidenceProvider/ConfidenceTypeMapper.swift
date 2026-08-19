@@ -25,6 +25,58 @@ public enum ConfidenceTypeMapper {
         return ofCtxMap.compactMapValues(convertValue)
     }
 
+    /// OpenFeature evaluation context takes precedence over Confidence session context on key conflicts.
+    static func mergeEventContext(
+        sessionContext: ConfidenceStruct,
+        openFeatureContext: ConfidenceStruct
+    ) -> ConfidenceStruct {
+        guard !openFeatureContext.isEmpty else {
+            return sessionContext
+        }
+        var merged = sessionContext
+        for (key, value) in openFeatureContext {
+            merged[key] = value
+        }
+        return merged
+    }
+
+    static func from(trackingDetails: (any TrackingEventDetails)?) -> ConfidenceStruct {
+        guard let trackingDetails else {
+            return [:]
+        }
+        // OpenFeature exposes an optional numeric value separately from structure attributes; map it
+        // to a "value" field when present and let an explicit attribute named "value" take precedence.
+        var data: ConfidenceStruct = [:]
+        if let numericValue = trackingDetails.getValue() {
+            data["value"] = ConfidenceValue(double: numericValue)
+        }
+        for (attributeKey, attributeValue) in trackingDetails.asMap() {
+            data[attributeKey] = convertTrackingValue(attributeValue)
+        }
+        return data
+    }
+
+    static private func convertTrackingValue(_ value: Value) -> ConfidenceValue {
+        switch value {
+        case .boolean(let value):
+            return ConfidenceValue(boolean: value)
+        case .string(let value):
+            return ConfidenceValue(string: value)
+        case .integer(let value):
+            return ConfidenceValue(integer: Int(value))
+        case .double(let value):
+            return ConfidenceValue(double: value)
+        case .date(let value):
+            return ConfidenceValue(timestamp: value)
+        case .list(let values):
+            return ConfidenceValue(list: values.map(convertTrackingValue))
+        case .structure(let values):
+            return ConfidenceValue(structure: values.mapValues(convertTrackingValue))
+        case .null:
+            return ConfidenceValue(null: ())
+        }
+    }
+
     // swiftlint:disable:next cyclomatic_complexity
     static private func convertValue(_ value: Value) -> ConfidenceValue {
         switch value {

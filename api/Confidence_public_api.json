@@ -97,6 +97,10 @@
       {
         "name": "flush()",
         "declaration": "public func flush()"
+      },
+      {
+        "name": "stop()",
+        "declaration": "public func stop()"
       }
     ]
   },
@@ -118,6 +122,10 @@
       {
         "name": "withTimeout(timeout:)",
         "declaration": "public func withTimeout(timeout: Double) -> Builder"
+      },
+      {
+        "name": "withEventFlushInterval(_:)",
+        "declaration": "public func withEventFlushInterval(_ interval: TimeInterval) -> Builder"
       },
       {
         "name": "build()",
@@ -198,6 +206,10 @@
       {
         "name": "init(stringList:)",
         "declaration": "public init(stringList: [String])"
+      },
+      {
+        "name": "init(list:)",
+        "declaration": "public init(list: [ConfidenceValue])"
       },
       {
         "name": "init(integerList:)",

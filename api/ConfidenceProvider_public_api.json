@@ -39,6 +39,10 @@
         "declaration": "public func getObjectEvaluation(key: String, defaultValue: OpenFeature.Value, context: EvaluationContext?)\nthrows -> OpenFeature.ProviderEvaluation<OpenFeature.Value>"
       },
       {
+        "name": "track(key:context:details:)",
+        "declaration": "public func track(key: String, context: (any EvaluationContext)?, details: (any TrackingEventDetails)?) throws"
+      },
+      {
         "name": "observe()",
         "declaration": "public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never>"
       }

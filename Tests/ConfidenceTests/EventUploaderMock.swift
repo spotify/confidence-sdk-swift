@@ -4,16 +4,19 @@ import Combine
 
 final class EventUploaderMock: ConfidenceClient {
     var calledRequest: [NetworkEvent]?
+    var calledRequests: [[NetworkEvent]] = []
     let subject: PassthroughSubject<Int, Never> = PassthroughSubject()
 
     func upload(events: [NetworkEvent]) async throws -> Bool {
         calledRequest = events
+        calledRequests.append(events)
         subject.send(1)
         return true
     }
 
     func reset() {
         calledRequest = nil
+        calledRequests.removeAll()
     }
 }
 
@@ -23,6 +26,9 @@ final class EventStorageMock: EventStorage {
     var removeCallback: () -> Void = {}
 
     func startNewBatch() throws {
+        guard !events.isEmpty else {
+            return
+        }
         batches[("\(batches.count)")] = events
         events.removeAll()
     }

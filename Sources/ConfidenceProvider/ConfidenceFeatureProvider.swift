@@ -74,6 +74,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func shutdown() {
+        confidence.stop()
         for cancellable in cancellables {
             cancellable.cancel()
         }
@@ -154,6 +155,20 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         default:
             throw OpenFeatureError.generalError(message: "Unexpected default value type: must be Dictionary or Array")
         }
+    }
+
+    public func track(key: String, context: (any EvaluationContext)?, details: (any TrackingEventDetails)?) throws {
+        var data = ConfidenceTypeMapper.from(trackingDetails: details)
+        let openFeatureContext = ConfidenceTypeMapper.from(ctx: context)
+        if data["context"] == nil && !openFeatureContext.isEmpty {
+            data["context"] = ConfidenceValue(
+                structure: ConfidenceTypeMapper.mergeEventContext(
+                    sessionContext: confidence.getContext(),
+                    openFeatureContext: openFeatureContext
+                )
+            )
+        }
+        try confidence.track(eventName: key, data: data)
     }
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
