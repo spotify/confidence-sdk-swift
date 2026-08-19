@@ -120,6 +120,10 @@
         "declaration": "public func withRegion(region: ConfidenceRegion) -> Builder"
       },
       {
+        "name": "withResolveBaseUrl(resolveBaseUrl:)",
+        "declaration": "public func withResolveBaseUrl(resolveBaseUrl: String) -> Builder"
+      },
+      {
         "name": "withTimeout(timeout:)",
         "declaration": "public func withTimeout(timeout: Double) -> Builder"
       },

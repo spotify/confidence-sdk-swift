@@ -37,6 +37,26 @@ class RemoteConfidenceClientTest: XCTestCase {
         XCTAssertTrue(processed)
     }
 
+    func testUploadIgnoresCustomResolveBaseUrl() async throws {
+        let client = RemoteConfidenceClient(
+            options: ConfidenceClientOptions(
+                credentials: ConfidenceClientCredentials.clientSecret(secret: ""),
+                region: .europe,
+                resolveBaseUrl: "http://localhost:8090",
+                timeoutIntervalForRequest: 10
+            ),
+            session: MockedClientURLProtocol.mockedSession(),
+            telemetry: Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
+        )
+
+        _ = try await client.upload(events: [])
+
+        XCTAssertEqual(
+            MockedClientURLProtocol.lastRequestURL?.absoluteString,
+            "https://events.eu.confidence.dev/v1/events:publish"
+        )
+    }
+
     func testUploadFirstEventFailsDoesntThrow() async throws {
         MockedClientURLProtocol.mockedOperation = .firstEventFails
         let client = RemoteConfidenceClient(

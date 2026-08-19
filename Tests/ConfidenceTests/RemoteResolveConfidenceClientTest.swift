@@ -43,4 +43,24 @@ class RemoteResolveConfidenceClientTest: XCTestCase {
         XCTAssertEqual(resolvedFlag2.value, sortedResultValues[1].value)
         XCTAssertEqual(resolvedFlag2.variant, sortedResultValues[1].variant)
     }
+
+    func testResolveUsesCustomResolveBaseUrl() async throws {
+        let session = MockedResolveClientURLProtocol.mockedSession(flags: flags)
+        let client = RemoteConfidenceResolveClient(
+            options: .init(
+                credentials: .clientSecret(secret: "test"),
+                resolveBaseUrl: "http://localhost:8090/",
+                timeoutIntervalForRequest: 10
+            ),
+            session: session,
+            telemetry: Telemetry(sdkId: "", library: .confidence, libraryVersion: "")
+        )
+
+        _ = try await client.resolve(ctx: ["targeting_key": ConfidenceValue(string: "user1")])
+
+        XCTAssertEqual(
+            MockedResolveClientURLProtocol.lastRequestURL?.absoluteString,
+            "http://localhost:8090/v1/flags:resolve"
+        )
+    }
 }

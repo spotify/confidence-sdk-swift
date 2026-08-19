@@ -54,6 +54,18 @@ await confidence.fetchAndActivate()
 _Note: the Confidence SDK has been intended to work as a single instance in your Application.
 Creating multiple instances in the same runtime could lead to unexpected behaviours._
 
+### Using a self-hosted local resolver sdk or sidecar resolver
+
+Configure a custom resolve base URL to send flag resolve and apply requests to a [Confidence local resolver](https://confidence.spotify.com/docs/flags/local-resolver) or self-hosted sidecar resolver:
+
+```swift
+let confidence = Confidence.Builder(clientSecret: "mysecret")
+    .withResolveBaseUrl(resolveBaseUrl: "http://localhost:8090")
+    .build()
+```
+
+The SDK appends `/v1/flags:resolve` and `/v1/flags:apply` to this URL. Event tracking is not supported by the sidecar resolver and continues to use the Confidence events endpoint selected by `withRegion`.
+
 ### Initialization strategy
 
 After creating the Confidence instance, you can choose between different strategies to initialize the SDK:

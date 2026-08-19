@@ -5,6 +5,7 @@ import XCTest
 
 class MockedClientURLProtocol: URLProtocol {
     public static var mockedOperation = MockedOperation.success
+    public static var lastRequestURL: URL?
 
     enum MockedOperation {
         case firstEventFails
@@ -23,6 +24,7 @@ class MockedClientURLProtocol: URLProtocol {
     }
 
     override func startLoading() {
+        MockedClientURLProtocol.lastRequestURL = request.url
         guard let path = request.url?.absoluteString, request.httpMethod == "POST" else {
             client?.urlProtocol(self, didFailWithError: NSError(domain: "test", code: URLError.badURL.rawValue))
             return
@@ -49,6 +51,7 @@ class MockedClientURLProtocol: URLProtocol {
 
     static func reset() {
         MockedClientURLProtocol.mockedOperation = MockedOperation.success
+        MockedClientURLProtocol.lastRequestURL = nil
     }
 
     private func upload() {

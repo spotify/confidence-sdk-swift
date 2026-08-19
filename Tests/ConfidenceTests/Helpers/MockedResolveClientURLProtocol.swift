@@ -6,6 +6,7 @@ class MockedResolveClientURLProtocol: URLProtocol {
     public static var callStats = 0
     public static var resolveStats = 0
     public static var resolveRequestFields = NetworkStruct(fields: [:])
+    public static var lastRequestURL: URL?
     public static var flags: [String: TestFlag] = [:]
     public static var failFirstApply = false
 
@@ -26,6 +27,7 @@ class MockedResolveClientURLProtocol: URLProtocol {
         MockedResolveClientURLProtocol.callStats = 0
         MockedResolveClientURLProtocol.resolveStats = 0
         MockedResolveClientURLProtocol.failFirstApply = false
+        MockedResolveClientURLProtocol.lastRequestURL = nil
     }
 
     override class func canInit(with request: URLRequest) -> Bool {
@@ -37,6 +39,7 @@ class MockedResolveClientURLProtocol: URLProtocol {
     }
 
     override func startLoading() {
+        MockedResolveClientURLProtocol.lastRequestURL = request.url
         guard let path = request.url?.absoluteString, request.httpMethod == "POST" else {
             client?.urlProtocol(self, didFailWithError: NSError(domain: "test", code: URLError.badURL.rawValue))
             return
