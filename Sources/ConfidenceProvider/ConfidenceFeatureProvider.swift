@@ -19,6 +19,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     private let confidence: Confidence
     private let confidenceFeatureProviderQueue = DispatchQueue(label: "com.provider.queue")
     private var cancellables = Set<AnyCancellable>()
+    // OpenFeature lifecycle futures may overlap, so keep their asynchronous work ordered.
+    private var lifecycleTail: Task<Void, Never>?
 
     /**
     Initialize the Provider via a `Confidence` object.
@@ -49,7 +51,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) -> Future<Void, Never> {
         Future { promise in
-            Task {
+            self.enqueueLifecycleWork {
                 do {
                     let context = ConfidenceTypeMapper.from(
                         ctx: initialContext ?? ImmutableContext(attributes: [:])
@@ -85,7 +87,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         newContext: OpenFeature.EvaluationContext
     ) -> Future<Void, Never> {
         Future { promise in
-            Task {
+            self.enqueueLifecycleWork {
                 self.statusTracker.send(.reconciling(nil))
                 let newContextMap = newContext.asMap()
                 let newKeys = Set(Array(newContextMap.keys))
@@ -158,6 +160,18 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
         statusTracker.observe()
+    }
+
+    private func enqueueLifecycleWork(
+        _ operation: @escaping () async -> Void
+    ) {
+        lock.locked {
+            let previousTask = lifecycleTail
+            lifecycleTail = Task {
+                await previousTask?.value
+                await operation()
+            }
+        }
     }
 
     private func withLock(callback: @escaping (ConfidenceFeatureProvider) -> Void) {
