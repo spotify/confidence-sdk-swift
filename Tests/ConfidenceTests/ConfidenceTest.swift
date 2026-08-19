@@ -466,6 +466,77 @@ class ConfidenceTest: XCTestCase {
         await confidence.putContextAndWait(context: ["hello": .init(string: "world")])
     }
 
+    func testApplyContextSupersededByReconcileKeepsLatestFlags() async throws {
+        let firstStarted = expectation(description: "first resolve started")
+        let firstCancelled = expectation(description: "first resolve cancelled")
+        let client = DelayTargetingKeyClient(
+            delayKey: "user1",
+            delayedStarted: firstStarted,
+            delayedCancelled: firstCancelled
+        )
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+
+        let initializeTask = Task {
+            await confidence.applyContext(
+                context: ["targeting_key": .init(string: "user1")],
+                strategy: .fetchAndActivate
+            )
+        }
+        await fulfillment(of: [firstStarted], timeout: 1)
+        let reconcileResult = await confidence.reconcileContext(
+            context: ["targeting_key": .init(string: "user2")]
+        )
+        let initializeResult = await initializeTask.value
+        await fulfillment(of: [firstCancelled], timeout: 1)
+
+        guard case .failure = initializeResult else {
+            XCTFail("initialize should be superseded")
+            return
+        }
+        guard case .success = reconcileResult else {
+            XCTFail("reconcile should succeed")
+            return
+        }
+        XCTAssertEqual(confidence.getEvaluation(key: "flag.size", defaultValue: 0).value, 7)
+    }
+
+    func testActivateThenPrefetchSupersededByReconcileKeepsLatestFlags() async throws {
+        let firstStarted = expectation(description: "prefetch started")
+        let firstCancelled = expectation(description: "prefetch cancelled")
+        let client = DelayTargetingKeyClient(
+            delayKey: "user1",
+            delayedStarted: firstStarted,
+            delayedCancelled: firstCancelled
+        )
+        let confidence = Confidence.Builder(clientSecret: "test")
+            .withFlagResolverClient(flagResolver: client)
+            .withStorage(storage: StorageMock())
+            .build()
+
+        let applyResult = await confidence.applyContext(
+            context: ["targeting_key": .init(string: "user1")],
+            strategy: .activateAndFetchAsync
+        )
+        guard case .success = applyResult else {
+            XCTFail("activation should succeed before prefetch")
+            return
+        }
+        await fulfillment(of: [firstStarted], timeout: 1)
+        let reconcileResult = await confidence.reconcileContext(
+            context: ["targeting_key": .init(string: "user2")]
+        )
+        await fulfillment(of: [firstCancelled], timeout: 1)
+
+        guard case .success = reconcileResult else {
+            XCTFail("reconcile should succeed")
+            return
+        }
+        XCTAssertEqual(confidence.getEvaluation(key: "flag.size", defaultValue: 0).value, 7)
+    }
+
     func testResolveDoubleFlag() async throws {
         class FakeClient: ConfidenceResolveClient {
             var resolveStats: Int = 0
@@ -1426,6 +1497,49 @@ class ConfidenceTest: XCTestCase {
         XCTAssertEqual(evaluation.variant, "control")
         XCTAssertNil(evaluation.errorMessage)
         XCTAssertNil(evaluation.errorCode)
+    }
+}
+
+private class DelayTargetingKeyClient: ConfidenceResolveClient {
+    let delayKey: String
+    let delayedStarted: XCTestExpectation
+    let delayedCancelled: XCTestExpectation
+
+    init(
+        delayKey: String,
+        delayedStarted: XCTestExpectation,
+        delayedCancelled: XCTestExpectation
+    ) {
+        self.delayKey = delayKey
+        self.delayedStarted = delayedStarted
+        self.delayedCancelled = delayedCancelled
+    }
+
+    func resolve(ctx: ConfidenceStruct) async throws -> ResolvesResult {
+        let targetingKey = ctx["targeting_key"]?.asString() ?? ""
+        if targetingKey == delayKey {
+            delayedStarted.fulfill()
+            do {
+                try await Task.sleep(nanoseconds: 5_000_000_000)
+            } catch {
+                delayedCancelled.fulfill()
+                throw error
+            }
+            XCTFail("delayed resolve should have been cancelled")
+        }
+        let size = targetingKey == "user2" ? 7 : 3
+        return .init(
+            resolvedValues: [
+                ResolvedValue(
+                    variant: "control",
+                    value: .init(structure: ["size": .init(integer: size)]),
+                    flag: "flag",
+                    resolveReason: .match,
+                    shouldApply: true
+                )
+            ],
+            resolveToken: "token"
+        )
     }
 }
 

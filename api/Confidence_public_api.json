@@ -55,6 +55,10 @@
         "declaration": "public func reconcileContext(\n    context: ConfidenceStruct,\n    removedKeys: [String] = []\n) async -> Result<Void, Error>"
       },
       {
+        "name": "applyContext(context:strategy:removedKeys:)",
+        "declaration": "public func applyContext(\n    context: ConfidenceStruct,\n    strategy: InitializationStrategy,\n    removedKeys: [String] = []\n) async -> Result<Void, Error>"
+      },
+      {
         "name": "putContextLocal(context:removeKeys:)",
         "declaration": "public func putContextLocal(context: ConfidenceStruct, removeKeys removedKeys: [String] = [])"
       },

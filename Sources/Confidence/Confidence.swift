@@ -107,6 +107,7 @@ public class Confidence: ConfidenceEventSender {
     private func internalFetch() async throws {
         let context = getContext()
         let resolvedFlags = try await remoteFlagResolver.resolve(ctx: context)
+        try Task.checkCancellation()
         let resolution = FlagResolution(
             context: context,
             flags: resolvedFlags.resolvedValues,
@@ -184,13 +185,40 @@ public class Confidence: ConfidenceEventSender {
 
     /**
     Applies context and fetches flags for it.
-    Returns success only when the fetch is stored and activated; does not throw.
+    Returns success only when the fetch is stored and activated for this call; does not throw.
+    If a later context change supersedes this one, returns `CancellationError`.
     */
     public func reconcileContext(
         context: ConfidenceStruct,
         removedKeys: [String] = []
     ) async -> Result<Void, Error> {
-        await scheduleContextChange(context: context, removedKeys: removedKeys, logAction: "PutContext")
+        await scheduleOwnedContextChange(
+            context: context,
+            removedKeys: removedKeys,
+            logAction: "PutContext"
+        )
+    }
+
+    /**
+    Applies context and loads flags according to `strategy`.
+    If a later context change supersedes this call, returns `CancellationError`.
+    */
+    public func applyContext(
+        context: ConfidenceStruct,
+        strategy: InitializationStrategy,
+        removedKeys: [String] = []
+    ) async -> Result<Void, Error> {
+        switch strategy {
+        case .fetchAndActivate:
+            return await scheduleOwnedContextChange(
+                context: context,
+                removedKeys: removedKeys,
+                logAction: "PutContext",
+                ignoreFetchFailure: true
+            )
+        case .activateAndFetchAsync:
+            return await activateThenPrefetch(context: context, removedKeys: removedKeys)
+        }
     }
 
     /**
@@ -204,35 +232,23 @@ public class Confidence: ConfidenceEventSender {
     }
 
     public func putContext(key: String, value: ConfidenceValue) {
-        taskManager.currentTask = Task {
-            await self.performContextChange(context: [key: value], removedKeys: [], logAction: "PutContext")
-        }
+        startContextChange(context: [key: value], removedKeys: [], logAction: "PutContext")
     }
 
     public func putContext(context: ConfidenceStruct) {
-        taskManager.currentTask = Task {
-            await self.performContextChange(context: context, removedKeys: [], logAction: "PutContext")
-        }
+        startContextChange(context: context, removedKeys: [], logAction: "PutContext")
     }
 
     public func putContext(context: ConfidenceStruct, removeKeys removedKeys: [String] = []) {
-        taskManager.currentTask = Task {
-            await self.performContextChange(
-                context: context, removedKeys: removedKeys, logAction: "PutContext")
-        }
+        startContextChange(context: context, removedKeys: removedKeys, logAction: "PutContext")
     }
 
     public func removeContext(key: String) {
-        taskManager.currentTask = Task {
-            await self.performContextChange(context: [:], removedKeys: [key], logAction: "RemoveContext")
-        }
+        startContextChange(context: [:], removedKeys: [key], logAction: "RemoveContext")
     }
 
     public func putContext(context: ConfidenceStruct, removedKeys: [String]) {
-        taskManager.currentTask = Task {
-            await self.performContextChange(
-                context: context, removedKeys: removedKeys, logAction: "RemoveContext")
-        }
+        startContextChange(context: context, removedKeys: removedKeys, logAction: "RemoveContext")
     }
 
     /**
@@ -247,37 +263,140 @@ public class Confidence: ConfidenceEventSender {
         removedKeys: [String],
         logAction: String
     ) async -> Result<Void, Error> {
-        taskManager.currentTask = Task {
-            await self.performContextChange(
-                context: context, removedKeys: removedKeys, logAction: logAction)
-        }
+        startContextChange(context: context, removedKeys: removedKeys, logAction: logAction)
         return await taskManager.awaitReconciliation()
     }
 
-    private func performContextChange(
+    private func scheduleOwnedContextChange(
         context: ConfidenceStruct,
         removedKeys: [String],
-        logAction: String
+        logAction: String,
+        ignoreFetchFailure: Bool = false
+    ) async -> Result<Void, Error> {
+        let task = startContextChange(
+            context: context,
+            removedKeys: removedKeys,
+            logAction: logAction,
+            ignoreFetchFailure: ignoreFetchFailure
+        )
+        return await ownedResult(of: task)
+    }
+
+    @discardableResult
+    private func startContextChange(
+        context: ConfidenceStruct,
+        removedKeys: [String],
+        logAction: String,
+        ignoreFetchFailure: Bool = false
+    ) -> Task<Result<Void, Error>, Never> {
+        taskManager.start(applying: {
+            _ = self.contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+        }, operation: {
+            await self.performFetchAndActivate(
+                logAction: logAction,
+                ignoreFetchFailure: ignoreFetchFailure
+            )
+        })
+    }
+
+    private func ownedResult(
+        of task: Task<Result<Void, Error>, Never>
+    ) async -> Result<Void, Error> {
+        let result = await task.value
+        if task.isCancelled || !taskManager.isCurrent(task) {
+            return .failure(CancellationError())
+        }
+        return result
+    }
+
+    private func activateThenPrefetch(
+        context: ConfidenceStruct,
+        removedKeys: [String]
+    ) async -> Result<Void, Error> {
+        await withCheckedContinuation { continuation in
+            let resume = OnceResume(continuation)
+            _ = taskManager.start(applying: {
+                _ = self.contextManager.updateContext(withValues: context, removedKeys: removedKeys)
+            }, operation: {
+                if Task.isCancelled {
+                    resume.finish(.failure(CancellationError()))
+                    return .failure(CancellationError())
+                }
+                do {
+                    try self.activate()
+                } catch {
+                    resume.finish(.failure(error))
+                    return .failure(error)
+                }
+                resume.finish(.success(()))
+                if Task.isCancelled {
+                    return .failure(CancellationError())
+                }
+                do {
+                    try await self.internalFetch()
+                    return .success(())
+                } catch {
+                    if self.isCancellation(error) {
+                        return .failure(CancellationError())
+                    }
+                    self.debugLogger?.logMessage(
+                        message: "\(error)",
+                        isWarning: true
+                    )
+                    return .failure(error)
+                }
+            })
+        }
+    }
+
+    private func performFetchAndActivate(
+        logAction: String,
+        ignoreFetchFailure: Bool
     ) async -> Result<Void, Error> {
         if Task.isCancelled {
             return .failure(CancellationError())
         }
 
-        let newContext = contextManager.updateContext(withValues: context, removedKeys: removedKeys)
         do {
-            try await internalFetch()
+            do {
+                try await internalFetch()
+            } catch {
+                if isCancellation(error) {
+                    throw CancellationError()
+                }
+                if !ignoreFetchFailure {
+                    throw error
+                }
+                debugLogger?.logMessage(
+                    message: "\(error)",
+                    isWarning: true
+                )
+            }
+            try Task.checkCancellation()
             try activate()
-            debugLogger?.logContext(action: logAction, context: newContext)
+            debugLogger?.logContext(action: logAction, context: getContext())
             return .success(())
-        } catch is CancellationError {
-            return .failure(CancellationError())
         } catch {
+            if isCancellation(error) {
+                return .failure(CancellationError())
+            }
             debugLogger?.logMessage(
                 message: "Error when putting context: \(error)",
                 isWarning: true)
             try? activate()
             return .failure(error)
         }
+    }
+
+    private func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        if Task.isCancelled {
+            return true
+        }
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
     }
 
     public func withContext(_ context: ConfidenceStruct) -> ConfidenceEventSender {
@@ -337,6 +456,23 @@ public class Confidence: ConfidenceEventSender {
 
     public func flush() {
         eventSenderEngine.flush()
+    }
+}
+
+private final class OnceResume<T> {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<T, Never>?
+
+    init(_ continuation: CheckedContinuation<T, Never>) {
+        self.continuation = continuation
+    }
+
+    func finish(_ value: T) {
+        lock.lock()
+        let continuation = self.continuation
+        self.continuation = nil
+        lock.unlock()
+        continuation?.resume(returning: value)
     }
 }
 

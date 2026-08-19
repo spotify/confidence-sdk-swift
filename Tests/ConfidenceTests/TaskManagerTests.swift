@@ -91,6 +91,29 @@ class TaskManagerTests: XCTestCase {
         XCTAssertTrue(true)
     }
 
+    func testStartCancelsPreviousTask() async {
+        let taskManager = TaskManager()
+        let firstCancelled = XCTestExpectation(description: "first cancelled")
+        let first = taskManager.start {
+            do {
+                try await Task.sleep(nanoseconds: 10_000_000_000)
+                return .success(())
+            } catch {
+                firstCancelled.fulfill()
+                return .failure(error)
+            }
+        }
+        XCTAssertTrue(taskManager.isCurrent(first))
+
+        let second = taskManager.start {
+            .success(())
+        }
+        XCTAssertFalse(taskManager.isCurrent(first))
+        XCTAssertTrue(taskManager.isCurrent(second))
+        _ = await second.value
+        await fulfillment(of: [firstCancelled], timeout: 1)
+    }
+
     private actor SignalManager {
         private var _signal1 = false
         private var _signal2 = false

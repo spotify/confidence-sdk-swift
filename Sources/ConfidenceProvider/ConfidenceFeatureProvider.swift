@@ -50,25 +50,8 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     public func initialize(initialContext: OpenFeature.EvaluationContext?) -> Future<Void, Never> {
         Future { promise in
             Task {
-                do {
-                    let context = ConfidenceTypeMapper.from(
-                        ctx: initialContext ?? ImmutableContext(attributes: [:])
-                    )
-                    self.confidence.putContextLocal(context: context)
-                    if self.initializationStrategy == .activateAndFetchAsync {
-                        try self.confidence.activate()
-                        self.statusTracker.send(.ready(nil))
-                        promise(.success(()))
-                        await self.confidence.asyncFetch()
-                    } else {
-                        try await self.confidence.fetchAndActivate()
-                        self.statusTracker.send(.ready(nil))
-                        promise(.success(()))
-                    }
-                } catch {
-                    self.statusTracker.send(.error(ProviderEventDetails(message: error.localizedDescription)))
-                    promise(.success(()))
-                }
+                await self.performInitialize(initialContext: initialContext)
+                promise(.success(()))
             }
         }
     }
@@ -87,25 +70,11 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         Future { promise in
             Task {
                 self.statusTracker.send(.reconciling(nil))
-                let newContextMap = newContext.asMap()
-                let newKeys = Set(Array(newContextMap.keys))
-                let targetingKey = newContext.getTargetingKey()
-
-                let removedKeys: [String] = oldContext.map { oldCtx in
-                    let oldKeys = Array(oldCtx.asMap().keys)
-                    return Array(Set(oldKeys).subtracting(newKeys))
-                } ?? []
-
                 let result = await self.confidence.reconcileContext(
-                    context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
-                    removedKeys: removedKeys
+                    context: ConfidenceTypeMapper.from(ctx: newContext),
+                    removedKeys: self.removedKeys(oldContext: oldContext, newContext: newContext)
                 )
-                switch result {
-                case .success:
-                    self.statusTracker.send(.contextChanged(nil))
-                case .failure(let error):
-                    self.statusTracker.send(.stale(ProviderEventDetails(message: error.localizedDescription)))
-                }
+                self.emitContextSetOutcome(result)
                 promise(.success(()))
             }
         }
@@ -158,6 +127,58 @@ public class ConfidenceFeatureProvider: FeatureProvider {
 
     public func observe() -> AnyPublisher<OpenFeature.ProviderEvent, Never> {
         statusTracker.observe()
+    }
+
+    private func performInitialize(initialContext: OpenFeature.EvaluationContext?) async {
+        let context = ConfidenceTypeMapper.from(
+            ctx: initialContext ?? ImmutableContext(attributes: [:])
+        )
+        let result = await confidence.applyContext(
+            context: context,
+            strategy: initializationStrategy
+        )
+        emitInitializeOutcome(result)
+    }
+
+    private func emitInitializeOutcome(_ result: Result<Void, Error>) {
+        switch result {
+        case .success:
+            statusTracker.send(.ready(nil))
+        case .failure(let error) where isCancellation(error):
+            break
+        case .failure(let error):
+            statusTracker.send(.error(ProviderEventDetails(message: error.localizedDescription)))
+        }
+    }
+
+    private func emitContextSetOutcome(_ result: Result<Void, Error>) {
+        switch result {
+        case .success:
+            statusTracker.send(.contextChanged(nil))
+        case .failure(let error) where isCancellation(error):
+            break
+        case .failure(let error):
+            statusTracker.send(.stale(ProviderEventDetails(message: error.localizedDescription)))
+        }
+    }
+
+    private func removedKeys(
+        oldContext: OpenFeature.EvaluationContext?,
+        newContext: OpenFeature.EvaluationContext
+    ) -> [String] {
+        let newKeys = Set(Array(newContext.asMap().keys))
+        return oldContext.map { oldCtx in
+            let oldKeys = Array(oldCtx.asMap().keys)
+            return Array(Set(oldKeys).subtracting(newKeys))
+        } ?? []
+    }
+
+    private func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return true
+        }
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled
     }
 
     private func withLock(callback: @escaping (ConfidenceFeatureProvider) -> Void) {
