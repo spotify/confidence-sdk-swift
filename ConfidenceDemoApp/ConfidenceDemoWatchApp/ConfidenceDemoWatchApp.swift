@@ -17,62 +17,16 @@ struct ConfidenceDemoWatchApp: App {
     }
 }
 
-@MainActor
-final class WatchDemoModel: ObservableObject {
-    @Published private(set) var value = "Gray"
-    @Published private(set) var reason = "Not evaluated"
-    @Published private(set) var providerStatus = "Not ready"
-    @Published private(set) var errorMessage: String?
-    @Published private(set) var isLoading = false
+struct WatchEvaluation {
+    static let empty = WatchEvaluation(
+        value: "Gray",
+        reason: "Not evaluated",
+        errorMessage: nil
+    )
 
-    private let api = OpenFeatureAPI()
-    private let confidence: Confidence
-    private var hasStarted = false
-
-    init() {
-        let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? "<Empty Secret>"
-        confidence = Confidence.Builder(clientSecret: secret, loggerLevel: .DEBUG).build()
-    }
-
-    func start() async {
-        guard !hasStarted else {
-            return
-        }
-        hasStarted = true
-        isLoading = true
-
-        let strategy: InitializationStrategy = confidence.isStorageEmpty()
-            ? .fetchAndActivate
-            : .activateAndFetchAsync
-        let provider = ConfidenceFeatureProvider(
-            confidence: confidence,
-            initializationStrategy: strategy
-        )
-        await api.setProviderAndWait(
-            provider: provider,
-            initialContext: ImmutableContext(
-                targetingKey: "watch-demo-user",
-                structure: ImmutableStructure(
-                    attributes: ["platform": .string("watchOS")]
-                )
-            )
-        )
-
-        updateEvaluation()
-        isLoading = false
-    }
-
-    func refresh() async {
-        isLoading = true
-        errorMessage = nil
-        do {
-            try await confidence.fetchAndActivate()
-            updateEvaluation()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        isLoading = false
-    }
+    let value: String
+    let reason: String
+    let errorMessage: String?
 
     var color: Color {
         switch value {
@@ -86,16 +40,141 @@ final class WatchDemoModel: ObservableObject {
             return .red
         }
     }
+}
 
-    private func updateEvaluation() {
+@MainActor
+final class WatchDemoModel: ObservableObject {
+    @Published private(set) var currentUser: String?
+    @Published private(set) var providerStatus = "Not ready"
+    @Published private(set) var errorMessage: String?
+    @Published private(set) var isLoading = false
+    @Published private(set) var hasCompletedInitialization = false
+    @Published private(set) var fixedEvaluation = WatchEvaluation.empty
+
+    private let api = OpenFeatureAPI()
+    private let confidence: Confidence
+    private var hasStarted = false
+    private let loggedUserKey = "watchDemoLoggedUser"
+
+    init() {
+        let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? "<Empty Secret>"
+        confidence = Confidence.Builder(clientSecret: secret, loggerLevel: .DEBUG).build()
+        currentUser = UserDefaults.standard.string(forKey: loggedUserKey)
+    }
+
+    func start() async {
+        guard !hasStarted else {
+            return
+        }
+        hasStarted = true
+        isLoading = true
+
+        confidence.putContextLocal(context: confidenceContext())
+        do {
+            try confidence.activate()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        fixedEvaluation = evaluateActivatedCache()
+
+        let provider = ConfidenceFeatureProvider(
+            confidence: confidence,
+            initializationStrategy: .fetchAndActivate
+        )
+        await waitForSimulatedLatency()
+        await api.setProviderAndWait(
+            provider: provider,
+            initialContext: evaluationContext()
+        )
+
+        updateStatus()
+        errorMessage = evaluate().errorMessage
+        hasCompletedInitialization = true
+        isLoading = false
+    }
+
+    func refresh() async {
+        await reconcileContext()
+    }
+
+    func login(as user: String) async {
+        do {
+            try confidence.activate()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        fixedEvaluation = evaluateActivatedCache()
+        currentUser = user
+        UserDefaults.standard.set(user, forKey: loggedUserKey)
+        await reconcileContext()
+    }
+
+    func logout() async {
+        currentUser = nil
+        UserDefaults.standard.removeObject(forKey: loggedUserKey)
+        fixedEvaluation = .empty
+        await reconcileContext()
+    }
+
+    func evaluate() -> WatchEvaluation {
         let details = api.getClient().getStringDetails(
             key: "swift-demoapp.color",
             defaultValue: "Gray"
         )
-        value = details.value
-        reason = details.reason ?? "Unknown"
+        return WatchEvaluation(
+            value: details.value,
+            reason: details.reason ?? "Unknown",
+            errorMessage: details.errorMessage
+        )
+    }
+
+    private func reconcileContext() async {
+        isLoading = true
+        errorMessage = nil
+        await waitForSimulatedLatency()
+        await api.setEvaluationContextAndWait(evaluationContext: evaluationContext())
+        updateStatus()
+        errorMessage = evaluate().errorMessage
+        hasCompletedInitialization = true
+        isLoading = false
+    }
+
+    private func waitForSimulatedLatency() async {
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
+    }
+
+    private func evaluateActivatedCache() -> WatchEvaluation {
+        let evaluation = confidence.getEvaluation(
+            key: "swift-demoapp.color",
+            defaultValue: "Gray"
+        )
+        return WatchEvaluation(
+            value: evaluation.value,
+            reason: String(describing: evaluation.reason),
+            errorMessage: evaluation.errorMessage
+        )
+    }
+
+    private func confidenceContext() -> ConfidenceStruct {
+        var context = [
+            "platform": ConfidenceValue(string: "watchOS")
+        ]
+        if let currentUser {
+            context["user_id"] = ConfidenceValue(string: currentUser)
+        }
+        return context
+    }
+
+    private func evaluationContext() -> ImmutableContext {
+        var attributes = ["platform": OpenFeature.Value.string("watchOS")]
+        if let currentUser {
+            attributes["user_id"] = .string(currentUser)
+        }
+        return ImmutableContext(structure: ImmutableStructure(attributes: attributes))
+    }
+
+    private func updateStatus() {
         providerStatus = String(describing: api.getProviderStatus())
-        errorMessage = details.errorMessage
     }
 }
 
@@ -103,19 +182,81 @@ private struct WatchContentView: View {
     @ObservedObject var model: WatchDemoModel
 
     var body: some View {
+        NavigationView {
+            Group {
+                if let currentUser = model.currentUser {
+                    WatchFlagScreen(model: model, currentUser: currentUser)
+                } else {
+                    WatchLoginScreen(model: model)
+                }
+            }
+        }
+    }
+}
+
+private struct WatchLoginScreen: View {
+    @ObservedObject var model: WatchDemoModel
+
+    var body: some View {
         ScrollView {
             VStack(spacing: 10) {
-                Circle()
-                    .fill(model.color)
-                    .frame(width: 48, height: 48)
-
-                Text(model.value)
-                    .font(.headline)
+                Text("Confidence")
+                    .font(.title3)
 
                 Text("Provider: \(model.providerStatus)")
-                    .font(.caption)
+                    .font(.caption2)
 
-                Text("Reason: \(model.reason)")
+                Button("Login user1") {
+                    Task {
+                        await model.login(as: "user1")
+                    }
+                }
+                .disabled(!model.hasCompletedInitialization || model.isLoading)
+
+                Button("Login user4") {
+                    Task {
+                        await model.login(as: "user4")
+                    }
+                }
+                .disabled(!model.hasCompletedInitialization || model.isLoading)
+
+                if model.isLoading {
+                    ProgressView()
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Login")
+    }
+}
+
+private struct WatchFlagScreen: View {
+    @ObservedObject var model: WatchDemoModel
+    let currentUser: String
+
+    var body: some View {
+        let liveEvaluation = model.evaluate()
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Logged in as \(currentUser)")
+                    .font(.caption2)
+
+                WatchFlagRow(
+                    label: "[1] After loading",
+                    evaluation: liveEvaluation,
+                    isLoading: model.isLoading
+                )
+                WatchFlagRow(
+                    label: "[2] Latest cache",
+                    evaluation: liveEvaluation
+                )
+                WatchFlagRow(
+                    label: "[3] Fixed value",
+                    evaluation: model.fixedEvaluation
+                )
+
+                Text("Provider: \(model.providerStatus)")
                     .font(.caption2)
 
                 if let errorMessage = model.errorMessage {
@@ -131,11 +272,76 @@ private struct WatchContentView: View {
                 }
                 .disabled(model.isLoading)
 
-                if model.isLoading {
-                    ProgressView()
+                NavigationLink(
+                    destination: WatchNavigationScreen(model: model),
+                    label: {
+                        Text("Navigate")
+                    }
+                )
+
+                Button("Logout") {
+                    Task {
+                        await model.logout()
+                    }
                 }
+                .disabled(model.isLoading)
             }
             .padding()
+        }
+        .navigationTitle("Flags")
+    }
+}
+
+private struct WatchFlagRow: View {
+    let label: String
+    let evaluation: WatchEvaluation
+    var isLoading = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption2)
+
+            if isLoading {
+                HStack(spacing: 6) {
+                    ProgressView()
+                    Text("Loading")
+                        .font(.caption)
+                }
+            } else {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(evaluation.color)
+                        .frame(width: 14, height: 14)
+                    Text(evaluation.value)
+                        .font(.headline)
+                }
+                Text(evaluation.reason)
+                    .font(.caption2)
+            }
+        }
+    }
+}
+
+private struct WatchNavigationScreen: View {
+    @ObservedObject var model: WatchDemoModel
+    @State private var capturedEvaluation = WatchEvaluation.empty
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("[4] On navigation")
+                .font(.caption2)
+            Circle()
+                .fill(capturedEvaluation.color)
+                .frame(width: 48, height: 48)
+            Text(capturedEvaluation.value)
+                .font(.headline)
+            Text(capturedEvaluation.reason)
+                .font(.caption2)
+        }
+        .navigationTitle("Destination")
+        .onAppear {
+            capturedEvaluation = model.evaluate()
         }
     }
 }
