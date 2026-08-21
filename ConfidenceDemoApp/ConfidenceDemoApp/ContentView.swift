@@ -7,6 +7,8 @@ struct ContentView: View {
     var flaggingState: ExperimentationFlags
     @AppStorage("loggedUser")
     private var loggedUser: String?
+    @AppStorage("appVersion")
+    private var appVersion = 1
     @State
     private var isLoggingOut = false
     @State
@@ -26,6 +28,7 @@ struct ContentView: View {
                         .font(.largeTitle)
                         .padding()
                 }
+                Text("App version: \(appVersion)")
                 Spacer()
                 NavigationLink(destination: AboutPage(confidence: confidence)) {
                     Text("Navigate")
@@ -42,6 +45,7 @@ struct ContentView: View {
                     loggedUser = nil
                     flaggingState.state = .loading
                     flaggingState.color = .gray
+                    flaggingState.reason = .unknown
                     Task {
                         await confidence.removeContextAndWait(key: "user_id")
                         flaggingState.state = .ready
@@ -59,6 +63,30 @@ struct ContentView: View {
                 .navigationDestination(isPresented: $loggedOut) {
                     LoginView(confidence: confidence)
                 }
+                Button(action: {
+                    appVersion += 1
+                    let updatedVersion = appVersion
+                    flaggingState.state = .loading
+                    Task {
+                        let latencyTask = Task {
+                            try? await Task.sleep(nanoseconds: 2 * 1_000_000_000)
+                        }
+                        await confidence.putContextAndWait(
+                            context: ["app_version": .init(integer: updatedVersion)]
+                        )
+                        await latencyTask.value
+                        flaggingState.state = .ready
+                    }
+                }, label: {
+                    Text("Simulate update")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.orange)
+                        .clipShape(Capsule())
+                })
+                .disabled(flaggingState.state == .loading)
                 Spacer()
             }
             Spacer()
@@ -93,7 +121,7 @@ struct ContentView: View {
 
             HStack {
                 Text("[3]")
-                Text("This text color is fixed from app start, doesn't react on flag fetches")
+                Text("This text color is fixed from app start until logout")
                     .font(.body)
                     .foregroundStyle(flaggingState.color)
                 Spacer()

@@ -25,25 +25,15 @@ struct LoginView: View {
                 Spacer()
                 ZStack {
                     Button(action: {
-                        do {
-                            try confidence.activate()
-                        } catch {
-                            flaggingState.state = .error(
-                                ExperimentationFlags.CustomError(message: error.localizedDescription))
-                        }
-
-                        let eval = confidence.getEvaluation(key: "swift-demoapp.color", defaultValue: "Gray")
-                        flaggingState.color = ContentView.getColor(
-                            color: eval.value
-                        )
-                        flaggingState.reason = eval.reason
-
                         // Simulating a module that handles feature flagging state during login
                         Task {
                             flaggingState.state = .loading
-                            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000) // simulating network delay
+                            let latencyTask = Task {
+                                try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
+                            }
                             // putContext adds the user_id field to the evaluation context and fetches values for it
                             await confidence.putContextAndWait(context: ["user_id": .init(string: "user1")])
+                            await latencyTask.value
                             flaggingState.state = .ready
                         }
 

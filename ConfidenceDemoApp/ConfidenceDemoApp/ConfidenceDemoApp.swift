@@ -6,16 +6,15 @@ struct ConfidenceDemoApp: App {
     @AppStorage("loggedUser")
     private var loggedUser: String?
     @AppStorage("appVersion")
-    private var appVersion = 0
+    private var appVersion = 1
 
     private let confidence: Confidence
     private let flaggingState = ExperimentationFlags()
     private let secret = ProcessInfo.processInfo.environment["CLIENT_SECRET"] ?? "<Empty Secret>"
 
     init() {
-        @AppStorage("appVersion") var appVersion = 0
+        @AppStorage("appVersion") var appVersion = 1
         @AppStorage("loggedUser") var loggedUser: String?
-        appVersion += 1 // Simulate update of the app on every new run
         var context = ["app_version": ConfidenceValue.init(integer: appVersion)]
         if let user = loggedUser {
             context["user_id"] = ConfidenceValue.init(string: user)
@@ -68,10 +67,13 @@ struct ConfidenceDemoApp: App {
         Task {
             do {
                 flaggingState.state = .loading
-                try await Task.sleep(nanoseconds: 2 * 1_000_000_000) // simulating slow network
+                let latencyTask = Task {
+                    try? await Task.sleep(nanoseconds: 2 * 1_000_000_000)
+                }
                 // The flags in storage are refreshed for the current `context`, and activated
                 // After this line, fresh (and potentially new) flags values can be accessed
                 try await confidence.fetchAndActivate()
+                await latencyTask.value
                 flaggingState.state = .ready
             } catch {
                 flaggingState.state = .error(ExperimentationFlags.CustomError(message: error.localizedDescription))
