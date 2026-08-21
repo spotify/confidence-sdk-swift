@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/spotify/confidence-sdk-swift/compare/1.6.0...1.7.0) (2026-08-21)
+
+
+### ✨ New Features
+
+* add native watchOS support ([#266](https://github.com/spotify/confidence-sdk-swift/issues/266)) ([3037d5d](https://github.com/spotify/confidence-sdk-swift/commit/3037d5dc8ce6bc111029e3da6a8b5f156cbc8f2e))
+
 ## [1.6.0](https://github.com/spotify/confidence-sdk-swift/compare/1.5.0...1.6.0) (2026-08-19)
 
 
