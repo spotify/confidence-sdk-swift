@@ -24,7 +24,8 @@ jobs:
     - name: Run public API diff
       run: scripts/api_diff.sh ${{ matrix.module }}
 
-  Unit-Tests:
+  unit_tests_matrix:
+    name: Unit-Tests (${{ matrix.platform }})
     runs-on: macOS-latest
     strategy:
       matrix:
@@ -33,6 +34,15 @@ jobs:
       - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
       - name: Build and Run Unit Tests on ${{ matrix.platform }}
         run: scripts/run_tests.sh ${{ matrix.platform }}
+
+  Unit-Tests:
+    name: Unit-Tests
+    needs: unit_tests_matrix
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify unit test matrix
+        run: test "${{ needs.unit_tests_matrix.result }}" = "success"
 
   Integration-Tests:
     runs-on: macOS-latest
