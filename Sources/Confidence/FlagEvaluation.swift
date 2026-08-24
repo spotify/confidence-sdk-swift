@@ -20,9 +20,59 @@ public enum ErrorCode: Equatable {
 
 struct FlagResolution: Encodable, Decodable, Equatable {
     let context: ConfidenceStruct
-    let flags: [ResolvedValue]
     let resolveToken: String
+
+    // Single source of truth: indexed by flag name for O(1) lookup during evaluation.
+    // The on-disk JSON format is preserved via a custom encoder that emits `flags`
+    // as an array (sorted by flag name for deterministic output).
+    private let flagIndex: [String: ResolvedValue]
+
+    // Derived view: flags sorted by name for deterministic iteration / encoding.
+    var flags: [ResolvedValue] {
+        flagIndex.values.sorted { $0.flag < $1.flag }
+    }
+
     static let EMPTY = FlagResolution(context: [:], flags: [], resolveToken: "")
+
+    init(context: ConfidenceStruct, flags: [ResolvedValue], resolveToken: String) {
+        self.context = context
+        self.resolveToken = resolveToken
+        var index: [String: ResolvedValue] = [:]
+        index.reserveCapacity(flags.count)
+        for flag in flags {
+            index[flag.flag] = flag
+        }
+        self.flagIndex = index
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case context, flags, resolveToken
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let context = try container.decode(ConfidenceStruct.self, forKey: .context)
+        let flags = try container.decode([ResolvedValue].self, forKey: .flags)
+        let resolveToken = try container.decode(String.self, forKey: .resolveToken)
+        self.init(context: context, flags: flags, resolveToken: resolveToken)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(context, forKey: .context)
+        try container.encode(flags, forKey: .flags)
+        try container.encode(resolveToken, forKey: .resolveToken)
+    }
+
+    static func == (lhs: FlagResolution, rhs: FlagResolution) -> Bool {
+        lhs.context == rhs.context
+            && lhs.flagIndex == rhs.flagIndex
+            && lhs.resolveToken == rhs.resolveToken
+    }
+
+    func resolvedFlag(named name: String) -> ResolvedValue? {
+        flagIndex[name]
+    }
 }
 
 extension FlagResolution {
@@ -37,8 +87,7 @@ extension FlagResolution {
     ) -> Evaluation<T> {
         do {
             let parsedKey = try FlagPath.getPath(for: flagName)
-            let resolvedFlag = self.flags.first { resolvedFlag in resolvedFlag.flag == parsedKey.flag }
-            guard let resolvedFlag = resolvedFlag else {
+            guard let resolvedFlag = self.resolvedFlag(named: parsedKey.flag) else {
                 return Evaluation(
                     value: defaultValue,
                     variant: nil,
