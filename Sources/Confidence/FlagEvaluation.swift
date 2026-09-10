@@ -22,6 +22,7 @@ struct FlagResolution: Encodable, Decodable, Equatable {
     let context: ConfidenceStruct
     let flags: [ResolvedValue]
     let resolveToken: String
+    var lastFetchedAt: Date?
     static let EMPTY = FlagResolution(context: [:], flags: [], resolveToken: "")
 }
 

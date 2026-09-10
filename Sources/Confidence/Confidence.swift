@@ -110,7 +110,8 @@ public class Confidence: ConfidenceEventSender {
         let resolution = FlagResolution(
             context: context,
             flags: resolvedFlags.resolvedValues,
-            resolveToken: resolvedFlags.resolveToken ?? ""
+            resolveToken: resolvedFlags.resolveToken ?? "",
+            lastFetchedAt: Date()
         )
         try storage.save(data: resolution)
     }
@@ -120,6 +121,18 @@ public class Confidence: ConfidenceEventSender {
     */
     public func isStorageEmpty() -> Bool {
         return storage.isEmpty()
+    }
+
+    /**
+    Checks the stored resolution without activating it. Storage read errors are propagated.
+    */
+    public func getStorageStatus(check: ResolveStorageCheck) throws -> ResolveStorageStatus {
+        let resolution = try storage.load(defaultValue: FlagResolution.EMPTY)
+        return check.check(metadata: ResolveStorageMetadata(
+            isEmpty: resolution == FlagResolution.EMPTY,
+            lastFetchedAt: resolution.lastFetchedAt,
+            context: resolution.context
+        ))
     }
 
     /**

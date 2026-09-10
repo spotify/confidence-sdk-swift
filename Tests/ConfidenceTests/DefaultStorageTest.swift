@@ -34,6 +34,21 @@ class DefaultStorageTest: XCTestCase {
         XCTAssertEqual(restoredValue, value)
     }
 
+    func testResolveTimestampPersistsWithResolution() throws {
+        let resolution = FlagResolution(
+            context: ["targeting_key": .init(string: "user")],
+            flags: [],
+            resolveToken: "token",
+            lastFetchedAt: Date(timeIntervalSince1970: 1234)
+        )
+        try storage.save(data: resolution)
+
+        let reopened = DefaultStorage(filePath: "resolver.cache")
+        XCTAssertEqual(try reopened.load(defaultValue: FlagResolution.EMPTY), resolution)
+        try reopened.clear()
+        XCTAssertNil(try reopened.load(defaultValue: FlagResolution.EMPTY).lastFetchedAt)
+    }
+
     func testResolvedValueShouldApplyBackwardCompatibility() throws {
         struct LegacyResolvedValue: Codable, Equatable {
             var variant: String?
