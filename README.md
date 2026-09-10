@@ -108,7 +108,7 @@ struct UserStorageCheck: ResolveStorageCheck {
 
     func check(metadata: ResolveStorageMetadata) -> ResolveStorageStatus {
         if metadata.isEmpty { return .empty }
-        if metadata.context["targeting_key"] != expectedUser {
+        if metadata.context["user_id"] != expectedUser {
             return .stale(lastFetchedAt: metadata.lastFetchedAt)
         }
         return MaxAgeStorageCheck(maxAge: 24 * 60 * 60).check(metadata: metadata)
