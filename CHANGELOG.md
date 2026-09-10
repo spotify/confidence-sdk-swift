@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/spotify/confidence-sdk-swift/compare/1.7.0...1.8.0) (2026-09-10)
+
+
+### ✨ New Features
+
+* expose resolve storage status ([#268](https://github.com/spotify/confidence-sdk-swift/issues/268)) ([e8e1b2d](https://github.com/spotify/confidence-sdk-swift/commit/e8e1b2de8f0da38ea2b2d9d7426c2793c7298c8b))
+
 ## [1.7.0](https://github.com/spotify/confidence-sdk-swift/compare/1.6.0...1.7.0) (2026-08-21)
 
 
