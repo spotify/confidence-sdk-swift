@@ -23,6 +23,10 @@
         "declaration": "public func isStorageEmpty() -> Bool"
       },
       {
+        "name": "getStorageStatus(check:)",
+        "declaration": "public func getStorageStatus(check: ResolveStorageCheck) throws -> ResolveStorageStatus"
+      },
+      {
         "name": "getEvaluation(key:defaultValue:)",
         "declaration": "public func getEvaluation<T>(key: String, defaultValue: T) -> Evaluation<T>"
       },
@@ -286,6 +290,28 @@
       {
         "name": "==(_:_:)",
         "declaration": "public static func == (lhs: ConfidenceValue, rhs: ConfidenceValue) -> Bool"
+      }
+    ]
+  },
+  {
+    "className": "ResolveStorageMetadata",
+    "apiFunctions": [
+      {
+        "name": "init(isEmpty:lastFetchedAt:context:)",
+        "declaration": "public init(isEmpty: Bool, lastFetchedAt: Date?, context: ConfidenceStruct)"
+      }
+    ]
+  },
+  {
+    "className": "MaxAgeStorageCheck",
+    "apiFunctions": [
+      {
+        "name": "init(maxAge:)",
+        "declaration": "public init(maxAge: TimeInterval)"
+      },
+      {
+        "name": "check(metadata:)",
+        "declaration": "public func check(metadata: ResolveStorageMetadata) -> ResolveStorageStatus"
       }
     ]
   }

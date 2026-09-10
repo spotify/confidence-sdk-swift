@@ -80,14 +80,43 @@ There is also an `async/await` compatible API available for waiting the Provider
 await OpenFeatureAPI.shared.setProviderAndWait(provider: provider)
 ```
 
-A utility function is available on the provider to check if the current storage has any stored values - this can be used to determine the best initialization strategy.
+Choose an initialization strategy based on the age of the stored resolution:
 ```swift
-// If we have no cache, then do a fetch first.
-var initializationStrategy: InitializationStrategy = .activateAndFetchAsync
-if ConfidenceFeatureProvider.isStorageEmpty() {
+let status = try confidence.getStorageStatus(check: MaxAgeStorageCheck(maxAge: 24 * 60 * 60))
+let initializationStrategy: InitializationStrategy
+switch status {
+case .empty, .stale:
     initializationStrategy = .fetchAndActivate
+case .fresh:
+    initializationStrategy = .activateAndFetchAsync
+}
+let provider = ConfidenceFeatureProvider(
+    confidence: confidence,
+    initializationStrategy: initializationStrategy
+)
+```
+
+`maxAge` is a positive, finite interval in seconds. A cache is stale at or beyond that age;
+older caches without a fetch timestamp are also stale. Successful fetches persist the timestamp
+with the resolution, even before activation. Failed fetches leave the timestamp unchanged.
+Checking status does not fetch or activate flags, and storage read errors are thrown to the caller.
+
+Implement `ResolveStorageCheck` for custom rules, such as checking the stored evaluation context:
+```swift
+struct UserStorageCheck: ResolveStorageCheck {
+    let expectedUser: ConfidenceValue
+
+    func check(metadata: ResolveStorageMetadata) -> ResolveStorageStatus {
+        if metadata.isEmpty { return .empty }
+        if metadata.context["targeting_key"] != expectedUser {
+            return .stale(lastFetchedAt: metadata.lastFetchedAt)
+        }
+        return MaxAgeStorageCheck(maxAge: 24 * 60 * 60).check(metadata: metadata)
+    }
 }
 ```
+
+`confidence.isStorageEmpty()` remains available when only cache presence matters.
 
 Initialization strategies:
 - _activateAndFetchAsync_: the flags in the cached are used for this session, while updated values are fetched and stored on disk for a future session; this means that a READY event is immediately emitted when calling `setProvider()`;
