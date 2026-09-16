@@ -7,7 +7,8 @@ let package = Package(
     name: "Confidence",
     platforms: [
         .iOS(.v14),
-        .macOS(.v12)
+        .macOS(.v12),
+        .watchOS(.v7)
     ],
     products: [
         .library(
