@@ -226,7 +226,7 @@ extension FlagResolution {
 
     // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue, defaultValue: T) throws -> T? {
-        if let value = self as? T {
+        if let value = value as? T {
             return value
         }
 
