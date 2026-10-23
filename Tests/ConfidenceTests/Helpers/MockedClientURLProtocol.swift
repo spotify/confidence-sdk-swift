@@ -4,8 +4,10 @@ import XCTest
 @testable import Confidence
 
 class MockedClientURLProtocol: URLProtocol {
-    public static var mockedOperation = MockedOperation.success
-    public static var lastRequestURL: URL?
+    // `nonisolated(unsafe)`: URLProtocol mocks are mutated from URLSession worker threads
+    // and reset from the test thread; benign by design in test scenarios.
+    nonisolated(unsafe) public static var mockedOperation = MockedOperation.success
+    nonisolated(unsafe) public static var lastRequestURL: URL?
 
     enum MockedOperation {
         case firstEventFails

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct GrpcStatusCode {
+public struct GrpcStatusCode: Sendable {
     private let _rawValue: UInt8
 
     public var rawValue: Int {

@@ -2,7 +2,7 @@ import Foundation
 
 public typealias ConfidenceStruct = [String: ConfidenceValue]
 
-public class ConfidenceValue: Equatable, Codable, CustomStringConvertible {
+public final class ConfidenceValue: Equatable, Codable, CustomStringConvertible, Sendable {
     private let value: ConfidenceValueInternal
     public var description: String {
         return value.description
