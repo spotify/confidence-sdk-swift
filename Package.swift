@@ -1,4 +1,4 @@
-// swift-tools-version: 5.5
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -19,7 +19,7 @@ let package = Package(
             targets: ["Confidence"])
     ],
     dependencies: [
-        .package(url: "https://github.com/open-feature/swift-sdk.git", .exact("0.6.0")),
+        .package(url: "https://github.com/open-feature/swift-sdk.git", exact: "0.6.0"),
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.20.2"),
     ],
     targets: [
@@ -49,5 +49,6 @@ let package = Package(
                 .product(name: "SwiftProtobuf", package: "swift-protobuf"),
             ]
         ),
-    ]
+    ],
+    swiftLanguageModes: [.v6]
 )

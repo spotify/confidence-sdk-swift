@@ -3,12 +3,14 @@ import Foundation
 @testable import Confidence
 
 class MockedResolveClientURLProtocol: URLProtocol {
-    public static var callStats = 0
-    public static var resolveStats = 0
-    public static var resolveRequestFields = NetworkStruct(fields: [:])
-    public static var lastRequestURL: URL?
-    public static var flags: [String: TestFlag] = [:]
-    public static var failFirstApply = false
+    // `nonisolated(unsafe)`: URLProtocol mocks are mutated from URLSession worker threads
+    // and reset from the test thread; benign by design in test scenarios.
+    nonisolated(unsafe) public static var callStats = 0
+    nonisolated(unsafe) public static var resolveStats = 0
+    nonisolated(unsafe) public static var resolveRequestFields = NetworkStruct(fields: [:])
+    nonisolated(unsafe) public static var lastRequestURL: URL?
+    nonisolated(unsafe) public static var flags: [String: TestFlag] = [:]
+    nonisolated(unsafe) public static var failFirstApply = false
 
     static func set(flags: [String: TestFlag]) {
         MockedResolveClientURLProtocol.flags = flags
