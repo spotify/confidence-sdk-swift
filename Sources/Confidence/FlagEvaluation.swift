@@ -226,10 +226,6 @@ extension FlagResolution {
 
     // swiftlint:disable:next cyclomatic_complexity
     private func getTyped<T>(value: ConfidenceValue, defaultValue: T) throws -> T? {
-        if let value = self as? T {
-            return value
-        }
-
         let result: Any?
         switch value.type() {
         case .boolean:
