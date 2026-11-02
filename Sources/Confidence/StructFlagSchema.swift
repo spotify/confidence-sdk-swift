@@ -10,6 +10,9 @@ struct StructFlagSchema: Equatable {
 
 indirect enum FlagSchema: Equatable {
     case structSchema(StructFlagSchema)
+    /// Deprecated for flags: list/array flag schema properties are deprecated, but remain fully
+    /// supported at runtime (parsing, serialization and resolution). Not annotated with
+    /// `@available(*, deprecated)` because this type is internal and used by the resolve pipeline.
     case listSchema(FlagSchema)
     case intSchema
     case doubleSchema
