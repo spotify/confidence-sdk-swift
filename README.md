@@ -184,6 +184,16 @@ let result = client.getObjectValue(key: "my-flag", defaultValue: Value.null)
 
 **Note:** if a flag can't be resolved from the local cache, the provider doesn't automatically resort to calling remote. Refreshing the cache from remote only happens when setting a new provider and/or evaluation context in the global OpenFeatureAPI.
 
+### Deprecated: list (array) flag values
+
+Using lists/arrays as flag schema property types (`listSchema`) or as resolved flag values is deprecated. Existing list
+flag properties continue to resolve, parse and serialize exactly as before, and no removal date has been set. For new
+flags, prefer structs or scalar properties instead.
+
+This deprecation only applies to flag schemas and flag values. List `ConfidenceValue`s (e.g. `ConfidenceValue(list:)`,
+`ConfidenceValue(stringList:)`, `asList()`) remain fully supported for evaluation context and tracked events. Because
+these APIs are shared between flags, context and events, they are intentionally not annotated with `@available(*, deprecated)`.
+
 
 # Confidence Vanilla SDK
 If you want to use Confidence without OpenFeature, you can. Please take a look at our [dedicated SDK readme](https://github.com/spotify/confidence-sdk-swift/tree/main/Sources/Confidence).
