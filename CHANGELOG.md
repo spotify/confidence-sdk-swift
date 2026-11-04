@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.1](https://github.com/spotify/confidence-sdk-swift/compare/1.8.0...1.8.1) (2026-11-04)
+
+
+### 🐛 Bug Fixes
+
+* **FlagEvaluation:** remove dead getTyped cast ([#272](https://github.com/spotify/confidence-sdk-swift/issues/272)) ([8381438](https://github.com/spotify/confidence-sdk-swift/commit/8381438e8eb64f7c532c63a780e3c178dce08c6b)), closes [#252](https://github.com/spotify/confidence-sdk-swift/issues/252)
+
+
+### 📚 Documentation
+
+* deprecate list/array flag schemas and values ([#276](https://github.com/spotify/confidence-sdk-swift/issues/276)) ([58cd6d3](https://github.com/spotify/confidence-sdk-swift/commit/58cd6d305da34091bb30c959d49ad13b95c9facf))
+
 ## [1.8.0](https://github.com/spotify/confidence-sdk-swift/compare/1.7.0...1.8.0) (2026-09-10)
 
 
