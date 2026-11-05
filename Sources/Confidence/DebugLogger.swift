@@ -11,7 +11,7 @@ protocol DebugLogger {
 }
 
 private extension Logger {
-    private static var subsystem = Bundle.main.bundleIdentifier
+    private static let subsystem = Bundle.main.bundleIdentifier
 
     static let confidence = Logger(subsystem: subsystem ?? "", category: "confidence")
 }

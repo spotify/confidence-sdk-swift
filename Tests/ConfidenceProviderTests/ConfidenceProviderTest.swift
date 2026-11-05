@@ -1055,7 +1055,7 @@ private class EventSenderEngineSpy: EventSenderEngine {
     func flush() {}
 }
 
-private class NoOpFlagApplier: FlagApplier {
+private final class NoOpFlagApplier: FlagApplier, Sendable {
     func apply(flagName: String, resolveToken: String) async {}
 }
 

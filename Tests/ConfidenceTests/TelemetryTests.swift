@@ -18,8 +18,13 @@ class TelemetryTests: XCTestCase {
         Telemetry(sdkId: "SDK_ID_SWIFT_CONFIDENCE", library: .confidence, libraryVersion: version)
     }
 
-    private func decodeMonitoring(_ base64: String) throws -> ProtoMonitoring {
-        let data = try XCTUnwrap(Data(base64Encoded: base64))
+    private static func decodeMonitoring(_ base64: String) throws -> ProtoMonitoring {
+        guard let data = Data(base64Encoded: base64) else {
+            throw NSError(
+                domain: "TelemetryTests",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid base64 telemetry payload"])
+        }
         return try ProtoMonitoring(serializedBytes: data)
     }
 
@@ -128,10 +133,10 @@ class TelemetryTests: XCTestCase {
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
         telemetry.trackResolveLatency(durationMs: 100, status: .success)
 
-        let first = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let first = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertFalse(first.libraryTraces[0].traces.isEmpty)
 
-        let second = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let second = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertTrue(second.libraryTraces[0].traces.isEmpty)
     }
 
@@ -139,7 +144,7 @@ class TelemetryTests: XCTestCase {
 
     func testEncodingBaseline() throws {
         let telemetry = makeTelemetry(version: "1.4.5")
-        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let monitoring = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
 
         XCTAssertEqual(monitoring.platform, .swift)
         XCTAssertEqual(monitoring.libraryTraces.count, 1)
@@ -156,7 +161,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
 
-        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let monitoring = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         let traces = monitoring.libraryTraces[0].traces
         XCTAssertEqual(traces.count, 1)
 
@@ -170,7 +175,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
 
-        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        let trace = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.id, .flagEvaluation)
         XCTAssertEqual(trace.evaluationTrace.reason, .stale)
         XCTAssertEqual(trace.evaluationTrace.errorCode, .unspecified)
@@ -180,7 +185,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: .typeMismatch())
 
-        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        let trace = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.evaluationTrace.reason, .error)
         XCTAssertEqual(trace.evaluationTrace.errorCode, .typeMismatch)
     }
@@ -189,7 +194,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .match, errorCode: .flagNotFound)
 
-        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        let trace = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.evaluationTrace.reason, .error)
         XCTAssertEqual(trace.evaluationTrace.errorCode, .flagNotFound)
     }
@@ -198,7 +203,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackEvaluation(reason: .error, errorCode: nil)
 
-        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        let trace = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.evaluationTrace.reason, .error)
         XCTAssertEqual(trace.evaluationTrace.errorCode, .general)
     }
@@ -209,7 +214,7 @@ class TelemetryTests: XCTestCase {
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
         telemetry.trackEvaluation(reason: .match, errorCode: .typeMismatch())
 
-        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 3)
         XCTAssertEqual(traces[0].evaluationTrace.reason, .targetingMatch)
         XCTAssertEqual(traces[0].evaluationTrace.errorCode, .unspecified)
@@ -225,7 +230,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 42, status: .success)
 
-        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 1)
 
         let trace = traces[0]
@@ -238,7 +243,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 500, status: .error)
 
-        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        let trace = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.requestTrace.millisecondDuration, 500)
         XCTAssertEqual(trace.requestTrace.status, .error)
     }
@@ -247,7 +252,7 @@ class TelemetryTests: XCTestCase {
         let telemetry = makeTelemetry()
         telemetry.trackResolveLatency(durationMs: 30000, status: .timeout)
 
-        let trace = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
+        let trace = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces[0]
         XCTAssertEqual(trace.requestTrace.millisecondDuration, 30000)
         XCTAssertEqual(trace.requestTrace.status, .timeout)
     }
@@ -260,7 +265,7 @@ class TelemetryTests: XCTestCase {
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
 
-        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, 3)
 
         XCTAssertEqual(traces[0].id, .resolveLatency)
@@ -277,14 +282,14 @@ class TelemetryTests: XCTestCase {
 
     func testLibraryDefaultIsConfidence() throws {
         let telemetry = makeTelemetry()
-        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let monitoring = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertEqual(monitoring.libraryTraces[0].library, .confidence)
     }
 
     func testSetLibraryOpenFeature() throws {
         let telemetry = makeTelemetry()
         telemetry.library = .openFeature
-        let monitoring = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let monitoring = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertEqual(monitoring.libraryTraces[0].library, .openFeature)
     }
 
@@ -296,16 +301,16 @@ class TelemetryTests: XCTestCase {
         // Cycle 1: add traces, snapshot clears them
         telemetry.trackEvaluation(reason: .match, errorCode: nil)
         telemetry.trackResolveLatency(durationMs: 50, status: .success)
-        let first = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let first = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertEqual(first.libraryTraces[0].traces.count, 2)
 
         // Cycle 2: empty after clear
-        let second = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let second = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertTrue(second.libraryTraces[0].traces.isEmpty)
 
         // Cycle 3: new traces accumulate independently
         telemetry.trackEvaluation(reason: .stale, errorCode: nil)
-        let third = try decodeMonitoring(telemetry.encodedHeaderValue())
+        let third = try Self.decodeMonitoring(telemetry.encodedHeaderValue())
         XCTAssertEqual(third.libraryTraces[0].traces.count, 1)
         XCTAssertEqual(third.libraryTraces[0].traces[0].evaluationTrace.reason, .stale)
     }
@@ -340,7 +345,7 @@ class TelemetryTests: XCTestCase {
         }
 
         group.wait()
-        let traces = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
+        let traces = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces
         XCTAssertEqual(traces.count, iterations * 2)
     }
 
@@ -366,7 +371,7 @@ class TelemetryTests: XCTestCase {
         for _ in 0..<10 {
             group.enter()
             DispatchQueue.global().async {
-                let monitoring = try? self.decodeMonitoring(telemetry.encodedHeaderValue())
+                let monitoring = try? Self.decodeMonitoring(telemetry.encodedHeaderValue())
                 let count = monitoring?.libraryTraces[0].traces.count ?? 0
                 totalTraces.add(count)
                 group.leave()
@@ -376,7 +381,7 @@ class TelemetryTests: XCTestCase {
         group.wait()
 
         // Final drain
-        let remaining = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces.count
+        let remaining = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces.count
         let total = totalTraces.value + remaining
         // iterations evaluations + iterations/3 resolve traces (i = 0, 3, 6, ... 198 → 67 values)
         let expectedResolves = (0..<iterations).filter { $0 % 3 == 0 }.count
@@ -402,7 +407,7 @@ class TelemetryTests: XCTestCase {
             DispatchQueue.global().async {
                 telemetry.trackEvaluation(reason: .match, errorCode: nil)
                 // Must not crash; library must be one of the two valid values
-                let monitoring = try? self.decodeMonitoring(telemetry.encodedHeaderValue())
+                let monitoring = try? Self.decodeMonitoring(telemetry.encodedHeaderValue())
                 if let lib = monitoring?.libraryTraces[0].library {
                     XCTAssertTrue(lib == .confidence || lib == .openFeature)
                 }
@@ -428,7 +433,7 @@ class TelemetryTests: XCTestCase {
         for _ in 0..<20 {
             group.enter()
             DispatchQueue.global().async {
-                let monitoring = try? self.decodeMonitoring(telemetry.encodedHeaderValue())
+                let monitoring = try? Self.decodeMonitoring(telemetry.encodedHeaderValue())
                 let count = monitoring?.libraryTraces[0].traces.count ?? 0
                 totalTraces.add(count)
                 group.leave()
@@ -436,7 +441,7 @@ class TelemetryTests: XCTestCase {
         }
 
         group.wait()
-        let remaining = try decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces.count
+        let remaining = try Self.decodeMonitoring(telemetry.encodedHeaderValue()).libraryTraces[0].traces.count
         XCTAssertEqual(totalTraces.value + remaining, iterations, "Traces must not be duplicated or lost")
     }
 }

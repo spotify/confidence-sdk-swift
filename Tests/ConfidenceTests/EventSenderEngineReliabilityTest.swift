@@ -143,7 +143,9 @@ final class EventSenderEngineReliabilityTest: XCTestCase {
     }
 }
 
-private final class BlockingEventUploaderMock: ConfidenceClient {
+private final class BlockingEventUploaderMock: ConfidenceClient, @unchecked Sendable {
+    // `@unchecked Sendable`: the semaphore is this mock's whole job — blocking a
+    // concurrent upload until the test releases it.
     private let uploadRelease = DispatchSemaphore(value: 0)
 
     func upload(events: [NetworkEvent]) async throws -> Bool {

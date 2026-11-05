@@ -1,6 +1,8 @@
 import Foundation
 
-internal class TaskManager {
+internal class TaskManager: @unchecked Sendable {
+    // `@unchecked Sendable`: `_currentTask` is only ever accessed through `queue`,
+    // making the class safe to share across concurrency domains by design.
     private let queue = DispatchQueue(label: "com.confidence.taskmanager")
     private var _currentTask: Task<Result<Void, Error>, Never>?
 

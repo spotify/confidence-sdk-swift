@@ -3,7 +3,7 @@ import XCTest
 
 @testable import Confidence
 
-class FlagApplierMock: FlagApplier {
+final class FlagApplierMock: FlagApplier, @unchecked Sendable {
     var applyCallCount = 0
     var applyExpectation = XCTestExpectation(description: "Flag Applied")
 

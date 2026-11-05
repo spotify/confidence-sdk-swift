@@ -1,15 +1,33 @@
 import Foundation
 import Combine
 import Confidence
-import OpenFeature
+@preconcurrency import OpenFeature
 import os
 
 struct Metadata: ProviderMetadata {
     var name: String?
 }
 
+/// Boxes a Combine `Future` promise so it can be captured in a `Task` under Swift 6
+/// strict concurrency. `Future` promises are thread-safe to fulfill from any task,
+/// but their closure type is not marked `Sendable` (pre-concurrency API).
+private final class FuturePromiseBox: @unchecked Sendable {
+    private let promise: Future<Void, Never>.Promise
+
+    init(_ promise: @escaping Future<Void, Never>.Promise) {
+        self.promise = promise
+    }
+
+    func resolve() {
+        promise(.success(()))
+    }
+}
+
 /// The implementation of the Confidence Feature Provider. This implementation allows to pre-cache evaluations.
-public class ConfidenceFeatureProvider: FeatureProvider {
+public class ConfidenceFeatureProvider: FeatureProvider, @unchecked Sendable {
+    // `@unchecked Sendable`: mutable state (`hooks`, `cancellables`) is guarded by `lock`
+    // and `ProviderStatusTracker`; OpenFeature types are pre-Swift 6 and imported
+    // with `@preconcurrency` until upstream adopts strict concurrency.
     public static let providerId: String = "SDK_ID_SWIFT_PROVIDER"
     public var metadata: ProviderMetadata
     public var hooks: [any Hook] = []
@@ -48,26 +66,31 @@ public class ConfidenceFeatureProvider: FeatureProvider {
     }
 
     public func initialize(initialContext: OpenFeature.EvaluationContext?) -> Future<Void, Never> {
-        Future { promise in
+        // OpenFeature's `EvaluationContext` predates strict concurrency and is not Sendable:
+        // convert it to Sendable Confidence types before capturing it in a Task.
+        let initialConfidenceContext = ConfidenceTypeMapper.from(
+            ctx: initialContext ?? ImmutableContext(attributes: [:])
+        )
+        return Future { promise in
+            // Combine `Future` promises are thread-safe to fulfill from any task but their
+            // closure type predates strict concurrency; box it to cross into the Task.
+            let fulfillment = FuturePromiseBox(promise)
             Task {
                 do {
-                    let context = ConfidenceTypeMapper.from(
-                        ctx: initialContext ?? ImmutableContext(attributes: [:])
-                    )
-                    self.confidence.putContextLocal(context: context)
+                    self.confidence.putContextLocal(context: initialConfidenceContext)
                     if self.initializationStrategy == .activateAndFetchAsync {
                         try self.confidence.activate()
                         self.statusTracker.send(.ready(nil))
-                        promise(.success(()))
+                        fulfillment.resolve()
                         await self.confidence.asyncFetch()
                     } else {
                         try await self.confidence.fetchAndActivate()
                         self.statusTracker.send(.ready(nil))
-                        promise(.success(()))
+                        fulfillment.resolve()
                     }
                 } catch {
                     self.statusTracker.send(.error(ProviderEventDetails(message: error.localizedDescription)))
-                    promise(.success(()))
+                    fulfillment.resolve()
                 }
             }
         }
@@ -85,20 +108,27 @@ public class ConfidenceFeatureProvider: FeatureProvider {
         oldContext: OpenFeature.EvaluationContext?,
         newContext: OpenFeature.EvaluationContext
     ) -> Future<Void, Never> {
-        Future { promise in
+        // OpenFeature contexts predate strict concurrency and are not Sendable:
+        // compute the Sendable inputs before capturing them in a Task.
+        let newContextMap = newContext.asMap()
+        let newKeys = Set(Array(newContextMap.keys))
+        let targetingKey = newContext.getTargetingKey()
+
+        let removedKeys: [String] = oldContext.map { oldCtx in
+            let oldKeys = Array(oldCtx.asMap().keys)
+            return Array(Set(oldKeys).subtracting(newKeys))
+        } ?? []
+
+        let newConfidenceContext = ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey)
+
+        return Future { promise in
+            // Combine `Future` promises are thread-safe to fulfill from any task but their
+            // closure type predates strict concurrency; box it to cross into the Task.
+            let fulfillment = FuturePromiseBox(promise)
             Task {
                 self.statusTracker.send(.reconciling(nil))
-                let newContextMap = newContext.asMap()
-                let newKeys = Set(Array(newContextMap.keys))
-                let targetingKey = newContext.getTargetingKey()
-
-                let removedKeys: [String] = oldContext.map { oldCtx in
-                    let oldKeys = Array(oldCtx.asMap().keys)
-                    return Array(Set(oldKeys).subtracting(newKeys))
-                } ?? []
-
                 let result = await self.confidence.reconcileContext(
-                    context: ConfidenceTypeMapper.from(contextMap: newContextMap, targetingKey: targetingKey),
+                    context: newConfidenceContext,
                     removedKeys: removedKeys
                 )
                 switch result {
@@ -107,7 +137,7 @@ public class ConfidenceFeatureProvider: FeatureProvider {
                 case .failure(let error):
                     self.statusTracker.send(.stale(ProviderEventDetails(message: error.localizedDescription)))
                 }
-                promise(.success(()))
+                fulfillment.resolve()
             }
         }
     }

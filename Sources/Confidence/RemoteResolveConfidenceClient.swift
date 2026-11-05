@@ -137,7 +137,7 @@ struct ResolvedFlag: Codable {
     var reason: ResolveReason
 }
 
-public enum ResolveReason: String, Codable, CaseIterableDefaultsLast {
+public enum ResolveReason: String, Codable, CaseIterableDefaultsLast, Sendable {
     case unspecified = "RESOLVE_REASON_UNSPECIFIED"
     case match = "RESOLVE_REASON_MATCH"
     case stale = "RESOLVE_REASON_STALE"
