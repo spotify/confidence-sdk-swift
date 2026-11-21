@@ -4,7 +4,9 @@ import Combine
 import os
 
 // swiftlint:disable:next type_body_length
-public class Confidence: ConfidenceEventSender {
+public class Confidence: ConfidenceEventSender, @unchecked Sendable {
+    // `@unchecked Sendable`: mutable state is either immutable-after-init or synchronized
+    // (e.g. context changes are serialized through `TaskManager`'s dispatch queue).
     // User configurations
     private let clientSecret: String
     private let region: ConfidenceRegion

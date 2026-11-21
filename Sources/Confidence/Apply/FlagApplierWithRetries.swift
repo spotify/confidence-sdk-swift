@@ -4,7 +4,9 @@ import os
 typealias ApplyFlagHTTPResponse = HttpClientResponse<ApplyFlagsResponse>
 typealias ApplyFlagResult = Result<ApplyFlagHTTPResponse, Error>
 
-final class FlagApplierWithRetries: FlagApplier {
+final class FlagApplierWithRetries: FlagApplier, @unchecked Sendable {
+    // `@unchecked Sendable`: all stored properties are immutable; mutable state lives
+    // behind the `CacheDataActor` actor.
     private let storage: Storage
     private let httpClient: HttpClient
     private let options: ConfidenceClientOptions

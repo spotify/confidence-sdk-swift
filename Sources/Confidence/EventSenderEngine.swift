@@ -17,7 +17,9 @@ protocol EventSenderEngine {
     func flush()
 }
 
-final class EventSenderEngineImpl: EventSenderEngine {
+final class EventSenderEngineImpl: EventSenderEngine, @unchecked Sendable {
+    // `@unchecked Sendable`: mutable state is guarded by `semaphore`, `shutdownLock` and
+    // the engine's internal processing task.
     static let defaultFlushInterval: TimeInterval = 60
     private static let sendSignalName: String = "FLUSH"
     private static let defaultShutdownTimeout: TimeInterval = 10
@@ -249,8 +251,8 @@ final class EventSenderEngineImpl: EventSenderEngine {
     }
 }
 
-private extension Publisher where Self.Failure == Never {
-    func sink(receiveValue: @escaping ((Self.Output) async -> Void)) -> AnyCancellable {
+private extension Publisher where Self.Failure == Never, Self.Output: Sendable {
+    func sink(receiveValue: @escaping @Sendable (Self.Output) async -> Void) -> AnyCancellable {
         sink { value in
             Task {
                 await receiveValue(value)

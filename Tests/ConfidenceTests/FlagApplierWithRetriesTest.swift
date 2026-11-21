@@ -114,16 +114,13 @@ class FlagApplierWithRetriesTest: XCTestCase {
     func testApply_emptyStorage_doesNotTriggerBatchApply() async throws {
         // Given flag applier with empty storage
         // When flag applier is initialised
-        let task = Task {
-            _ = FlagApplierWithRetries(
-                httpClient: httpClient,
-                storage: storage,
-                options: options,
-                telemetry: telemetry,
-                triggerBatch: false
-            )
-        }
-        await task.value
+        _ = FlagApplierWithRetries(
+            httpClient: httpClient,
+            storage: storage,
+            options: options,
+            telemetry: telemetry,
+            triggerBatch: false
+        )
 
         // Then http client does not send apply flags batch request
         XCTAssertEqual(httpClient.postCallCounter, 0)
